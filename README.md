@@ -26,7 +26,7 @@ roslaunch gbplanner gbplanner_sim.launch
 ```
 rosservice call /planner_control_interface/std_srvs/automatic_planning "{}"
 ```
-- We provide several types of environment for simulation in the package [planner_gazebo_sim](https://github.com/unr-arl/gbplanner_ros/planner_gazebo_sim) including room-and-pillar mine (```pittsburgh_mine.world```), long-wall mine (```edgar_mine.world```), and a model reconstructed from a real mine (```virginia_mine.world```)
+- We provide several types of environment for simulation in the package [planner_gazebo_sim](https://github.com/unr-arl/gbplanner_ros/tree/master/planner_gazebo_sim) including room-and-pillar mine (```pittsburgh_mine.world```), long-wall mine (```edgar_mine.world```), and a model reconstructed from a real mine (```virginia_mine.world```)
 
 ### Select the mapping framework
 By default, the planner is compiled with Voxblox. To compile with Octomap, set the flag USE_OCTOMAP to 1:
