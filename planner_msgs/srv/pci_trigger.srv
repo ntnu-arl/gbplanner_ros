@@ -1,0 +1,12 @@
+# Request the planning through the planner control interface node.
+
+# Set not_exe_path to true if don't want the robot to execute the path.
+bool not_exe_path
+# Set set_auto to true to change to auto mode and vice versa.
+bool set_auto
+uint8 bound_mode
+
+# Max velocity allowed.
+float32 vel_max
+-------
+bool success

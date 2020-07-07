@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>planner_msgs</name>
+  <version>1.0.0</version>
+  <description>Interface</description>
+
+  <maintainer email="tung.dang@nevada.unr.edu">Tung Dang</maintainer>
+
+  <license>TODO</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>message_generation</depend>
+  <depend>geometry_msgs</depend>
+  <depend>message_runtime</depend>
+
+</package>
+

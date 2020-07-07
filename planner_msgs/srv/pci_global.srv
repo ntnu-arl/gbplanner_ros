@@ -1,0 +1,23 @@
+# Request the planning through the planner control interface node.
+
+## Params for planner-control-interface
+# Set not_exe_path to true if don't want the robot to execute the path.
+bool not_exe_path
+# Set set_auto to true to change to auto mode and vice versa.
+bool set_auto
+uint8 bound_mode
+# Max velocity allowed.
+float32 vel_max
+
+## Params for planner
+# id of the frontier:
+# --> default is 0: auto-select the best frontier.
+# --> other than 0: manual select with feasibility check.
+int32 id
+# Don't check for frontier properties (e.g. leaf vertex, gain, ...).
+# This could be used to find a path to any vertex in the graph.
+bool not_check_frontier
+# Force the planner to provide the path regardless the time budget.
+bool ignore_time
+-------
+bool success

@@ -1,0 +1,19 @@
+# Request the planning through the planner control interface node.
+Header header
+# Set True if want to set source pose at current robot's state;
+# otherwise, get from inter=active marker
+bool use_current_state
+bool not_exe_path
+
+# Set the bound mode of the robot to use in planner.
+# Use extension to actual size. (default)
+int32 kExtendedBound = 0
+int32 kRelaxedBound = 1
+int32 kMinBound = 2
+int32 kExactBound = 3
+int32 kNoBound = 4
+# Can only be used with one of above values. Check Params/BoundModeType for more details.
+int32 bound_mode
+-------
+bool success
+geometry_msgs/Pose[] path

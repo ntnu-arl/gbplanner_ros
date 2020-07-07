@@ -1,7 +1,40 @@
 # gbplanner_ros
 Graph-based Exploration Planner for Subterranean Environments
 
-This repo is for the planning framework developed in the publication.
+### How to build the planner
+The planner could be compiled using simple catkin-build command as following:
+```
+catkin build -DCMAKE_BUILD_TYPE=Release gbplanner_ros
+```
+However, please be aware that the planner requires several dependencies; for example:
+- Mapping framework: either [Voxblox](https://github.com/ethz-asl/voxblox) or [Octomap](https://github.com/OctoMap/octomap)
+- Planner-Control interface package: [pci_mav](https://github.com/unr-arl/pci_mav)
+- MAV simulation: [RotorS](https://github.com/ethz-asl/rotors_simulator), [LiDAR simulator](https://github.com/unr-arl/lidar_simulator.git)
+
+Hence, to simplify the test process with the planner, we prepare an example workspace [gbplanner_ws](https://github.com/unr-arl/gbplanner_ws), which includes all relevant packages. Please follow the suggested steps in the repo [gbplanner_ws](https://github.com/unr-arl/gbplanner_ws) for further detail.
+
+### How to launch the planner
+- Launch file for simulation:
+```
+roslaunch gbplanner m100_sim.launch
+```
+- To trigger the planner in command line, please use this service call:
+```
+rosservice call /planner_control_interface/std_srvs/automatic_planning "{}"
+```
+
+### Select the mapping framework
+By default, the planner is compiled with Voxblox, to compile with Octomap:
+```
+catkin build -DCMAKE_BUILD_TYPE=Release -DUSE_OCTOMAP=1 gbplanner_ros
+```
+Also change the config to Octomap in the m100_sim.launch file
+```
+<arg name="map_config_file" default="$(arg octomap_config_file)"/>
+```
+
+### References
+If you use this work in your research, please consider to cite the below publication.
 ```
 @inproceedings{dang2019graph,
   title={Graph-based path planning for autonomous robotic exploration in subterranean environments},
@@ -12,7 +45,6 @@ This repo is for the planning framework developed in the publication.
   organization={IEEE}
 }
 ```
-
 
 You can contact us for any question:
 * [Tung Dang](mailto:tung.dang@nevada.unr.edu)

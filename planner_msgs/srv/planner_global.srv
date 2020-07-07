@@ -1,0 +1,13 @@
+# Request the planner to run and return a path
+# Since the global planner solution is almost deterministic,
+# we could choose which frontier (using its id) from the best one to execute.
+# By default, id 0 means selecting the best one.
+int32 id
+# Don't check for frontier properties (e.g. leaf vertex, gain, ...)
+# This could be used to find a path to any vertex in the graph
+bool not_check_frontier
+# Force the planner to provide the path regardless the time budget.
+bool ignore_time
+-------
+# Return best path.
+geometry_msgs/Pose[] path

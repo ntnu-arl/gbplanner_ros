@@ -1,0 +1,5 @@
+# Request the planner control interface to guide the robot go home.
+# Set true if don't want to execute path.
+bool not_exe_path
+-------
+bool success

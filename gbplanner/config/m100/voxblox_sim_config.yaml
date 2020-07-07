@@ -1,0 +1,39 @@
+world_frame: world
+use_tf_transforms: True
+use_freespace_pointcloud: False
+tsdf_voxels_per_side: 16
+tsdf_voxel_size: 0.20
+max_ray_length_m: 50.0
+truncation_distance: 0.4
+use_sparsity_compensation_factor: True
+sparsity_compensation_factor: 100.0 #10.0
+use_weight_dropoff: True
+voxel_carving_enabled: True
+color_mode: "height"
+verbose: False
+use_const_weight: True
+update_mesh_every_n_sec: 1.0
+mesh_min_weight: 1e-4
+slice_level: 1.0
+method: "fast"
+publish_slices: False
+publish_pointclouds: True
+allow_clear: True
+pointcloud_queue_size: 1000
+min_time_between_msgs_sec: 0.0
+#max_block_distance_from_body: FLT_MAX
+publish_tsdf_info: False
+publish_slices: False
+publish_traversable: False
+traversability_radius: 1.5
+enable_icp: False
+icp_refine_roll_pitch: False
+accumulate_icp_corrections: True
+
+# !!! NOT IMPLEMENTED FOR VOXBLOX !!!
+# Augmentation
+#augment_free_frustum_enabled: true
+#free_frustum_skip: 10
+#free_frustum_range: 15.0
+#free_frustum_fov: [rad(2*pi), rad(pi/6)]
+#free_frustum_resolution: [rad(1.0*pi/180) rad(1.0*pi/180)]

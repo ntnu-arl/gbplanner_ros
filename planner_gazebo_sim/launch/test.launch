@@ -1,0 +1,16 @@
+<launch>
+  <arg name="gazebo_gui_en" default="true"/>
+  <arg name="use_sim_time" default="true"/>
+
+  <param name="use_sim_time" value="$(arg use_sim_time)"/>
+
+  <env name="GAZEBO_MODEL_PATH" value="${GAZEBO_MODEL_PATH}:$(find planner_gazebo_sim)/models"/>
+  <!-- <env name="GAZEBO_RESOURCE_PATH" value="${GAZEBO_RESOURCE_PATH}:$(find planner_gazebo_sim)/models"/> -->
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(find planner_gazebo_sim)/worlds/edgar_mine.world"/>
+    <arg name="gui" value="$(arg gazebo_gui_en)" />
+    <arg name="use_sim_time" value="$(arg use_sim_time)"/>
+    <arg name="paused" value="false" />
+    <arg name="verbose" value="false"/>
+  </include>
+</launch>
