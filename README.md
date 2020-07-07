@@ -16,25 +16,25 @@ Hence, to simplify the test process with the planner, we prepare an example work
 ### How to launch the planner
 - Launch file for simulation:
 ```
-roslaunch gbplanner m100_sim.launch
+roslaunch gbplanner gbplanner_sim.launch
 ```
-- To trigger the planner in command line, please use this service call:
+- To trigger the planner in command line, please use the service call:
 ```
 rosservice call /planner_control_interface/std_srvs/automatic_planning "{}"
 ```
 
 ### Select the mapping framework
-By default, the planner is compiled with Voxblox, to compile with Octomap:
+By default, the planner is compiled with Voxblox. To compile with Octomap, set the flag ``USE_OCTOMAP'' to 1:
 ```
 catkin build -DCMAKE_BUILD_TYPE=Release -DUSE_OCTOMAP=1 gbplanner_ros
 ```
-Also change the config to Octomap in the m100_sim.launch file
+Also change the config to Octomap in the gbplanner_sim.launch file
 ```
 <arg name="map_config_file" default="$(arg octomap_config_file)"/>
 ```
 
 ### References
-If you use this work in your research, please consider to cite the below publication.
+If you use this work in your research, please cite the following publication.
 ```
 @inproceedings{dang2019graph,
   title={Graph-based path planning for autonomous robotic exploration in subterranean environments},
