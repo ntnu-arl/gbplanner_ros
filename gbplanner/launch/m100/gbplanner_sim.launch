@@ -43,8 +43,8 @@
       <arg name="mav_name" value="$(arg robot_name)" />
       <arg name="model" value="$(find rotors_description)/urdf/m100.gazebo" />
       <arg name="enable_ground_truth" value="true" />
-      <arg name="x" value="90.0"/>
-      <arg name="y" value="2.0"/>
+      <arg name="x" value="0.0"/>
+      <arg name="y" value="0.0"/>
       <arg name="z" value="0.5"/>
     </include>
 

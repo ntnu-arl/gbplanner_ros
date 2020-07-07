@@ -8,8 +8,8 @@
 RobotParams:
   type:               kAerialRobot
   size:               [1.1, 1.1, 0.4]
-  size_extension_min: [0.3, 0.3, 0.4] # minimum extension allowed to operate.
-  size_extension:     [0.0, 0.0, 0.0]
+  size_extension_min: [0.1, 0.1, 0.2] # minimum extension allowed to operate.
+  size_extension:     [0.4, 0.4, 0.4]
   center_offset:      [0.0, 0.0, 0.0]
   relax_ratio:        0.5
   bound_mode:         kExtendedBound
