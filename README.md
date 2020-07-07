@@ -37,6 +37,9 @@ Also change the config to Octomap in the gbplanner_sim.launch file
 <arg name="map_config_file" default="$(arg octomap_config_file)"/>
 ```
 
+### Tutorial:
+You could find a short tutorial on the plannning algorithm and the overall architecture on our website: [Link](https://www.autonomousrobotslab.com/subtplanning.html)
+
 ### References
 If you use this work in your research, please cite the following publication.
 ```
