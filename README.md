@@ -2,7 +2,11 @@
 Graph-based Exploration Planner for Subterranean Environments
 
 ### How to build the planner
-The planner could be compiled using simple catkin-build command as following:
+- Clone the package:
+```
+git clone https://github.com/unr-arl/gbplanner_ros
+```
+- Build the package:
 ```
 catkin build -DCMAKE_BUILD_TYPE=Release gbplanner_ros
 ```
