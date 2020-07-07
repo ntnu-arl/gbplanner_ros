@@ -1,0 +1,5 @@
+# Request the planner get the shortest path to go home.
+Header header
+-------
+# Return shortest path to go home.
+geometry_msgs/Pose[] path

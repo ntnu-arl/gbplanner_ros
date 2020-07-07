@@ -1,0 +1,22 @@
+tf_frame: world
+robot_frame: base_link
+resolution: 0.2
+probability_hit: 0.9
+probability_miss: 0.45
+threshold_min: 0.12
+threshold_max: 0.97
+threshold_occupancy: 0.7
+treat_unknown_as_occupied: False
+change_detection_enabled: False
+visualize_min_z: -50.0
+visualize_max_z: 50.0
+sensor_max_range: 50.0
+map_publish_frequency: 2.0
+resume_from_current: True
+
+# Augmentation
+augment_free_frustum_enabled: false
+free_frustum_skip: 10
+free_frustum_range: 15.0
+free_frustum_fov: [rad(2*pi), rad(pi/6)]
+free_frustum_resolution: [rad(1.0*pi/180) rad(1.0*pi/180)]

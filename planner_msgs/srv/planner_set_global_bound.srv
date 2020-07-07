@@ -1,0 +1,16 @@
+# get_current_bound:
+#   true: get current bound, nothing to set
+#   false: set bound then returns the latest bound
+bool get_current_bound
+
+# reset_to_default:
+#   true:  reset to the default bounding box
+#   false: set new bounding box
+bool reset_to_default
+
+planner_msgs/PlanningBound bound
+-------
+bool success
+
+# Return the actual value inside planner after calling this service
+planner_msgs/PlanningBound bound_ret

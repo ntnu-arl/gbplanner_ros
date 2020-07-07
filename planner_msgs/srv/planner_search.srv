@@ -1,0 +1,22 @@
+# Request the planner to search for a path to connect two arbitrary poses.
+Header header
+# Set True if want to set source pose at current robot's state.
+bool use_current_state
+# Source pose will be ignored if use_current_state is True
+geometry_msgs/Pose source
+# Target pose
+geometry_msgs/Pose target
+
+# Set the bound mode of the robot to use in planner.
+# Use extension to actual size. (default)
+int32 kExtendedBound = 0
+int32 kRelaxedBound = 1
+int32 kMinBound = 2
+int32 kExactBound = 3
+int32 kNoBound = 4
+# Can only be used with one of above values. Check Params/BoundModeType for more details.
+int32 bound_mode
+-------
+bool success
+# Return best path.
+geometry_msgs/Pose[] path

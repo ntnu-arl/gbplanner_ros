@@ -1,0 +1,8 @@
+Header header
+
+bool success
+planner_msgs/TriggerMode trigger_mode
+planner_msgs/BoundMode bound_mode
+planner_msgs/PlanningMode planning_mode
+planner_msgs/ExecutionPathMode exe_path_mode
+float32 max_vel

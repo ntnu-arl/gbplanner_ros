@@ -1,0 +1,8 @@
+# A generic service to request a path from gbplanner
+
+-------
+# Return actual bound mode used in planner.
+BoundMode bound
+
+# Return path.
+geometry_msgs/Pose[] path

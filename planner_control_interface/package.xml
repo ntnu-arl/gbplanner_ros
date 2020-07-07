@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>planner_control_interface</name>
+  <version>0.0.0</version>
+  <description>Interface</description>
+  <maintainer email="tung.dang@nevada.unr.edu">Tung Dang</maintainer>
+  <license>None</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend>catkin_simple</buildtool_depend>
+  <depend>roscpp</depend>
+  <depend>tf</depend>
+  <depend>planner_msgs</depend>
+  <depend>interactive_markers</depend>
+  <depend>std_srvs</depend>
+
+</package>
