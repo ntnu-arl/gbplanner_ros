@@ -1,0 +1,24 @@
+<package>
+  <name>gbplanner_ui</name>
+  <version>0.0.1</version>
+  <description> gbplanner_ui </description>
+  <maintainer email="fmascarich@nevada.unr.edu">Frank Mascarich</maintainer>
+  <license>TODO</license>
+
+  <author></author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>qtbase5-dev</build_depend>
+  <build_depend>rviz</build_depend>
+  <build_depend>planner_msgs</build_depend>
+
+  <run_depend>libqt5-core</run_depend>
+  <run_depend>libqt5-gui</run_depend>
+  <run_depend>libqt5-widgets</run_depend>
+  <run_depend>rviz</run_depend>
+
+  <export>
+      <rviz plugin="${prefix}/plugin_description.xml"/>
+  </export>
+</package>
