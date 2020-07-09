@@ -75,8 +75,6 @@
     <rosparam command="load" file="$(arg pci_file)" />
   </node>
 
-  <group if="$(arg rviz_en)">
-    <node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz" args="-d $(find gbplanner)/config/rviz/m100_sim.rviz" />
-  </group>
+  <node pkg="rviz" type="rviz" name="gbplanner_ui" output="screen" args="-d $(find gbplanner)/config/rviz/m100_sim.rviz"/>
 
 </launch>

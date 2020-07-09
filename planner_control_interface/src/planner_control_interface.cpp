@@ -65,6 +65,10 @@ PlannerControlInterface::PlannerControlInterface(
       "pci_global", &PlannerControlInterface::globalPlannerCallback, this);
   planner_global_client_ =
       nh.serviceClient<planner_msgs::planner_global>("gbplanner/global");
+  pci_std_global_server_ = nh_.advertiseService(
+      "planner_control_interface/std_srvs/global_planning",
+      &PlannerControlInterface::stdSrvGlobalPlannerCallback, this);
+
   pci_stop_server_ = nh_.advertiseService(
       "pci_stop", &PlannerControlInterface::stopPlannerCallback, this);
   pci_std_stop_server_ = nh_.advertiseService(
@@ -235,6 +239,22 @@ bool PlannerControlInterface::homingCallback(
   exe_path_en_ = !req.not_exe_path;
   homing_request_ = true;
   res.success = true;
+  return true;
+}
+
+bool PlannerControlInterface::stdSrvGlobalPlannerCallback(
+    std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res) {
+  planner_msgs::pci_global::Request global_trigger_request;
+  planner_msgs::pci_global::Response global_trigger_response;
+
+  global_trigger_request.not_exe_path = false;
+  global_trigger_request.id = 0;
+  global_trigger_request.not_check_frontier = false;
+  global_trigger_request.ignore_time = false;
+
+  res.success =
+      globalPlannerCallback(global_trigger_request, global_trigger_response);
+  res.success &= global_trigger_response.success;
   return true;
 }
 
