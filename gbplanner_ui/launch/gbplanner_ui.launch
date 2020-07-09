@@ -1,0 +1,8 @@
+<launch>
+  <node pkg="rviz" type="rviz" name="gbplanner_ui" output="screen" args="-d $(find gbplanner_ui)/config/gbplanner.rviz">
+    <param name="start_planner_service_name" value="/gbplanner_start"/>
+    <param name="stop_planner_service_name"  value="/gbplanner_stop"/>
+    <param name="homing_service_name"  value="/gbplanner_homing"/>
+    <param name="global_planner_service_name"  value="/gbplanner_global"/>
+  </node>
+</launch>
