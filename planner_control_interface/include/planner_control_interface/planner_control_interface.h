@@ -74,6 +74,7 @@ class PlannerControlInterface {
   ros::ServiceServer pci_set_homing_pos_server_;
   ros::ServiceServer pci_initialization_server_;
   ros::ServiceServer pci_global_server_;
+  ros::ServiceServer pci_std_global_server_;
   ros::ServiceServer pci_stop_server_;
   ros::ServiceServer pci_std_stop_server_;
   ros::ServiceServer pci_geofence_server_;
@@ -131,6 +132,8 @@ class PlannerControlInterface {
 
   bool globalPlannerCallback(planner_msgs::pci_global::Request &req,
                              planner_msgs::pci_global::Response &res);
+  bool stdSrvGlobalPlannerCallback(std_srvs::Trigger::Request &req,
+                                   std_srvs::Trigger::Response &res);
 
   bool stopPlannerCallback(planner_msgs::pci_stop::Request &req,
                            planner_msgs::pci_stop::Response &res);

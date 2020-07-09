@@ -3264,10 +3264,7 @@ bool Rrg::isRemainingTimeSufficient(const double& time_cost,
                                     double& time_spare) {
   const double kTimeDelta = 20;  // magic number, extra safety
   time_spare = getTimeRemained() - time_cost;
-  if (time_spare < kTimeDelta) {
-    ROS_WARN("REACHED TIME LIMIT: BE CAREFUL.");
-    return false;
-  }
+  if (time_spare < kTimeDelta) return false;
   return true;
 }
 
@@ -3398,8 +3395,7 @@ std::vector<geometry_msgs::Pose> Rrg::runGlobalPlanner(int vertex_id,
     double time_spare = 0;
     if (!isRemainingTimeSufficient(time_cost, time_spare)) {
       ROS_WARN("[Global] Not enough time to go the vertex [%d]", vertex_id);
-      ROS_WARN(
-          "[Global] Consider change to another ID or set ignore_time to True");
+      ROS_WARN("[Global] Consider another ID or set ignore_time to True");
       return ret_path;
     }
     best_frontier = global_graph_->getVertex(vertex_id);
@@ -3442,12 +3438,10 @@ std::vector<geometry_msgs::Pose> Rrg::runGlobalPlanner(int vertex_id,
         }
       }
     }
-    ROS_INFO("Get %d feasible frontiers from global frontiers.",
-             (int)feasible_global_frontiers.size());
+    ROS_INFO("There are %d potential frontiers, get %d feasible frontiers.",
+        (int)global_frontiers.size(), (int)feasible_global_frontiers.size());
     if (feasible_global_frontiers.size() <= 0) {
-      ROS_INFO(
-          "No feasible frontier exists --> Call HOMING instead if fully "
-          "explored.");
+      ROS_WARN("No feasible frontier-->Call HOMING instead if fully explored.");
       return ret_path;
     }
 
