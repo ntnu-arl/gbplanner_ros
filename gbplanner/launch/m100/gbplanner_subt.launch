@@ -1,0 +1,49 @@
+<launch>
+  <!-- All settings -->
+  <arg name="robot_name" default="m100"/>
+  <arg name="gazebo_gui_en" default="false"/>
+  <arg name="use_sim_time" default="true"/>
+  <arg name="rviz_en" default="true" />
+  <arg name="launch_prefix" default=""/> <!-- gdb -ex run //args -->
+  <param name="use_sim_time" value="$(arg use_sim_time)"/>
+
+  <!-- Config files -->
+  <arg name="gbplanner_config_file" default="$(find gbplanner)/config/$(arg robot_name)/gbplanner_config.yaml"/>
+  <arg name="pci_file" default="$(find gbplanner)/config/$(arg robot_name)/planner_control_interface_sim_config.yaml"/>
+  <arg name="octomap_config_file" default="$(find gbplanner)/config/$(arg robot_name)/octomap_sim_config.yaml"/>
+  <arg name="voxblox_config_file" default="$(find gbplanner)/config/$(arg robot_name)/voxblox_sim_config.yaml"/>
+  <arg name="map_config_file" default="$(arg voxblox_config_file)"/>
+  <arg name="world_file" default="$(find planner_gazebo_sim)/worlds/pittsburgh_mine.world"/>
+
+  <!-- Static TF -->
+  <node pkg="tf" type="static_transform_publisher" name="tf_53" args="0 0 0 0 0 0 world navigation 100" />
+  <node pkg="tf" type="static_transform_publisher" name="tf_51" args="0.15 0 0.0 0.0 0.261 0.0 $(arg robot_name)/base_link $(arg robot_name)/vi_sensor/base_link 10" />
+  <node pkg="tf" type="static_transform_publisher" name="tf_1" args="0 0 0 0 0 0 $(arg robot_name)/vi_sensor/base_link fcu 1" />
+  <node pkg="tf" type="static_transform_publisher" name="tf_2" args="0.015 0.055 0.0065 -1.57 0.1 -1.57 fcu $(arg robot_name)/vi_sensor/camera_depth_optical_center_link 1" />
+  <node pkg="tf" type="static_transform_publisher" name="tf_3" args="0.015 0.055 0.0065 -1.57 0.1 -1.57 fcu $(arg robot_name)/vi_sensor/camera_left_link 1" />
+  <node pkg="tf" type="static_transform_publisher" name="tf_4" args="0.015 -0.055 0.0065 -1.57 0.1 -1.57 fcu $(arg robot_name)/vi_sensor/camera_right_link 1" />
+  <node pkg="tf" type="static_transform_publisher" name="tf_5" args="0 0 0.05 0.0 0.0 0.0 $(arg robot_name)/base_link $(arg robot_name)/$(arg robot_name)/velodyne 10" />
+
+
+  <arg name="odometry_topic" default="$(arg robot_name)/odom"/>
+  <node name="pose_throttler" type="throttle" pkg="topic_tools" args="messages $(arg robot_name)/ground_truth/pose_with_covariance 10 /msf_core/pose" />
+  <!-- Graph based planning -->
+  <node pkg="gbplanner" type="gbplanner_node" name="gbplanner_node" output="screen" launch-prefix="$(arg launch_prefix)">
+    <remap from="odometry" to="$(arg odometry_topic)" />
+    <remap from="/pointcloud" to="/m100/points" />
+    <rosparam command="load" file="$(arg gbplanner_config_file)" />
+    <rosparam command="load" file="$(arg map_config_file)" />
+  </node>
+
+  <!-- Planner and Control Interface -->
+  <node pkg="pci_mav" type="pci_mav_ros_node" name="pci_mav_ros_node" output="screen">
+    <remap from="command/trajectory" to="$(arg robot_name)/trajectory" />
+    <remap from="planner_server" to="gbplanner" />
+    <remap from="planner_homing_server" to="gbplanner/homing" />
+    <remap from="odometry" to="$(arg odometry_topic)"/>
+    <rosparam command="load" file="$(arg pci_file)" />
+  </node>
+
+  <node pkg="rviz" type="rviz" name="gbplanner_ui" output="screen" args="-d $(find gbplanner)/config/rviz/m100_sim.rviz"/>
+
+</launch>
