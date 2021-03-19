@@ -1,0 +1,137 @@
+# Configurations for the exploration pipeline.
+# For more details, please check comments in the params.h file.
+#-------------------------------------------------------------------------------
+# ROBOT CONFIGURATION
+# Mine config: 2x2x0.75 + overshoot: 0.35m
+# for the mine: 1.8-2.0
+#-------------------------------------------------------------------------------
+RobotParams:
+  type:               kAerialRobot
+  size:               [1.1, 1.1, 0.4]
+  size_extension_min: [0.1, 0.1, 0.2] # minimum extension allowed to operate.
+  size_extension:     [0.4, 0.4, 0.4]
+  center_offset:      [0.0, 0.0, 0.0]
+  relax_ratio:        0.5
+  bound_mode:         kExtendedBound
+  safety_extension:  [2.0, 2.0, 1.0]
+#-------------------------------------------------------------------------------
+# SENSOR CONFIGURATION
+#  sensor_list: Define a set of sensors relevant to the exploration task.
+#  rotations: ZYX order;
+#             all follows ROS convention (X-forward, Y-left, Z-Up).
+#-------------------------------------------------------------------------------
+SensorParams:
+  sensor_list:      ["VLP16"]
+  VLP16:
+    type:           kLidar
+    max_range:      20.0
+    center_offset:  [0.0, 0.0, 0.0]
+    rotations:      [0.0, 0.0, 0.0]
+    fov:            [rad(2*pi), rad(pi/18)]
+    resolution:     [rad(5.0*pi/180), rad(5.0*pi/180)]
+    frontier_percentage_threshold: 0.1
+#-------------------------------------------------------------------------------
+# SAMPLING SPACE CONFIGURATION
+#   Global: Strictly defined bounds for the whole environment.
+#   Local: Define a local space wrt current robot state for planning.
+#-------------------------------------------------------------------------------
+BoundedSpaceParams:
+  Global:
+    type:           kCuboid
+    min_val:        [-0.0 , -2000.0, -400.0]
+    max_val:        [5000.0, 2000.0, 400.0]
+  Local:
+    type:           kCuboid
+    min_val:        [-15.0, -15.0, -3.0]
+    max_val:        [15.0, 15.0, 3.0]
+    min_extension:  [-20.0, -20.0, -3.0]
+    max_extension:  [20.0, 20.0, 3.0]
+  LocalSearch:
+    type:           kCuboid
+    min_val:        [-50.0, -50.0, -1.0]
+    max_val:        [50.0, 50.0, 1.0]
+#-------------------------------------------------------------------------------
+# SAMPLING POLICY CONFIGURATION
+#   Sample space limited to 4 states: X, Y, Z, and Heading
+#-------------------------------------------------------------------------------
+RandomSamplerParams:
+  SamplerForExploration:
+    X:
+      pdf_type:       kUniform
+      sample_mode:    kLocal
+    Y:
+      pdf_type:       kUniform
+      sample_mode:    kLocal
+    Z:
+      pdf_type:       kUniform
+      sample_mode:    kLocal
+    Heading:
+      pdf_type:       kUniform
+      sample_mode:    kManual
+      min_val:        rad(-pi)
+      max_val:        rad(pi)
+  SamplerForSearching:
+    X:
+      pdf_type:       kUniform
+      sample_mode:    kLocal
+    Y:
+      pdf_type:       kUniform
+      sample_mode:    kLocal
+    Z:
+      pdf_type:       kUniform
+      sample_mode:    kLocal
+    Heading:
+      pdf_type:       kUniform
+      sample_mode:    kManual
+      min_val:        rad(-pi)
+      max_val:        rad(pi)
+
+#-------------------------------------------------------------------------------
+# EXPLORATION CONFIGURATION
+# exp_sensor_list: sensors used to compute exploration gain.
+#-------------------------------------------------------------------------------
+PlanningParams:
+  type:             kBasicExploration
+  rr_mode:          kGraph
+  bound_mode:       kExtremeBound
+  exp_sensor_list:  ["VLP16"]
+  yaw_tangent_correction: true
+  edge_length_min:  0.8
+  edge_length_max:  5.0
+  edge_overshoot:   0.0
+  num_vertices_max: 500
+  num_edges_max:    3000
+  num_loops_cutoff: 2000
+  num_loops_max:    20000
+  nearest_range:    3.0
+  nearest_range_min: 1.0 # >= edge_length_min
+  nearest_range_max: 5.0 # <= edge_length_max
+  use_current_state: true
+  use_ray_model_for_volumetric_gain: true
+  path_length_penalty: 0.02
+  path_direction_penalty: 0.01
+  exp_gain_voxel_size: 0.8
+  occupied_voxel_gain: 0.0
+  free_voxel_gain:  2.0 #prefer directions towards more free voxels in case of the dead-end
+  unknown_voxel_gain: 50.0
+  traverse_length_max: 7.0
+  traverse_time_max: 40.0
+  augment_free_voxels_time: 1
+  free_frustum_before_planning: false
+  auto_homing_enable: false
+  time_budget_limit: 500000
+  homing_backward: true
+  geofence_checking_enable: true
+  path_safety_enhance_enable: true
+
+GeofenceParams:
+  AreaList: ["GBack"]
+  GLeft:
+    center: [1.5, 2.0, 0.0]
+    size:   [2.8, 1.0, 0.0]
+  GRight:
+    center: [1.5, -2.0, 0.0]
+    size:   [2.8, 1.0, 0.0]
+  GBack:
+    center: [-0.75, 0.0, 0.0]
+    size:   [1.0, 4.0, 0.0]

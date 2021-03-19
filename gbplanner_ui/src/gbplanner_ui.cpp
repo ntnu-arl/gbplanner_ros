@@ -4,11 +4,11 @@ namespace gbplanner_ui {
 
 gbplanner_panel::gbplanner_panel(QWidget* parent) : rviz::Panel(parent) {
   planner_client_start_planner = nh.serviceClient<std_srvs::Trigger>(
-      "/planner_control_interface/std_srvs/automatic_planning");
+      "planner_control_interface/std_srvs/automatic_planning");
   planner_client_stop_planner = nh.serviceClient<std_srvs::Trigger>(
-      "/planner_control_interface/std_srvs/stop");
+      "planner_control_interface/std_srvs/stop");
   planner_client_homing = nh.serviceClient<std_srvs::Trigger>(
-      "/planner_control_interface/std_srvs/homing_trigger");
+      "planner_control_interface/std_srvs/homing_trigger");
   planner_client_global_planner = nh.serviceClient<planner_msgs::pci_global>(
       "pci_global");
 
