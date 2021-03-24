@@ -1,7 +1,7 @@
 run_mode: kReal
 trigger_mode: kManual
 init_motion_enable: true
-planner_trigger_lead_time: 0.0
+planner_trigger_lead_time: 1.0
 smooth_heading_enable: true
 init_motion:
   z_takeoff: 2.0
