@@ -8,6 +8,8 @@ Gbplanner::Gbplanner(const ros::NodeHandle &nh,
                      const ros::NodeHandle &nh_private)
     : nh_(nh), nh_private_(nh_private) {
   planner_status_ = Gbplanner::PlannerStatus::NOT_READY;
+  odom_ready_ = false;
+  pointcloud_ready_ = false;
 
   rrg_ = new gbplanner::Rrg(nh, nh_private);
   if (!(rrg_->loadParams())) {
@@ -40,6 +42,8 @@ Gbplanner::Gbplanner(const ros::NodeHandle &nh,
       nh_.subscribe("pose_stamped", 100, &Gbplanner::poseStampedCallback, this);
   odometry_subscriber_ =
       nh_.subscribe("odometry", 100, &Gbplanner::odometryCallback, this);
+  pointcloud_subcriber_ =
+      nh_.subscribe("/pointcloud", 100, &Gbplanner::pointCloudCallback, this);
   robot_status_subcriber_ =
       nh_.subscribe("/robot_status", 1, &Gbplanner::robotStatusCallback, this);
 }
@@ -184,6 +188,11 @@ void Gbplanner::poseStampedCallback(const geometry_msgs::PoseStamped &pose) {
 }
 
 void Gbplanner::processPose(const geometry_msgs::Pose &pose) {
+  odom_ready_ = true;
+  if(pointcloud_ready_) {
+    planner_status_ = PlannerStatus::READY;
+  }
+
   StateVec state;
   state[0] = pose.position.x;
   state[1] = pose.position.y;
@@ -193,6 +202,11 @@ void Gbplanner::processPose(const geometry_msgs::Pose &pose) {
 }
 
 void Gbplanner::odometryCallback(const nav_msgs::Odometry &odo) {
+  odom_ready_ = true;
+  if(pointcloud_ready_) {
+    planner_status_ = PlannerStatus::READY;
+  }
+  
   StateVec state;
   state[0] = odo.pose.pose.position.x;
   state[1] = odo.pose.pose.position.y;
@@ -203,6 +217,13 @@ void Gbplanner::odometryCallback(const nav_msgs::Odometry &odo) {
 
 void Gbplanner::robotStatusCallback(const planner_msgs::RobotStatus &status) {
   rrg_->setTimeRemaining(status.time_remaining);
+}
+
+void Gbplanner::pointCloudCallback(const sensor_msgs::PointCloud2 &pcl) {
+  pointcloud_ready_ = true;
+  if(odom_ready_) {
+    planner_status_ = PlannerStatus::READY;
+  }
 }
 
 Gbplanner::PlannerStatus Gbplanner::getPlannerStatus() {

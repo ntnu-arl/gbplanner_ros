@@ -2,6 +2,7 @@
 #define GBPLANNER_H_
 #include <ros/ros.h>
 #include <std_srvs/Trigger.h>
+#include "sensor_msgs/PointCloud2.h"
 
 #include "gbplanner/gbplanner_rviz.h"
 #include "gbplanner/geofence_manager.h"
@@ -46,12 +47,15 @@ class Gbplanner {
   ros::Subscriber pose_stamped_subscriber_;
   ros::Subscriber odometry_subscriber_;
   ros::Subscriber robot_status_subcriber_;
+  ros::Subscriber pointcloud_subcriber_;
   ros::ServiceClient map_save_service_;
 
   gbplanner::Rrg* rrg_;
 
   PlannerStatus planner_status_;
   PlanningState planning_state_;
+  bool odom_ready_;
+  bool pointcloud_ready_;
 
   bool plannerServiceCallback(planner_msgs::planner_srv::Request& req,
                               planner_msgs::planner_srv::Response& res);
@@ -86,6 +90,7 @@ class Gbplanner {
   void processPose(const geometry_msgs::Pose& pose);
   void odometryCallback(const nav_msgs::Odometry& odo);
   void robotStatusCallback(const planner_msgs::RobotStatus& status);
+  void pointCloudCallback(const sensor_msgs::PointCloud2 &pcl);
 
   Gbplanner::PlannerStatus getPlannerStatus();
 };
