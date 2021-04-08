@@ -230,7 +230,7 @@ Gbplanner::PlannerStatus Gbplanner::getPlannerStatus() {
   if (planner_status_ == Gbplanner::PlannerStatus::READY)
     return Gbplanner::PlannerStatus::READY;
 
-  return Gbplanner::PlannerStatus::READY;
+  return Gbplanner::PlannerStatus::NOT_READY;
 }
 
 }  // namespace explorer
