@@ -23,6 +23,5 @@
   <depend>octomap_msgs</depend>
   <depend>kdtree</depend>
   <depend>voxblox_ros</depend>
-  <depend>octomap_world</depend>
 
 </package>
