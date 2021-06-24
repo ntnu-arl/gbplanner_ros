@@ -61,7 +61,7 @@
   <!-- Graph based planning -->
   <node pkg="gbplanner" type="gbplanner_node" name="gbplanner_node" output="screen" launch-prefix="$(arg launch_prefix)">
     <remap from="odometry" to="$(arg odometry_topic)" />
-    <remap from="/pointcloud" to="/velodyne_points" />
+    <remap from="/pointcloud" to="/m100/velodyne_points" />
     <rosparam command="load" file="$(arg gbplanner_config_file)" />
     <rosparam command="load" file="$(arg map_config_file)" />
   </node>
