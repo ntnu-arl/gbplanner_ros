@@ -6,7 +6,7 @@ if (USE_OCTOMAP)
   add_definitions(-DUSE_OCTOMAP=${USE_OCTOMAP})
 endif (USE_OCTOMAP)
 
-add_definitions(-std=c++11)
+add_definitions(-std=c++14)
 
 find_package(catkin_simple REQUIRED)
 find_package(Boost REQUIRED)
