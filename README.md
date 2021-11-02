@@ -1,47 +1,81 @@
-# gbplanner_ros
-Graph-based Exploration Planner for Subterranean Environments
+# Graph-based Exploration Planner 2.0
+![swag](img/cerberus_subt_winners.png)
 
-### How to build the planner
-- Clone the package:
-```
-git clone https://github.com/unr-arl/gbplanner_ros
-```
-- Build the package:
-```
-catkin build -DCMAKE_BUILD_TYPE=Release gbplanner_ros
-```
-However, please be aware that the planner requires several dependencies; for example:
-- Mapping framework: either [Voxblox](https://github.com/ethz-asl/voxblox) or [Octomap](https://github.com/OctoMap/octomap)
-- Planner-Control interface package: [pci_mav](https://github.com/unr-arl/pci_mav)
-- MAV simulation: [RotorS](https://github.com/ethz-asl/rotors_simulator), [LiDAR simulator](https://github.com/unr-arl/lidar_simulator.git)
+## Tutorial:
+Please refer to the [wiki](https://github.com/ntnu-arl/gbplanner_wiki/wiki) page for detailed instructions to install and run the demo simulations as well as documentation of the planner interface and parameters.
+More results and video explaination of our method can be found on our website: [Link](https://www.autonomousrobotslab.com/exploration-planning.html)
 
-Hence, to simplify the test process with the planner, we prepare an example workspace [gbplanner_ws](https://github.com/unr-arl/gbplanner_ws), which includes all relevant packages. Please follow the suggested steps in the repo [gbplanner_ws](https://github.com/unr-arl/gbplanner_ws) for further detail.
+## Installation
+These instructions assume that ROS desktop-full of the appropriate ROS distro is installed.
 
-### How to launch the planner
-- Launch file for simulation:
-```
-roslaunch gbplanner gbplanner_sim.launch
-```
-- To trigger the planner in command line, please use the service call:
-```
-rosservice call /planner_control_interface/std_srvs/automatic_planning "{}"
-```
-- We provide several types of environment for simulation in the package [planner_gazebo_sim](https://github.com/unr-arl/gbplanner_ros/tree/master/planner_gazebo_sim) including room-and-pillar mine (```pittsburgh_mine.world```), long-wall mine (```edgar_mine.world```), and a model reconstructed from a real mine (```virginia_mine.world```)
+Install necessary libraries:
 
-### Select the mapping framework
-By default, the planner is compiled with Voxblox. To compile with Octomap, set the flag USE_OCTOMAP to 1:
+For Ubuntu 18.04 and ROS Melodic:
+```bash
+sudo apt install python-catkin-tools \
+libgoogle-glog-dev \
+ros-melodic-joy \
+ros-melodic-twist-mux \
+ros-melodic-interactive-marker-twist-server
 ```
-catkin build -DCMAKE_BUILD_TYPE=Release -DUSE_OCTOMAP=1 gbplanner_ros
-```
-Also change the config to Octomap in the gbplanner_sim.launch file
-```
-<arg name="map_config_file" default="$(arg octomap_config_file)"/>
+For Ubuntu 20.04 and ROS Noetic:
+```bash
+
+sudo apt install python3-catkin-tools \
+libgoogle-glog-dev \
+ros-noetic-joy \
+ros-noetic-twist-mux \
+ros-noetic-interactive-marker-twist-server
 ```
 
-### Tutorial:
-You could find a short tutorial on the plannning algorithm and the overall architecture on our website: [Link](https://www.autonomousrobotslab.com/subtplanning.html)
 
-### References
+Clone the workspace <span style="color:red">(UPDATE THE LINK BEFORE RELEASE)</span>.:
+```bash
+git clone git@github.com:ntnu-arl/gbplanner_prerelease_ws.git
+cd gbplanner_prerelease_ws
+```
+
+Clone and update the required packages:
+```bash
+wstool init
+wstool merge packages_ssh.rosinstall
+wstool update
+```
+
+Build:
+```bash
+catkin config -DCMAKE_BUILD_TYPE=Release
+catkin build
+```
+
+## Running Planner Demo 
+### Aerial Robot Demo
+Download the gazebo model from [here](https://drive.google.com/file/d/1Mx_JKNyx2MEwn56LM5KyP8Z3FM-4I6OS/view?usp=sharing) and extract in the `~/.gazebo/models` folder.
+```bash
+roslaunch gbplanner rmf_sim.launch
+```
+
+### Ground Robot Demo
+the following command:
+```bash
+roslaunch gbplanner smb_sim.launch
+```
+In Ubuntu 18.04 with ROS Melodic, the gazebo node might crash when running the ground robot simulation. In this case set the `gpu` parameter to false [here](https://github.com/ntnu-arl/smb_simulator/blob/6ed9d738ffd045d666311a8ba266570f58dca438/smb_description/urdf/sensor_head.urdf.xacro#L20).
+
+## Results
+
+Robot's of Team Cerberus running GBPlanner and GBPlanner2  
+![gbplanner_robots](img/gbplanner_robots.png)
+
+Autonomous exploration mission in the Prize Round of the DARPA Subterranean Challenge Final Event using four ANYmal C legged robots (Chimera, Cerberus, Camel, Caiman), all running GBPlanner2 independantly.
+
+![final_circuit_all_robots](img/cerberus_final_run_compiled_hd.png)
+
+## References
+
+### Explanation Video
+[![gbplanner_video](img/gbp2_vid.png)](https://www.youtube.com/watch?v=bTqFp1aODqU&list=PLu70ME0whad9Z4epZQ9VBYagKpyMyhZZ1&index=4)
+
 If you use this work in your research, please cite the following publication.
 ```
 @inproceedings{dang2019graph,
@@ -56,4 +90,5 @@ If you use this work in your research, please cite the following publication.
 
 You can contact us for any question:
 * [Tung Dang](mailto:tung.dang@nevada.unr.edu)
-* [Kostas Alexis](mailto:kalexis@unr.edu)
+* [Mihir Dharmadhikari](mailto:mdharmadhikari@nevada.unr.edu)
+* [Kostas Alexis](mailto:konstantinos.alexis@ntnu.no)

@@ -12,6 +12,7 @@
   <depend>message_generation</depend>
   <depend>geometry_msgs</depend>
   <depend>message_runtime</depend>
+  <depend>actionlib_msgs</depend>
 
 </package>
 

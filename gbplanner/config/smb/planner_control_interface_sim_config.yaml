@@ -1,0 +1,19 @@
+run_mode: kSim
+trigger_mode: kManual
+robot_type: kGround
+output_type: kAction
+init_motion_enable: false
+planner_trigger_lead_time: 0.0
+smooth_heading_enable: true
+init_motion:
+  z_takeoff: 2.5
+  z_drop: 1.7
+  x_forward: 3.0
+
+# Group related parameters to be shared between nodes.
+RobotDynamics:
+  v_max: 0.3
+  v_init_max: 0.3
+  v_homing_max: 0.3
+  yaw_rate_max: 0.5
+  dt: 0.05

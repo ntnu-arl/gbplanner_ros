@@ -1,0 +1,445 @@
+<?xml version="1.0" ?>
+<!--
+  Generated with the generator.py script:
+    __main__.py simple_cave_01.tsv -\-graph-file simple_cave_01.dot -\-world-file simple_cave_01.sdf -\-world-name simple_cave_01 -\-scale_x 25 -\-scale_y 25 -\-cave -\-y0 175 -\-x0 0 -\-z0 0 -\-level_type row_col -\-levels_buf 5
+-->
+<sdf version="1.6">
+  <world name="simple_cave_01">
+
+    <physics name="1ms" type="ode">
+      <max_step_size>0.004</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+    </physics>
+
+    <scene>
+      <ambient>150 150 150 255 </ambient>
+      <background>250 250 250 255</background>
+      <grid>true</grid>
+      <origin_visual>true</origin_visual>
+    </scene>
+
+
+    <include>
+      <static>true</static>
+      <name>base_station</name>
+      <pose>-8 0 0 0 0 0</pose>
+      <uri>model://Base Station</uri>
+    </include>
+
+    <!-- The staging area -->
+    <include>
+      <static>true</static>
+      <name>staging_area</name>
+      <pose>0 0 0 0 0 1.5708</pose>
+      <uri>model://Cave Starting Area</uri>
+    </include>
+
+    <plugin name='ros_interface_plugin' filename='librotors_gazebo_ros_interface_plugin.so'/>
+
+
+    <!-- Tunnel tiles and artifacts -->
+    <include>
+      <name>tile_1</name>
+      <uri>model://Cave Corner 01</uri>
+      <pose>400.000000 175.000000 10.000000 0 0 3.141593</pose>
+    </include>
+
+    <include>
+      <name>tile_2</name>
+      <uri>model://Cave Straight 02</uri>
+      <pose>425.000000 175.000000 10.000000 0 0 1.570796</pose>
+    </include>
+
+    <include>
+      <name>tile_3</name>
+      <uri>model://Cave Cavern Split 02</uri>
+      <pose>450.000000 175.000000 10.000000 0 0 0.000000</pose>
+    </include>
+
+    <include>
+      <name>rescue_randy_1</name>
+      <uri>model://Rescue Randy Sitting</uri>
+      <pose>453.290000 183.140000 9.500000 0 0 0.261799</pose>
+    </include>
+
+    <include>
+      <name>tile_4</name>
+      <uri>model://Cave Cavern Split 01</uri>
+      <pose>475.000000 175.000000 10.000000 0 0 0.000000</pose>
+    </include>
+
+    <include>
+      <name>cave_cap_1</name>
+      <uri>model://Cave Cap</uri>
+      <pose>475.000000 212.500000 35.000000 0 0 3.141593</pose>
+    </include>
+
+    <include>
+      <name>cave_cap_2</name>
+      <uri>model://Cave Cap</uri>
+      <pose>500.000000 175.000000 10.000000 0 0 1.570796</pose>
+    </include>
+
+    <include>
+      <name>tile_5</name>
+      <uri>model://Cave Elevation</uri>
+      <pose>400.000000 150.000000 0.000000 0 0 3.141593</pose>
+    </include>
+
+    <include>
+      <name>tile_6</name>
+      <uri>model://Cave Corner 01</uri>
+      <pose>375.000000 125.000000 0.000000 0 0 3.141593</pose>
+    </include>
+
+    <include>
+      <name>tile_7</name>
+      <uri>model://Cave Corner 02</uri>
+      <pose>400.000000 125.000000 0.000000 0 0 0.000000</pose>
+    </include>
+
+    <include>
+      <name>tile_8</name>
+      <uri>model://Cave Straight 01</uri>
+      <pose>375.000000 100.000000 0.000000 0 0 3.141593</pose>
+    </include>
+
+    <include>
+      <name>tile_9</name>
+      <uri>model://Cave Corner 01</uri>
+      <pose>350.000000 75.000000 0.000000 0 0 3.141593</pose>
+    </include>
+
+    <include>
+      <name>rescue_randy_2</name>
+      <uri>model://Rescue Randy Sitting</uri>
+      <pose>348.000000 78.140000 -0.290000 -0.109956 0 0.314159</pose>
+    </include>
+
+    <include>
+      <name>tile_10</name>
+      <uri>model://Cave 3 Way 01</uri>
+      <pose>375.000000 75.000000 0.000000 0 0 0.000000</pose>
+    </include>
+
+    <include>
+      <name>tile_11</name>
+      <uri>model://Cave Elevation</uri>
+      <pose>400.000000 75.000000 -10.000000 0 0 -1.570796</pose>
+    </include>
+
+    <include>
+      <name>tile_12</name>
+      <uri>model://Cave Straight 03</uri>
+      <pose>425.000000 75.000000 -10.000000 0 0 1.570796</pose>
+    </include>
+
+    <include>
+      <name>phone_1</name>
+      <uri>model://Samsung J8 Black</uri>
+      <pose>425.000000 76.720000 -9.810000 -1.570796 0 0.349066</pose>
+    </include>
+
+    <include>
+      <name>tile_13</name>
+      <uri>model://Cave Elevation</uri>
+      <pose>450.000000 75.000000 -20.000000 0 0 -1.570796</pose>
+    </include>
+
+    <include>
+      <name>tile_14</name>
+      <uri>model://Cave Elevation</uri>
+      <pose>475.000000 75.000000 -30.000000 0 0 -1.570796</pose>
+    </include>
+
+    <include>
+      <name>tile_15</name>
+      <uri>model://Cave Corner 01</uri>
+      <pose>500.000000 75.000000 -30.000000 0 0 1.570796</pose>
+    </include>
+
+    <include>
+      <name>tile_16</name>
+      <uri>model://Cave Corner 02</uri>
+      <pose>175.000000 50.000000 0.000000 0 0 3.141593</pose>
+    </include>
+
+    <include>
+      <name>tile_17</name>
+      <uri>model://Cave Straight 03</uri>
+      <pose>200.000000 50.000000 0.000000 0 0 1.570796</pose>
+    </include>
+
+    <include>
+      <name>tile_18</name>
+      <uri>model://Cave Straight 02</uri>
+      <pose>225.000000 50.000000 0.000000 0 0 1.570796</pose>
+    </include>
+
+    <include>
+      <name>backpack_1</name>
+      <uri>model://JanSport Backpack Red</uri>
+      <pose>233.830000 48.750000 0.310000 0 0 2.408554</pose>
+    </include>
+
+    <include>
+      <name>tile_19</name>
+      <uri>model://Cave Straight 01</uri>
+      <pose>250.000000 50.000000 0.000000 0 0 -1.570796</pose>
+    </include>
+
+    <include>
+      <name>tile_20</name>
+      <uri>model://Cave Straight 02</uri>
+      <pose>275.000000 50.000000 0.000000 0 0 -1.570796</pose>
+    </include>
+
+    <include>
+      <name>tile_21</name>
+      <uri>model://Cave Corner 01</uri>
+      <pose>300.000000 50.000000 0.000000 0 0 1.570796</pose>
+    </include>
+
+    <include>
+      <name>tile_22</name>
+      <uri>model://Cave Straight 01</uri>
+      <pose>350.000000 50.000000 0.000000 0 0 3.141593</pose>
+    </include>
+
+    <include>
+      <name>tile_23</name>
+      <uri>model://Cave Straight 01</uri>
+      <pose>500.000000 50.000000 -30.000000 0 0 3.141593</pose>
+    </include>
+
+    <include>
+      <name>phone_2</name>
+      <uri>model://Samsung J8 Black</uri>
+      <pose>500.000000 50.640000 -29.610000 -1.512502 0 0.000000</pose>
+    </include>
+
+    <include>
+      <name>tile_24</name>
+      <uri>model://Cave Straight 02</uri>
+      <pose>175.000000 25.000000 0.000000 0 0 0.000000</pose>
+    </include>
+
+    <include>
+      <name>tile_25</name>
+      <uri>model://Cave Corner 02</uri>
+      <pose>300.000000 25.000000 0.000000 0 0 -1.570796</pose>
+    </include>
+
+    <include>
+      <name>backpack_2</name>
+      <uri>model://JanSport Backpack Red</uri>
+      <pose>300.000000 32.580000 0.060000 0 0 3.316126</pose>
+    </include>
+
+    <include>
+      <name>tile_26</name>
+      <uri>model://Cave Straight 03</uri>
+      <pose>325.000000 25.000000 0.000000 0 0 -1.570796</pose>
+    </include>
+
+    <include>
+      <name>tile_27</name>
+      <uri>model://Cave Corner 02</uri>
+      <pose>350.000000 25.000000 0.000000 0 0 0.000000</pose>
+    </include>
+
+    <include>
+      <name>tile_28</name>
+      <uri>model://Cave Corner 01</uri>
+      <pose>500.000000 25.000000 -30.000000 0 0 -1.570796</pose>
+    </include>
+
+    <include>
+      <name>tile_29</name>
+      <uri>model://Cave Straight 02</uri>
+      <pose>525.000000 25.000000 -30.000000 0 0 -1.570796</pose>
+    </include>
+
+    <include>
+      <name>rescue_randy_3</name>
+      <uri>model://Rescue Randy Sitting</uri>
+      <pose>536.600000 25.050000 -30.020000 0 0 -1.570796</pose>
+    </include>
+
+    <include>
+      <name>cave_cap_3</name>
+      <uri>model://Cave Cap</uri>
+      <pose>550.000000 25.000000 -30.000000 0 0 1.570796</pose>
+    </include>
+
+    <include>
+      <name>tile_30</name>
+      <uri>model://Cave Straight 05</uri>
+      <pose>25.000000 0.000000 0.000000 0 0 1.570796</pose>
+    </include>
+
+    <include>
+      <name>tile_31</name>
+      <uri>model://Cave Straight 01</uri>
+      <pose>50.000000 0.000000 0.000000 0 0 1.570796</pose>
+    </include>
+
+    <include>
+      <name>tile_32</name>
+      <uri>model://Cave Straight 03</uri>
+      <pose>75.000000 0.000000 0.000000 0 0 1.570796</pose>
+    </include>
+
+    <include>
+      <name>backpack_3</name>
+      <uri>model://JanSport Backpack Red</uri>
+      <pose>80.160000 -5.000000 0.070000 0 0 3.141593</pose>
+    </include>
+
+    <include>
+      <name>tile_33</name>
+      <uri>model://Cave 3 Way 01</uri>
+      <pose>100.000000 0.000000 0.000000 0 0 3.141593</pose>
+    </include>
+
+    <include>
+      <name>tile_34</name>
+      <uri>model://Cave Straight 02</uri>
+      <pose>125.000000 0.000000 0.000000 0 0 -1.570796</pose>
+    </include>
+
+    <include>
+      <name>tile_35</name>
+      <uri>model://Cave Straight 01</uri>
+      <pose>150.000000 0.000000 0.000000 0 0 1.570796</pose>
+    </include>
+
+    <include>
+      <name>phone_3</name>
+      <uri>model://Samsung J8 Black</uri>
+      <pose>149.960000 -2.030000 0.410000 -1.659983 0 1.448623</pose>
+    </include>
+
+    <include>
+      <name>tile_36</name>
+      <uri>model://Cave Corner 01</uri>
+      <pose>175.000000 0.000000 0.000000 0 0 0.000000</pose>
+    </include>
+
+    <include>
+      <name>tile_37</name>
+      <uri>model://Cave Straight 03</uri>
+      <pose>100.000000 -25.000000 0.000000 0 0 0.000000</pose>
+    </include>
+
+    <include>
+      <name>tile_38</name>
+      <uri>model://Cave Straight 01</uri>
+      <pose>100.000000 -50.000000 0.000000 0 0 3.141593</pose>
+    </include>
+
+    <include>
+      <name>tile_39</name>
+      <uri>model://Cave Straight 03</uri>
+      <pose>100.000000 -75.000000 0.000000 0 0 3.141593</pose>
+    </include>
+
+    <include>
+      <name>tile_40</name>
+      <uri>model://Cave Corner 02</uri>
+      <pose>100.000000 -100.000000 0.000000 0 0 -1.570796</pose>
+    </include>
+
+    <include>
+      <name>tile_41</name>
+      <uri>model://Cave Corner 01</uri>
+      <pose>125.000000 -100.000000 0.000000 0 0 1.570796</pose>
+    </include>
+
+    <include>
+      <name>tile_42</name>
+      <uri>model://Cave Straight 05</uri>
+      <pose>125.000000 -125.000000 0.000000 0 0 0.000000</pose>
+    </include>
+
+    <include>
+      <name>phone_4</name>
+      <uri>model://Samsung J8 Black</uri>
+      <pose>125.000000 -121.680000 0.210000 -1.639911 0 0.000000</pose>
+    </include>
+
+    <include>
+      <name>tile_43</name>
+      <uri>model://Cave Corner 01</uri>
+      <pose>100.000000 -150.000000 0.000000 0 0 3.141593</pose>
+    </include>
+
+    <include>
+      <name>tile_44</name>
+      <uri>model://Cave 3 Way 01</uri>
+      <pose>125.000000 -150.000000 0.000000 0 0 0.000000</pose>
+    </include>
+
+    <include>
+      <name>tile_45</name>
+      <uri>model://Cave Corner 02</uri>
+      <pose>150.000000 -150.000000 0.000000 0 0 1.570796</pose>
+    </include>
+
+    <include>
+      <name>tile_46</name>
+      <uri>model://Cave Straight 04</uri>
+      <pose>100.000000 -175.000000 0.000000 0 0 0.000000</pose>
+    </include>
+
+    <include>
+      <name>tile_47</name>
+      <uri>model://Cave Vertical Shaft</uri>
+      <pose>150.000000 -175.000000 0.000000 0 0 3.141593</pose>
+    </include>
+
+    <include>
+      <name>tile_48</name>
+      <uri>model://Cave Corner 02</uri>
+      <pose>100.000000 -200.000000 0.000000 0 0 -1.570796</pose>
+    </include>
+
+    <include>
+      <name>tile_49</name>
+      <uri>model://Cave Vertical Shaft</uri>
+      <pose>125.000000 -200.000000 0.000000 0 0 -1.570796</pose>
+    </include>
+
+    <include>
+      <name>backpack_4</name>
+      <uri>model://JanSport Backpack Red</uri>
+      <pose>130.110000 -200.000000 0.030000 0 0 -1.396263</pose>
+    </include>
+
+    <include>
+      <name>tile_50</name>
+      <uri>model://Cave 3 Way 01</uri>
+      <pose>150.000000 -200.000000 20.000000 0 0 1.570796</pose>
+    </include>
+
+    <include>
+      <name>tile_51</name>
+      <uri>model://Cave Straight 02</uri>
+      <pose>150.000000 -225.000000 20.000000 0 0 0.000000</pose>
+    </include>
+
+    <include>
+      <name>rescue_randy_4</name>
+      <uri>model://Rescue Randy Sitting</uri>
+      <pose>150.000000 -237.280000 20.000000 0 0 3.228859</pose>
+    </include>
+
+    <include>
+      <name>cave_cap_4</name>
+      <uri>model://Cave Cap</uri>
+      <pose>150.000000 -250.000000 20.000000 0 0 0.000000</pose>
+    </include>
+
+  </world>
+</sdf>
+

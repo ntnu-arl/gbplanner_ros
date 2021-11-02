@@ -18,6 +18,7 @@ geometry_msgs/Pose root_pose
 int32 kForward = 0
 int32 kBackward = 1
 int32 kHoming = 2
+int32 kRepositioning = 3
 # Status of the best path, take one of the above values.
 int32 status
 

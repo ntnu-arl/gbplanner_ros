@@ -1,0 +1,12 @@
+# goal
+geometry_msgs/PoseStamped[] path
+
+---
+# result
+bool success
+
+---
+# feedback
+int32 remaining_waypoints
+float32 dist_to_goal
+float32 estimated_time_remaining

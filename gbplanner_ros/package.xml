@@ -10,5 +10,4 @@
   <buildtool_depend>catkin_simple</buildtool_depend>
   <depend>gbplanner</depend>
   <depend>planner_control_interface</depend>
-  <depend>planner_gazebo_sim</depend>
 </package>

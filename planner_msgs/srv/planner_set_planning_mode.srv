@@ -1,0 +1,9 @@
+# Set the planning mode of the robot to use in planner.
+int32 kManual = 0
+int32 kAuto = 1
+# Can only be used with one of above values. Check Params/BoundModeType for more details.
+int32 planning_mode
+
+-------
+
+bool success

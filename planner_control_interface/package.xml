@@ -11,6 +11,7 @@
   <depend>roscpp</depend>
   <depend>tf</depend>
   <depend>planner_msgs</depend>
+  <depend>planner_semantic_msgs</depend>
   <depend>interactive_markers</depend>
   <depend>std_srvs</depend>
 

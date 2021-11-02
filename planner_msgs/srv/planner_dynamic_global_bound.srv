@@ -1,0 +1,17 @@
+# reset_to_default:
+#   true:  reset to the default bounding box
+#   false: set new bounding box
+bool reset_to_default
+
+# Header contains the frame in which the bounding box is expressed
+std_msgs/Header header
+
+# All coordinates are absolute and expressed in global frame (as set in the header)
+geometry_msgs/Point center  # Origin of bounding box
+geometry_msgs/Point left    # Vertex on the left of center when looking along the vector of the bb
+geometry_msgs/Point front   # Vertex in the front of center when looking along the vector of the bb
+geometry_msgs/Point up      # Vertex above center when looking along the vector of the bb
+
+------
+
+bool success

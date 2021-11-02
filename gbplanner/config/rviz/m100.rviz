@@ -1,0 +1,572 @@
+Panels:
+  - Class: rviz/Displays
+    Help Height: 78
+    Name: Displays
+    Property Tree Widget:
+      Expanded:
+        - /Global Options1
+        - /Status1
+        - /Odometry1/Shape1
+        - /Odometry1/Covariance1
+        - /PlannerViz1
+        - /PlannerViz1/BestPaths1/Namespaces1
+        - /PlannerViz1/ShortestPaths1
+        - /PlannerViz1/ShortestPaths1/Namespaces1
+        - /PlannerViz1/RobotState1/Namespaces1
+        - /PlannerViz1/PlanningWorkspace1/Namespaces1
+        - /PlannerViz1/PlanningGraph1/Namespaces1
+        - /PlannerViz1/Sampler1/Namespaces1
+        - /PlannerViz1/HomingPath1
+        - /Sensors1
+        - /Sensors1/VLP1
+        - /Sensors1/VLP1/Autocompute Value Bounds1
+        - /Octomap1
+        - /Axes1
+        - /Axes1/BaseLink1
+        - /Axes1/World1
+        - /PointCloud21/Autocompute Value Bounds1
+        - /Voxblox1/Occupied1
+        - /PostProcessing1
+        - /PostProcessing1/PlanningGraph1/Namespaces1
+        - /PostProcessing1/BestPaths1/Namespaces1
+        - /PostProcessing1/GlobalGraph1/Namespaces1
+      Splitter Ratio: 0.581460655
+    Tree Height: 750
+  - Class: rviz/Selection
+    Name: Selection
+  - Class: rviz/Tool Properties
+    Expanded:
+      - /2D Pose Estimate1
+      - /2D Nav Goal1
+      - /Publish Point1
+    Name: Tool Properties
+    Splitter Ratio: 0.588679016
+  - Class: rviz/Views
+    Expanded:
+      - /Current View1
+    Name: Views
+    Splitter Ratio: 0.5
+  - Class: rviz/Time
+    Experimental: false
+    Name: Time
+    SyncMode: 0
+    SyncSource: VLP
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Alpha: 0.5
+      Cell Size: 1
+      Class: rviz/Grid
+      Color: 160; 160; 164
+      Enabled: false
+      Line Style:
+        Line Width: 0.0299999993
+        Value: Lines
+      Name: Grid
+      Normal Cell Count: 0
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Plane: XY
+      Plane Cell Count: 30
+      Reference Frame: <Fixed Frame>
+      Value: false
+    - Angle Tolerance: 0
+      Class: rviz/Odometry
+      Covariance:
+        Orientation:
+          Alpha: 0.5
+          Color: 255; 255; 127
+          Color Style: Unique
+          Frame: Local
+          Offset: 1
+          Scale: 1
+          Value: true
+        Position:
+          Alpha: 0.300000012
+          Color: 204; 51; 204
+          Scale: 1
+          Value: true
+        Value: false
+      Enabled: false
+      Keep: 1
+      Name: Odometry
+      Position Tolerance: 0.200000003
+      Shape:
+        Alpha: 1
+        Axes Length: 1
+        Axes Radius: 0.100000001
+        Color: 255; 25; 0
+        Head Length: 0.300000012
+        Head Radius: 0.100000001
+        Shaft Length: 1
+        Shaft Radius: 0.0799999982
+        Value: Arrow
+      Topic: /msf_core/odometry
+      Unreliable: false
+      Value: false
+    - Class: rviz/Group
+      Displays:
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /vis/planning_failed
+          Name: PlanningFailed
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /vis/volumetric_gains
+          Name: VolumetricGain
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /vis/sensor_fov
+          Name: SensorFOV
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /vis/best_planning_paths
+          Name: BestPaths
+          Namespaces:
+            best_path: true
+            heading: true
+            next_best_paths: true
+            vertices: true
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /vis/shortest_paths
+          Name: ShortestPaths
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /vis/robot_state
+          Name: RobotState
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /vis/planning_workspace
+          Name: PlanningWorkspace
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /vis/planning_graph
+          Name: PlanningGraph
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /vis/sampler
+          Name: Sampler
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /vis/ray_casting
+          Name: RayCasting
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /vis/planning_global_graph
+          Name: GlobalGraph
+          Namespaces:
+            edges: true
+            frontier: true
+            gain: true
+            heading: true
+            vertices: true
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /vis/planning_homing_path
+          Name: HomingPath
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /vis/ref_path
+          Name: RefPath
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /vis/state_history
+          Name: StateHist
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /vis/shortest_path_clustering
+          Name: PathClustering
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /vis/planning_global_path
+          Name: GlobalPathFrontier
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+      Enabled: true
+      Name: PlannerViz
+    - Class: rviz/Group
+      Displays:
+        - Class: rviz/Image
+          Enabled: false
+          Image Topic: /camera/image_raw
+          Max Value: 1
+          Median window: 5
+          Min Value: 0
+          Name: Camera
+          Normalize Range: true
+          Queue Size: 2
+          Transport Hint: raw
+          Unreliable: false
+          Value: false
+        - Alpha: 0.5
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 2.54707336
+            Min Value: -1.44483745
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/PointCloud2
+          Color: 255; 255; 255
+          Color Transformer: AxisColor
+          Decay Time: 0
+          Enabled: true
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Max Intensity: 149
+          Min Color: 0; 0; 0
+          Min Intensity: 0
+          Name: VLP
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.00999999978
+          Style: Points
+          Topic: /velodyne_points
+          Unreliable: false
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: true
+      Enabled: true
+      Name: Sensors
+    - Class: rviz/Group
+      Displays:
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /gbplanner_node/octomap_free
+          Name: Free
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /gbplanner_node/octomap_occupied
+          Name: Occupied
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+      Enabled: true
+      Name: Octomap
+    - Class: rviz/Group
+      Displays:
+        - Class: rviz/TF
+          Enabled: false
+          Frame Timeout: 15
+          Frames:
+            All Enabled: false
+          Marker Scale: 1
+          Name: TF
+          Show Arrows: true
+          Show Axes: true
+          Show Names: true
+          Tree:
+            {}
+          Update Interval: 0
+          Value: false
+        - Class: rviz/Axes
+          Enabled: true
+          Length: 3
+          Name: BaseLink
+          Radius: 0.5
+          Reference Frame: state
+          Value: true
+        - Class: rviz/Axes
+          Enabled: true
+          Length: 5
+          Name: World
+          Radius: 0.5
+          Reference Frame: world
+          Value: true
+        - Class: rviz/Axes
+          Enabled: false
+          Length: 1
+          Name: Axes
+          Radius: 0.100000001
+          Reference Frame: current_reference
+          Value: false
+        - Class: rviz/Axes
+          Enabled: false
+          Length: 5
+          Name: Axes
+          Radius: 0.100000001
+          Reference Frame: aft_mapped_to_init_CORRECTED
+          Value: false
+      Enabled: true
+      Name: Axes
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 4.79458761
+        Min Value: -2.2227993
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: AxisColor
+      Decay Time: 50
+      Enabled: false
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 15
+      Min Color: 0; 0; 0
+      Min Intensity: 0
+      Name: PointCloud2
+      Position Transformer: XYZ
+      Queue Size: 10
+      Selectable: true
+      Size (Pixels): 2
+      Size (m): 0.0700000003
+      Style: Points
+      Topic: /velodyne_cloud_registered
+      Unreliable: false
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: false
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: Intensity
+      Decay Time: 0
+      Enabled: false
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 1
+      Min Color: 0; 0; 0
+      Min Intensity: -0.999132156
+      Name: PointCloud2
+      Position Transformer: XYZ
+      Queue Size: 10
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 0.00999999978
+      Style: Flat Squares
+      Topic: /gbplanner_node/tsdf_pointcloud
+      Unreliable: false
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: false
+    - Class: rviz/Group
+      Displays:
+        - Class: voxblox_rviz_plugin/VoxbloxMesh
+          Enabled: false
+          Name: VoxbloxMesh
+          Topic: /gbplanner_node/mesh
+          Unreliable: false
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /gbplanner_node/occupied_nodes
+          Name: Occupied
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: true
+      Enabled: false
+      Name: Voxblox
+    - Alpha: 1
+      Class: mav_rviz_plugin/RollPitchYawrateThrust
+      ColorPsi: 204; 51; 204
+      ColorX: 204; 51; 51
+      ColorY: 51; 204; 51
+      ColorZ: 51; 51; 204
+      Enabled: false
+      History Length: 1
+      Mass: 3.5999999
+      Name: RollPitchYawrateThrust
+      Scale: 9.81000042
+      Topic: /matrice/command/roll_pitch_yawrate_thrust
+      Unreliable: false
+      Value: false
+    - Class: rviz/Group
+      Displays:
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /vis/planning_homing_path_post
+          Name: Homing
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /vis/planning_graph_post
+          Name: PlanningGraph
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /vis/best_planning_paths_post
+          Name: BestPaths
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /vis/planning_global_graph_post
+          Name: GlobalGraph
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: true
+      Enabled: false
+      Name: PostProcessing
+  Enabled: true
+  Global Options:
+    Background Color: 255; 255; 255
+    Default Light: true
+    Fixed Frame: world
+    Frame Rate: 30
+  Name: root
+  Tools:
+    - Class: rviz/Interact
+      Hide Inactive Objects: true
+    - Class: rviz/MoveCamera
+    - Class: rviz/Select
+    - Class: rviz/FocusCamera
+    - Class: rviz/Measure
+    - Class: rviz/SetInitialPose
+      Topic: /initialpose
+    - Class: rviz/SetGoal
+      Topic: /move_base_simple/goal
+    - Class: rviz/PublishPoint
+      Single click: true
+      Topic: /clicked_point
+  Value: true
+  Views:
+    Current:
+      Class: rviz/Orbit
+      Distance: 72.1125793
+      Enable Stereo Rendering:
+        Stereo Eye Separation: 0.0599999987
+        Stereo Focal Distance: 1
+        Swap Stereo Eyes: false
+        Value: false
+      Focal Point:
+        X: 1.79702818
+        Y: -0.561641514
+        Z: -4.17066717
+      Focal Shape Fixed Size: true
+      Focal Shape Size: 0.0500000007
+      Invert Z Axis: false
+      Name: Current View
+      Near Clip Distance: 0.00999999978
+      Pitch: 1.3697964
+      Target Frame: state
+      Value: Orbit (rviz)
+      Yaw: 3.15915704
+    Saved:
+      - Class: rviz/ThirdPersonFollower
+        Distance: 1.72829688
+        Enable Stereo Rendering:
+          Stereo Eye Separation: 0.0599999987
+          Stereo Focal Distance: 1
+          Swap Stereo Eyes: false
+          Value: false
+        Focal Point:
+          X: -2.13378954
+          Y: 0.0920158923
+          Z: -3.69172994e-08
+        Focal Shape Fixed Size: true
+        Focal Shape Size: 0.0500000007
+        Invert Z Axis: false
+        Name: ThirdPersonFollower
+        Near Clip Distance: 0.00999999978
+        Pitch: 0.326434225
+        Target Frame: state
+        Value: ThirdPersonFollower (rviz)
+        Yaw: 2.73914719
+Window Geometry:
+  Camera:
+    collapsed: false
+  Displays:
+    collapsed: false
+  Height: 1028
+  Hide Left Dock: false
+  Hide Right Dock: true
+  QMainWindow State: 000000ff00000000fd0000000400000000000001730000037dfc020000000afb000000100044006900730070006c00610079007301000000280000037d000000d700fffffffb0000001200530065006c0065006300740069006f006e0000000028000003990000006100fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb0000000a0049006d00610067006501000002ef000000cf0000000000000000fb0000000c00430061006d00650072006100000003affffffff60000001600ffffff000000010000010f00000399fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000002800000399000000ad00fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000003a00000003bfc0100000002fb0000000800540069006d00650100000000000003a00000030000fffffffb0000000800540069006d00650100000000000004500000000000000000000002270000037d00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  Selection:
+    collapsed: false
+  Time:
+    collapsed: false
+  Tool Properties:
+    collapsed: false
+  Views:
+    collapsed: true
+  Width: 928
+  X: 992
+  Y: 24

@@ -1,0 +1,181 @@
+RobotParams:
+  type:               kGroundRobot
+  size:               [0.8, 0.8, 0.2] # Actual size of the robot in meters [x, y, z]
+  size_extension_min: [0.0, 0.0, 0.0] # minimum extension outside of robot size allowed to operate
+  size_extension:     [0.2, 0.2, 0.2] # maximum extension outside of the robot size
+  center_offset:      [0.0, 0.0, 0.0]
+  relax_ratio:        0.5 # Used to define an intermediate size between size_extension_min and size_extension for planning
+  bound_mode:         kExtendedBound
+  safety_extension:   [2.0, 3.0, 0.2] # Safety extension outside the bounding box of a path segment used to improve it by pushing it away from obstacles
+#-------------------------------------------------------------------------------
+# SENSOR CONFIGURATION
+#  sensor_list: Define a set of sensors relevant to the exploration task.
+#  rotations: ZYX order;
+#             all follows ROS convention (X-forward, Y-left, Z-Up).
+#-------------------------------------------------------------------------------
+SensorParams:
+  sensor_list:      ["VLP16"]
+  VLP16:
+    type:           kLidar
+    max_range:      20.0
+    center_offset:  [0.0, 0.0, 0.0]
+    rotations:      [0.0, 0.0, 0.0]
+    fov:            [rad(2.0*pi), rad(pi/6)]
+    resolution:     [rad(5.0*pi/180), rad(5.0*pi/180)]
+    frontier_percentage_threshold: 0.05
+#-------------------------------------------------------------------------------
+# SAMPLING SPACE CONFIGURATION
+#   Global: Strictly defined bounds for the whole environment.
+#   Local: Define a local space wrt current robot state for planning.
+#-------------------------------------------------------------------------------
+BoundedSpaceParams:
+  Global:
+    type:           kCuboid
+    min_val:        [-1000.0, -1000.0, -30.0]
+    max_val:        [1000.0, 1000.0, 30.0]
+  Local:
+    type:           kCuboid
+    min_val:        [-15.0, -15.0, -3.0]
+    max_val:        [15.0, 15.0, 3.0]
+    min_extension:  [-20.0, -20.0, -20.0]
+    max_extension:  [20.0, 20.0, 20.0]
+  LocalSearch:
+    type:           kCuboid
+    min_val:        [-50.0, -50.0, -10.0]
+    max_val:        [50.0, 50.0, 10.0]
+  # Adaptive OBB:
+  LocalAdaptiveExp:
+    type:           kCuboid
+    min_val:        [-10.0, -10.0, -0.75]
+    max_val:        [10.0, 10.0, 0.75]
+NoGainZones:
+  g1:  # Back
+    type:           kCuboid
+    min_val:        [-50.0, -50.0, -20.0]
+    max_val:        [2.0, 50.0, 20.0]
+#-------------------------------------------------------------------------------
+# SAMPLING POLICY CONFIGURATION
+#   Sample space limited to 4 states: X, Y, Z, and Heading
+#-------------------------------------------------------------------------------
+RandomSamplerParams:
+  SamplerForExploration:
+    X:
+      pdf_type:       kUniform
+      sample_mode:    kLocal
+    Y:
+      pdf_type:       kUniform
+      sample_mode:    kLocal
+    Z:
+      pdf_type:       kUniform
+      sample_mode:    kLocal
+    Heading:
+      pdf_type:       kUniform
+      sample_mode:    kManual
+      min_val:        rad(-pi)
+      max_val:        rad(pi)
+  SamplerForSearching:
+    X:
+      pdf_type:       kUniform
+      sample_mode:    kLocal
+    Y:
+      pdf_type:       kUniform
+      sample_mode:    kLocal
+    Z:
+      pdf_type:       kUniform
+      sample_mode:    kLocal
+    Heading:
+      pdf_type:       kUniform
+      sample_mode:    kManual
+      min_val:        rad(-pi)
+      max_val:        rad(pi)
+  SamplerForAdaptiveExp:
+    X:
+      pdf_type:       kUniform
+      sample_mode:    kLocal
+    Y:
+      pdf_type:       kUniform
+      sample_mode:    kLocal
+    Z:
+      pdf_type:       kUniform
+      sample_mode:    kLocal
+    Heading:
+      pdf_type:       kUniform
+      sample_mode:    kManual
+      min_val:        rad(-pi)
+      max_val:        rad(pi)
+#-------------------------------------------------------------------------------
+# EXPLORATION CONFIGURATION
+# exp_sensor_list: sensors used to compute exploration gain.
+#-------------------------------------------------------------------------------
+PlanningParams:
+  type:             kAdaptiveExploration # Options: kBasicExploration, kAdaptiveExploration
+  rr_mode:          kGraph
+  bound_mode:       kExtremeBound
+  exp_sensor_list:  ["VLP16"]
+  no_gain_zones_list: ["g1"]
+  edge_length_min:  0.1
+  edge_length_max:  3.0
+  edge_overshoot:   0.0 #m
+  num_vertices_max: 500
+  num_edges_max:    5000
+  num_loops_cutoff: 2000
+  num_loops_max:    20000
+  nearest_range:    2.5
+  nearest_range_min: 0.1 # >= edge_length_min
+  nearest_range_max: 3.0 # <= edge_length_max
+  use_current_state: true
+  augment_free_voxels_time: 1
+  free_frustum_before_planning: false
+
+  use_ray_model_for_volumetric_gain: true
+  path_length_penalty: 0.07
+  path_direction_penalty: 0.3
+  hanging_vertex_penalty: 5.0
+  exp_gain_voxel_size: 0.8
+  occupied_voxel_gain: 0.0
+  free_voxel_gain:  0.0 #prefer directions towards more free voxels in case of the dead-end
+  unknown_voxel_gain: 60.0
+  nonuniform_ray_cast: true
+  ray_cast_step_size_multiplier: 1.0
+  freespace_cloud_enable: false
+  leafs_only_for_volumetric_gain: false
+  cluster_vertices_for_gain: true
+  clustering_radius: 0.5
+  
+  max_ground_height: 0.7 # All points will be projected to this height from ground
+  robot_height: 0.6  # Height of robot's base frame from ground
+  max_inclination: rad(25.0*pi/180)
+  interpolate_projection_distance: false
+  
+  yaw_tangent_correction: true
+  traverse_length_max: 6.0
+  traverse_time_max: 40.0
+  path_safety_enhance_enable: true
+  path_interpolation_distance: 0.5
+  
+  auto_global_planner_enable: true
+  relaxed_corridor_multiplier: 1.5
+  homing_backward: false
+  auto_homing_enable: true
+  time_budget_limit: 3600 # seconds
+  global_frame_id: world
+  global_path_inclination_check: true
+  go_home_if_fully_explored: true
+  geofence_checking_enable: true
+
+AdaptiveObbParams:
+  type: kPca
+  local_pointcloud_range: 50.0
+  bounding_box_size_max: 35
+
+GeofenceParams:
+  AreaList: ["GLeft", "GBack", "GRight"]
+  GBack:
+    center: [-3.0, 0.0, 0.0]
+    size:   [2.0, 6.0, 0.0]
+  GLeft:
+    center: [0.0, 4.0, 0.0]
+    size:   [6.0, 2.0, 0.0]
+  GRight:
+    center: [0.0, -4.0, 0.0]
+    size:   [6.0, 2.0, 0.0]

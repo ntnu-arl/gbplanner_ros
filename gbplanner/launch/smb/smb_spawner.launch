@@ -1,0 +1,10 @@
+<launch>
+	<include file="$(find smb_gazebo)/launch/spawn_smb.launch">
+    <arg name="joystick" value="true"/>
+    <arg name="x" value="0.0" />
+    <arg name="y" value="0.0" />
+    <arg name="z" value="0.5" />
+  </include>
+
+	<include file="$(find smb_path_tracker)/launch/pure_pursuit_tracker.launch"/>
+</launch>

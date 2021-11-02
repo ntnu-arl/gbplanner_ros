@@ -1,0 +1,67 @@
+<launch>
+  <!-- All settings -->
+  <arg name="robot_name" default="smb"/>
+  <arg name="gazebo_gui_en" default="false"/>
+  <arg name="use_sim_time" default="true"/>
+  <arg name="rviz_en" default="true" />
+  <arg name="launch_prefix" default=""/> <!-- gdb -ex run //args -->
+  <param name="use_sim_time" value="$(arg use_sim_time)"/>
+
+  <!-- Config files -->
+  <arg name="gbplanner_config_file" default="$(find gbplanner)/config/$(arg robot_name)/gbplanner_config.yaml"/>
+  <arg name="pci_file" default="$(find gbplanner)/config/$(arg robot_name)/planner_control_interface_sim_config.yaml"/>
+  <arg name="voxblox_config_file" default="$(find gbplanner)/config/$(arg robot_name)/voxblox_sim_config.yaml"/>
+  <arg name="map_config_file" default="$(arg voxblox_config_file)"/>
+  <!-- <arg name="world_file" default="$(find planner_gazebo_sim)/worlds/niosh_osrf.world"/> -->
+  <!-- <arg name="world_file" default="$(find planner_gazebo_sim)/worlds/darpa_cave_01.world"/> -->
+  <arg name="world_file" default="$(find planner_gazebo_sim)/worlds/pittsburgh_mine.world"/>
+
+  <!-- Static TF -->
+  <node pkg="tf" type="static_transform_publisher" name="tf_53" args="0 0 0 0 0 0 world navigation 100" />
+
+  <env name="GAZEBO_MODEL_PATH" value="${GAZEBO_MODEL_PATH}:$(find planner_gazebo_sim)/models:$(find subt_cave_sim)/models"/>
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+		<arg name="world_name" value="$(arg world_file)"/>
+		<arg name="paused" value="false"/>
+		<arg name="use_sim_time" value="true"/>
+		<arg name="gui" value="$(arg gazebo_gui_en)"/>
+		<arg name="headless" value="false"/>
+		<arg name="debug" value="false"/>
+	</include>
+
+  <!-- <include file="$(find smb_gazebo)/launch/smb_empty_world.launch">
+    <arg name="world_name" value="$(arg world_file)" />
+    <arg name="gazebo_gui_en" value="$(arg gazebo_gui_en)"/>
+    <arg name="joystick" value="true"/>
+    <arg name="x" value="0.0" />
+    <arg name="y" value="0.0" />
+    <arg name="z" value="0.5" />
+  </include>
+
+  <include file="$(find smb_path_tracker)/launch/pure_pursuit_tracker.launch"/> -->
+
+  <node pkg="topic_tools" type="relay" name="vlp_relay" args="/velodyne_points /input_pointcloud" />
+  <node pkg="topic_tools" type="relay" name="front_lidar_relay" args="/lidar_front_points /input_pointcloud" />
+
+  <arg name="odometry_topic" default="/ground_truth/state"/>
+  <node name="pose_throttler" type="throttle" pkg="topic_tools" args="messages $(arg robot_name)/ground_truth/pose_with_covariance 10 /msf_core/pose" />
+  <!-- Graph based planning -->
+  <node pkg="gbplanner" type="gbplanner_node" name="gbplanner_node" output="screen" launch-prefix="$(arg launch_prefix)">
+    <remap from="odometry" to="$(arg odometry_topic)" />
+    <remap from="/pointcloud" to="/input_pointcloud" />
+    <rosparam command="load" file="$(arg gbplanner_config_file)" />
+    <rosparam command="load" file="$(arg map_config_file)" />
+  </node>
+
+  <!-- Planner and Control Interface -->
+  <node pkg="pci_general" type="pci_general_ros_node" name="pci_general_ros_node" output="screen">
+    <remap from="command/trajectory" to="$(arg robot_name)/command/trajectory" />
+    <remap from="planner_server" to="gbplanner" />
+    <remap from="planner_homing_server" to="gbplanner/homing" />
+    <remap from="odometry" to="$(arg odometry_topic)"/>
+    <rosparam command="load" file="$(arg pci_file)" />
+  </node>
+
+  <node pkg="rviz" type="rviz" name="gbplanner_ui" output="screen" args="-d $(find gbplanner)/config/rviz/smb.rviz"/>
+
+</launch>

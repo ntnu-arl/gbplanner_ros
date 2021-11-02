@@ -10,19 +10,16 @@
   <buildtool_depend>catkin_simple</buildtool_depend>
   <depend>roscpp</depend>
   <depend>cv_bridge</depend>
-  <depend>image_geometry</depend>
-  <depend>image_proc</depend>
-  <depend>image_transport</depend>
   <depend>tf</depend>
-  <depend>planner_msgs</depend>
   <depend>message_generation</depend>
   <depend>geometry_msgs</depend>
   <depend>visualization_msgs</depend>
-  <depend>octomap</depend>
-  <depend>octomap_ros</depend>
-  <depend>octomap_msgs</depend>
   <depend>kdtree</depend>
   <depend>voxblox_ros</depend>
-  <depend>octomap_world</depend>
-
+  <depend>planner_common</depend>
+  <depend>planner_msgs</depend>
+  <depend>planner_semantic_msgs</depend>
+  <depend>adaptive_obb</depend>
+  <depend>pcl_ros</depend>
+  
 </package>
