@@ -29,16 +29,21 @@ ros-noetic-interactive-marker-twist-server
 ```
 
 
-Clone the workspace:
+Create the workspace:
 ```bash
-git clone git@github.com:ntnu-arl/gbplanner_ws.git
-cd gbplanner_ws
+mkdir -p gbplanner2_ws/src/exploration
+cd gbplanner2_ws/src/exploration
+```
+Clone the planner
+```bash
+git clone git@github.com:ntnu-arl/gbplanner_ros.git
 ```
 
 Clone and update the required packages:
 ```bash
+cd <path/to/gbplanner2_ws>
 wstool init
-wstool merge packages_ssh.rosinstall
+wstool merge ./src/exploration/gbplanner_ros/packages_ssh.rosinstall
 wstool update
 ```
 
@@ -54,6 +59,7 @@ Download the gazebo model from [here](https://drive.google.com/file/d/1Mx_JKNyx2
 ```bash
 roslaunch gbplanner rmf_sim.launch
 ```
+It will take few moments to load the world. A message saying the spawn_rmf_obelix process has died may pop up, but as long as the pointcloud map is visible in rviz and the UI controls work this message can be safely ignored.
 
 ### Ground Robot Demo
 the following command:
