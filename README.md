@@ -2,7 +2,7 @@
 ![swag](img/cerberus_subt_winners.png)
 
 ## Tutorial:
-Please refer to the [wiki](https://github.com/ntnu-arl/gbplanner_wiki/wiki) page for detailed instructions to install and run the demo simulations as well as documentation of the planner interface and parameters.
+Please refer to the [wiki](https://github.com/ntnu-arl/gbplanner_ros/wiki) page for detailed instructions to install and run the demo simulations as well as documentation of the planner interface and parameters.
 More results and video explaination of our method can be found on our website: [Link](https://www.autonomousrobotslab.com/exploration-planning.html)
 
 ## Installation
@@ -29,10 +29,10 @@ ros-noetic-interactive-marker-twist-server
 ```
 
 
-Clone the workspace <span style="color:red">(UPDATE THE LINK BEFORE RELEASE)</span>.:
+Clone the workspace:
 ```bash
-git clone git@github.com:ntnu-arl/gbplanner_prerelease_ws.git
-cd gbplanner_prerelease_ws
+git clone git@github.com:ntnu-arl/gbplanner_ws.git
+cd gbplanner_ws
 ```
 
 Clone and update the required packages:
