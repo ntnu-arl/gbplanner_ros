@@ -82,15 +82,17 @@ Autonomous exploration mission in the Prize Round of the DARPA Subterranean Chal
 ### Explanation Video
 [![gbplanner_video](img/gbp2_vid.png)](https://www.youtube.com/watch?v=bTqFp1aODqU&list=PLu70ME0whad9Z4epZQ9VBYagKpyMyhZZ1&index=4)
 
-If you use this work in your research, please cite the following publication.
+If you use this work in your research, please cite the following publication [(link)](https://onlinelibrary.wiley.com/doi/full/10.1002/rob.21993)
 ```
-@inproceedings{dang2019graph,
-  title={Graph-based path planning for autonomous robotic exploration in subterranean environments},
-  author={Dang, Tung and Mascarich, Frank and Khattak, Shehryar and Papachristos, Christos and Alexis, Kostas},
-  booktitle={2019 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)},
-  pages={3105--3112},
-  year={2019},
-  organization={IEEE}
+@article{dang2020graph,
+  title={Graph-based subterranean exploration path planning using aerial and legged robots},
+  author={Dang, Tung and Tranzatto, Marco and Khattak, Shehryar and Mascarich, Frank and Alexis, Kostas and Hutter, Marco},
+  journal={Journal of Field Robotics},
+  volume = {37},
+  number = {8},
+  pages = {1363-1388},  
+  year={2020},
+  note={Wiley Online Library}
 }
 ```
 
