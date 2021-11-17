@@ -16,7 +16,8 @@ sudo apt install python-catkin-tools \
 libgoogle-glog-dev \
 ros-melodic-joy \
 ros-melodic-twist-mux \
-ros-melodic-interactive-marker-twist-server
+ros-melodic-interactive-marker-twist-server \
+ros-melodic-octomap-ros
 ```
 For Ubuntu 20.04 and ROS Noetic:
 ```bash
@@ -25,7 +26,8 @@ sudo apt install python3-catkin-tools \
 libgoogle-glog-dev \
 ros-noetic-joy \
 ros-noetic-twist-mux \
-ros-noetic-interactive-marker-twist-server
+ros-noetic-interactive-marker-twist-server \
+ros-noetic-octomap-ros
 ```
 
 
