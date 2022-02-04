@@ -101,13 +101,13 @@ If you use this work in your research, please cite the following publications:
 ```
 **Autonomous Teamed Exploration of Subterranean Environments using Legged and Aerial Robots**
 ```
-@misc{kulkarni2021autonomous,
+@inproceedings{kulkarni2021autonomous,
       title={Autonomous Teamed Exploration of Subterranean Environments using Legged and Aerial Robots}, 
       author={Mihir Kulkarni and Mihir Dharmadhikari and Marco Tranzatto and Samuel Zimmermann and Victor Reijgwart and Paolo De Petris and Huan Nguyen and Nikhil Khedekar and Christos Papachristos and Lionel Ott and Roland Siegwart and Marco Hutter and Kostas Alexis},
-      year={2021},
-      eprint={2111.06482},
-      archivePrefix={arXiv},
-      primaryClass={cs.RO}
+      year={2022},
+      booktitle={2022 IEEE International Conference on Robotics and Automation (ICRA)},
+      organization={IEEE},
+      address={Philadelphia (PA), USA}
 }
 ```
 
