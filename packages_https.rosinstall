@@ -1,0 +1,74 @@
+#MISC
+- git:
+    local-name: src/misc/catkin_simple/
+    uri: https://github.com/catkin/catkin_simple.git
+    version: 0e62848b12da76c8cc58a1add42b4f894d1ac21e
+- git:
+    local-name: src/misc/eigen_catkin/
+    uri: https://github.com/ethz-asl/eigen_catkin.git
+    version: 00b5eb254bad8de9cd68d238aa994e443062cf30
+- git:
+    local-name: src/misc/eigen_checks/
+    uri: https://github.com/ethz-asl/eigen_checks.git
+    version: 22a6247a3df11bc285d43d1a030f4e874a413997
+- git:
+    local-name: src/misc/gflags_catkin/
+    uri: https://github.com/ethz-asl/gflags_catkin.git
+    version: 5324e74119996a6e2da12d20e5388c17480ebd79
+- git:
+    local-name: src/misc/glog_catkin/
+    uri: https://github.com/ethz-asl/glog_catkin.git
+    version: dcb4559be6b9f9248c543df6789d46271c13efcf
+- git:
+    local-name: src/misc/minkindr/
+    uri: https://github.com/ethz-asl/minkindr.git
+    version: bc4503c34970a13b7ef06f62505e3333395ce02c
+- git:
+    local-name: src/misc/minkindr_ros/
+    uri: https://github.com/ethz-asl/minkindr_ros.git
+    version: 88e0bd476f82027453f04fdf7c40c7c9a358aa1b
+- git:
+    local-name: src/misc/mav_comm/
+    uri: https://github.com/ethz-asl/mav_comm.git
+    version: master
+- git:
+    local-name: src/misc/yaml_cpp_catkin/
+    uri: https://github.com/ethz-asl/yaml_cpp_catkin.git
+    version: master
+
+# MAPPING
+- git:
+    local-name: src/mapping/voxblox/
+    uri: https://github.com/ntnu-arl/voxblox.git
+    version: dev/noetic
+
+#EXPLORATION
+- git:
+    local-name: src/exploration/gbplanner_ros/
+    uri: https://github.com/ntnu-arl/gbplanner_ros.git
+    version: gbplanner2
+- git:
+    local-name: src/exploration/pci_general/
+    uri: https://github.com/ntnu-arl/pci_general.git
+    version: main
+- git:
+    local-name: src/exploration/adaptive_obb_ros/
+    uri: https://github.com/ntnu-arl/adaptive_obb_ros.git
+
+# sim
+- git:
+    local-name: src/sim/rotors_simulator/
+    uri: https://github.com/ntnu-arl/rotors_simulator.git
+    version: dev/rmf_obelix
+- git:
+    local-name: src/sim/lidar_simulator/
+    uri: https://github.com/ntnu-arl/lidar_simulator.git
+    version: psuedo_bpearl
+- git:
+    local-name: src/sim/smb_simulator/
+    uri: https://github.com/ntnu-arl/smb_simulator.git
+- git:
+    local-name: src/sim/subt_cave_sim/
+    uri: https://github.com/ntnu-arl/subt_cave_sim.git
+    version: master
+
