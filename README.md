@@ -49,6 +49,8 @@ wstool merge ./src/exploration/gbplanner_ros/packages_ssh.rosinstall
 wstool update
 ```
 
+`Note: ./src/exploration/gbplanner_ros/packages_https.rosinstall can be used for https based urls.`
+
 Build:
 ```bash
 catkin config -DCMAKE_BUILD_TYPE=Release
