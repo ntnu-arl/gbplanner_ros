@@ -701,7 +701,7 @@ void PlannerControlInterface::runPlanner(bool exe_path = false) {
     planning_mode_srv.request.planning_mode =
         planner_msgs::planner_set_planning_mode::Request::kManual;
   }
-  planner_set_trigger_mode_client_.call(planning_mode_srv);
+  // planner_set_trigger_mode_client_.call(planning_mode_srv);
 
   for (int ind = 0; ind < kBBoxLevel; ++ind) {
     ros::Duration(0.01)

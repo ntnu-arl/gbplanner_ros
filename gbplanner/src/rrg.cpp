@@ -4960,7 +4960,7 @@ std::vector<geometry_msgs::Pose> Rrg::runGlobalPlanner(
         time_spare = 1;
       }
 
-      const double kGDistancePenalty = 0.01;
+      const double kGDistancePenalty = 0.1;
       double exp_gain = f->vol_gain.gain * exp(-kGDistancePenalty * current_to_frontier_distance);
       if (!ignore_time) exp_gain *= time_spare;
       frontier_exp_gain[f->id] = exp_gain;

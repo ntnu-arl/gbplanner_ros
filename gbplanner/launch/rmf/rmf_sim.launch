@@ -14,7 +14,7 @@
   <arg name="voxblox_config_file" default="$(find gbplanner)/config/$(arg robot_name)/voxblox_sim_config.yaml"/>
   <arg name="map_config_file" default="$(arg voxblox_config_file)"/>
   <!-- <arg name="world_file" default="$(find planner_gazebo_sim)/worlds/darpa_cave_01.world"/> -->
-  <arg name="world_file" default="$(find planner_gazebo_sim)/worlds/darpa_subt_final_circuit.world"/>
+  <arg name="world_file" default="$(find planner_gazebo_sim)/worlds/darpa_subt_final_circuit2.world"/>
 
   <!-- Static TF -->
   <node pkg="tf" type="static_transform_publisher" name="tf_53" args="0 0 0 0 0 0 world navigation 100" />
@@ -68,8 +68,8 @@
   </node>
 
   <node pkg="gbplanner" type="gbplanner_stats_logger" name="gbplanner_stats_logger" output="screen">
-    <remap from="occ_cloud" to="/gbplanner/surface_pointcloud" />
-    <remap from="cam_cloud" to="/gbplanner_node/tsdf_pointcloud" />
+    <remap from="occ_cloud" to="/gbplanner_node/surface_pointcloud" />
+    <remap from="com_cloud" to="/gbplanner_node/tsdf_pointcloud" />
   </node>
 
   <!-- Planner and Control Interface -->

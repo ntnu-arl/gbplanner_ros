@@ -1,0 +1,14 @@
+<launch>
+	<arg name="record" default="true" />
+	<arg name="record_path" default="/media/mihir/4beffc03-9f30-412c-8e66-41c32654ad8c/home/mihir/ROSBAGS/Dharmadhikari_gbplanner_sims/final_event_map" />
+
+	<!-- <node pkg="topic_tools" type="drop" name="cam_drop" args="/cam0/cam0 1 2" /> -->
+
+	<node pkg="rosbag" type="record" name="recorder_usd" output="screen" respawn="false" launch-prefix="nice -n 19" if="$(arg record)" args="--split --size=1024 -o $(arg record_path)/gbplanner_simulations_
+	/gbplanner/planner_mode
+	/cloud_sizes
+	/gbp_time_log
+	/rmf_obelix/ground_truth/odometry_throttled
+	" />
+
+</launch>

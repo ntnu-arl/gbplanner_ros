@@ -3,7 +3,7 @@ trigger_mode: kManual
 robot_type: kAerial
 output_type: kTopic
 init_motion_enable: false
-planner_trigger_lead_time: 0.4
+planner_trigger_lead_time: 0.8
 smooth_heading_enable: true
 init_motion:
   z_takeoff: 2.5
@@ -12,8 +12,8 @@ init_motion:
 
 # Group related parameters to be shared between nodes.
 RobotDynamics:
-  v_max: 1.0
+  v_max: 1.5
   v_init_max: 1.0
-  v_homing_max: 1.0
+  v_homing_max: 1.5
   yaw_rate_max: 0.15
   dt: 0.05

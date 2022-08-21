@@ -7,17 +7,17 @@ add_definitions(-std=c++14 -Wall -Wno-sign-compare -Wno-unused-variable -Wno-unu
 #   0 - Orignal
 #   1 - Direct TSDF/ESDF distance check (requires continuous path check during execution)
 #   2 - Using interpolated tsdf distance
-add_definitions(-DCOL_CHECK_METHOD=0)
+add_definitions(-DCOL_CHECK_METHOD=2)
 # Line collision checking: 
 #   0 - Orignal
 #   1 - Cuboid around the edge
 #   2 - Direct TSDF/ESDF distance check (requires continuous path check during execution)
 #   3 - Using interpolated tsdf distance
-add_definitions(-DEDGE_CHECK_METHOD=1)
+add_definitions(-DEDGE_CHECK_METHOD=3)
 # Ray casting: 
 #   0 - Original
 #   1 - Iterative ray casting
-add_definitions(-DRAY_CAST_METHOD=1)
+add_definitions(-DRAY_CAST_METHOD=0)
 
 # Verify the values of the definitions
 get_directory_property( DirDefs COMPILE_DEFINITIONS ) 

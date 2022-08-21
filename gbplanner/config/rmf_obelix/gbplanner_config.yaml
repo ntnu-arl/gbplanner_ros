@@ -22,7 +22,7 @@ SensorParams:
   sensor_list:      ["OS064"]
   OS064:
     type:           kLidar
-    max_range:      20.0
+    max_range:      15.0
     center_offset:  [0.0, 0.0, 0.0]
     rotations:      [0.0, 0.0, 0.0]
     fov:            [rad(2*pi), rad(pi/2)]
@@ -118,8 +118,8 @@ PlanningParams:
   rr_mode:          kGraph
   exp_sensor_list:  ["OS064"]
   # no_gain_zones_list: ["g1"]
-  v_max:            1.0 # max velocity m/s
-  v_homing_max:     0.9 # max velocity m/s
+  v_max:            1.5 # max velocity m/s
+  v_homing_max:     1.4 # max velocity m/s
   yaw_rate_max:     0.15 # max angular velocity rad/s
   yaw_tangent_correction: true # If true - all headings will be along the path segment
   edge_length_min:  0.2
@@ -137,7 +137,7 @@ PlanningParams:
   exp_gain_voxel_size: 0.8 # used if use_ray_model_for_volumetric_gain is false
   # Gains:
   path_length_penalty: 0.04
-  path_direction_penalty: 0.1
+  path_direction_penalty: 0.3
   occupied_voxel_gain: 0.0
   free_voxel_gain:  0.0 # prefer directions towards more free voxels in case of the dead-end
   unknown_voxel_gain: 60.0
@@ -153,8 +153,8 @@ PlanningParams:
   clustering_radius: 0.5
   path_interpolation_distance: 0.5
   
-  time_budget_limit: 480 # seconds
-  auto_homing_enable: true
+  time_budget_limit: 1800 # seconds
+  auto_homing_enable: false
   go_home_if_fully_explored: true
 
   nonuniform_ray_cast: true

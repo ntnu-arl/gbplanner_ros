@@ -22,7 +22,7 @@
 #include <limits>
 #include <vector>
 
-#include "std_msgs/Int16MultiArray.h"
+#include "std_msgs/Int32MultiArray.h"
 
 ros::Publisher cloud_sizes_pub_;
 int occ_cloud_size, com_cloud_size;
@@ -30,6 +30,7 @@ bool occ_cloud_set = false, com_cloud_set = false;
 
 void occ_pcl_cb(const sensor_msgs::PointCloud2ConstPtr & input)
 {
+  // std::cout << "Occ cloud received" << std::endl;
   // Convert ROS msg to pcl data structure and store it in global variable
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
   pcl::fromROSMsg(*input, *cloud);
@@ -41,6 +42,7 @@ void occ_pcl_cb(const sensor_msgs::PointCloud2ConstPtr & input)
 
 void com_pcl_cb(const sensor_msgs::PointCloud2ConstPtr & input)
 {
+  // std::cout << "complete cloud received" << std::endl;
   // Convert ROS msg to pcl data structure and store it in global variable
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
   pcl::fromROSMsg(*input, *cloud);
@@ -55,13 +57,13 @@ int main(int argc, char ** argv)
   ros::init(argc, argv, "sparsify");  // Initialise the node. Node name = talker
   ros::NodeHandle nh;
 
-  cloud_sizes_pub_ = nh.advertise<std_msgs::Int16MultiArray>("cloud_sizes", 100);
+  cloud_sizes_pub_ = nh.advertise<std_msgs::Int32MultiArray>("cloud_sizes", 100);
   ros::Subscriber occ_pcl_sub = nh.subscribe("occ_cloud", 1, occ_pcl_cb);
   ros::Subscriber com_pcl_sub = nh.subscribe("com_cloud", 1, com_pcl_cb);
 
   ros::Timer timer = nh.createTimer(ros::Duration(0.1), [&](ros::TimerEvent) {
     if (occ_cloud_set && com_cloud_set) {
-      std_msgs::Int16MultiArray msg;
+      std_msgs::Int32MultiArray msg;
       msg.data.push_back(occ_cloud_size);
       msg.data.push_back(com_cloud_size);
       cloud_sizes_pub_.publish(msg);
