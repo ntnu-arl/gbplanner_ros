@@ -7,6 +7,8 @@ find_package(catkin_simple REQUIRED)
 find_package(Boost REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(adaptive_obb REQUIRED)
+find_package(pcl_ros REQUIRED)
+find_package(pcl_conversions REQUIRED)
 
 catkin_simple(ALL_DEPS_REQUIRED)
 
@@ -25,6 +27,9 @@ cs_add_library(
 
 cs_add_executable(gbplanner_node src/gbplanner_ros_node.cpp)
 target_link_libraries(gbplanner_node ${PROJECT_NAME} ${planner_common_LIBRARIES})
+
+cs_add_executable(gbplanner_stats_logger src/gbplanner_stats_logger.cpp)
+target_link_libraries(gbplanner_stats_logger ${PROJECT_NAME} ${PCL_LIBRARIES})
 
 cs_install()
 cs_export(LIBRARIES)

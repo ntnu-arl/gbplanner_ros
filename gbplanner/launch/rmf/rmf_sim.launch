@@ -4,7 +4,8 @@
   <arg name="gazebo_gui_en" default="false"/>
   <arg name="use_sim_time" default="true"/>
   <arg name="rviz_en" default="true" />
-  <arg name="launch_prefix" default=""/> <!-- gdb -ex run //args -->
+  <arg name="launch_prefix" default=""/>
+  <!-- gdb -ex run //args -->
   <param name="use_sim_time" value="$(arg use_sim_time)"/>
 
   <!-- Config files -->
@@ -64,6 +65,11 @@
     <remap from="/pointcloud" to="/$(arg robot_name)/velodyne_points" />
     <rosparam command="load" file="$(arg gbplanner_config_file)" />
     <rosparam command="load" file="$(arg map_config_file)" />
+  </node>
+
+  <node pkg="gbplanner" type="gbplanner_stats_logger" name="gbplanner_stats_logger" output="screen">
+    <remap from="occ_cloud" to="/gbplanner/surface_pointcloud" />
+    <remap from="cam_cloud" to="/gbplanner_node/tsdf_pointcloud" />
   </node>
 
   <!-- Planner and Control Interface -->
