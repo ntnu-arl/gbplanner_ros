@@ -1473,20 +1473,17 @@ Rrg::GraphStatus Rrg::evaluateGraph() {
             v_id->vol_gain.gain *
             exp(-v_id->is_hanging * planning_params_.hanging_vertex_penalty);
 
-        if (ind > 0) {
+        if (ind > 0 && robot_params_.type == RobotType::kGroundRobot) {
           double inclination =
               edge_inclinations_[path[ind]->id][path[ind - 1]->id];
-          double max_negative_inclination = 0.37;
-          if (inclination > max_negative_inclination) {
-          }
           Eigen::Vector3d segment =
               path[ind]->state.head(3) - path[ind - 1]->state.head(3);
           if ((path[ind]->state(2) - path[ind - 1]->state(2)) <
               -map_manager_->getResolution()) {
             // Negative slope
-            if (inclination > max_negative_inclination ||
-                (std::atan2(std::abs(segment(2)), segment.head(2).norm())) >
-                    max_negative_inclination) {
+            if (inclination > planning_params_.max_negative_inclination ||
+                (std::atan2(std::abs(segment(2)), segment.head(2).norm()) >
+                    planning_params_.max_negative_inclination)) {
               path_gain = 0.0;
               negative_edge_leafs.push_back(leaf_vertices[i]->id);
               inadmissible_negative_edges.push_back(

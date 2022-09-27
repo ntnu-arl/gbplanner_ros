@@ -1119,6 +1119,12 @@ bool PlanningParams::loadParams(std::string ns) {
     ROSPARAM_WARN(param_name, auto_landing_enable);
   }
 
+  param_name = ns + "/max_negative_inclination";
+  if (!ros::param::get(param_name, max_negative_inclination)) {
+    max_negative_inclination = 0.37;
+    ROSPARAM_WARN(param_name, max_negative_inclination);
+  }
+
   ROSPARAM_INFO("Done.");
   return true;
 }

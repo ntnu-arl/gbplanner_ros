@@ -319,6 +319,7 @@ struct PlanningParams {
   double time_budget_limit;
   bool auto_landing_enable;
   double time_budget_before_landing;
+  double max_negative_inclination;
 
   bool loadParams(std::string ns);
   void setPlanningMode(PlanningModeType pmode);
