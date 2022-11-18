@@ -116,5 +116,5 @@ If you use this work in your research, please cite the following publications:
 
 You can contact us for any question:
 * [Tung Dang](mailto:tung.dang@nevada.unr.edu)
-* [Mihir Dharmadhikari](mailto:mdharmadhikari@nevada.unr.edu)
+* [Mihir Dharmadhikari](mailto:mihir.dharmadhikari@ntnu.no)
 * [Kostas Alexis](mailto:konstantinos.alexis@ntnu.no)
