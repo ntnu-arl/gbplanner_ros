@@ -1,0 +1,16 @@
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+
+jobs:
+  my_job:
+    name: deploy to staging
+    runs-on: ubuntu-latest
+    container: ros
+    steps:
+      - run: echo "Running 1.2.0"
+      - uses: actions/checkout@v3  
