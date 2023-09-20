@@ -6,7 +6,6 @@ add_definitions(-std=c++14 -Wall -Wno-sign-compare -Wno-catch-value -Wno-switch 
 find_package(catkin_simple REQUIRED)
 find_package(Boost REQUIRED)
 find_package(Eigen3 REQUIRED)
-find_package(adaptive_obb REQUIRED)
 
 catkin_simple(ALL_DEPS_REQUIRED)
 

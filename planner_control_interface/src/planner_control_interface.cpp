@@ -121,11 +121,6 @@ PlannerControlInterface::PlannerControlInterface(
   imarker_server_.reset(
       new interactive_markers::InteractiveMarkerServer("waypoints", "", false));
 
-  semantic_server.reset(
-      new interactive_markers::InteractiveMarkerServer("semantics", "", false));
-  semantic_pub = nh_.advertise<planner_semantic_msgs::SemanticPoint>(
-      "semantic_location", 10);
-
   nav_goal_sub_ =
       nh_.subscribe("/move_base_simple/goal", 1,
                     &PlannerControlInterface::navGoalCallback, this);
@@ -520,9 +515,6 @@ bool PlannerControlInterface::init() {
   initIMarker();
   ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG,
                 "[PCI]:[init()]: initIMarker");
-  initSemanticIMarker();
-  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG,
-                "[PCI]:[init()]: initSemanticIMarker");
   if (!pci_manager_->initialize()) return false;
   ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG,
                 "[PCI]:[init()]: pci manager init done");
@@ -972,8 +964,6 @@ void PlannerControlInterface::odometryCallback(const nav_msgs::Odometry& odo) {
         new_pose.orientation.y = 0.0;
         new_pose.orientation.z = 0.0;
         new_pose.orientation.w = 1.0;
-        semantic_server->setPose("semantic", new_pose);
-        semantic_server->applyChanges();
         previous_pose_ = current_pose_;
       }
     }
@@ -1018,8 +1008,6 @@ void PlannerControlInterface::processPose(const geometry_msgs::Pose& pose) {
         new_pose.orientation.y = 0.0;
         new_pose.orientation.z = 0.0;
         new_pose.orientation.w = 1.0;
-        semantic_server->setPose("semantic", new_pose);
-        semantic_server->applyChanges();
         previous_pose_ = current_pose_;
       }
     }
@@ -1175,141 +1163,5 @@ void PlannerControlInterface::processFeedback(
   }
 }
 
-// Semantics
-void PlannerControlInterface::initSemanticIMarker() {
-  visualization_msgs::InteractiveMarker int_marker;
-  int_marker.header.frame_id = world_frame_id_;
-  int_marker.header.stamp = ros::Time::now();
-  int_marker.name = "semantic";
-  int_marker.description = "";
-  int_marker.pose.position.x = current_pose_.position.x + 1.5;
-  int_marker.pose.position.y = current_pose_.position.y;
-  int_marker.pose.position.z = current_pose_.position.z;
-  int_marker.scale = control_size;
-
-  visualization_msgs::InteractiveMarkerControl x_control;
-  x_control.name = "x_control";
-  x_control.interaction_mode =
-      visualization_msgs::InteractiveMarkerControl::MOVE_AXIS;
-  int_marker.controls.push_back(x_control);
-
-  visualization_msgs::InteractiveMarkerControl y_control;
-  y_control.name = "y_control";
-  y_control.interaction_mode =
-      visualization_msgs::InteractiveMarkerControl::MOVE_AXIS;
-  y_control.orientation.x = 0;
-  y_control.orientation.y = 0;
-  y_control.orientation.z = 0.707;
-  y_control.orientation.w = 0.707;
-  int_marker.controls.push_back(y_control);
-
-  visualization_msgs::InteractiveMarkerControl z_control;
-  z_control.name = "z_control";
-  z_control.interaction_mode =
-      visualization_msgs::InteractiveMarkerControl::MOVE_AXIS;
-  z_control.orientation.x = 0;
-  z_control.orientation.y = 0.707;
-  z_control.orientation.z = 0;
-  z_control.orientation.w = 0.707;
-  int_marker.controls.push_back(z_control);
-
-  visualization_msgs::Marker button_box_marker;
-  button_box_marker.type = visualization_msgs::Marker::CUBE;
-  button_box_marker.scale.x = 1.0;
-  button_box_marker.scale.y = 1.0;
-  button_box_marker.scale.z = 1.0;
-  button_box_marker.color.r = 0.5;
-  button_box_marker.color.g = 0.5;
-  button_box_marker.color.b = 0.5;
-  button_box_marker.color.a = 0.65;
-
-  visualization_msgs::InteractiveMarkerControl button_control;
-  button_control.interaction_mode =
-      visualization_msgs::InteractiveMarkerControl::BUTTON;
-  button_control.name = "button_control";
-  button_control.description = "menu_button";
-  button_control.markers.push_back(button_box_marker);
-  button_control.always_visible = true;
-
-  int_marker.controls.push_back(button_control);
-
-  semantic_server->insert(int_marker);
-  semantic_server->setCallback(
-      int_marker.name,
-      boost::bind(&PlannerControlInterface::semanticMarkerFeedback, this, _1));
-
-  if (!menu_initialized) {
-    class_entry_handle = menu_handler.insert("Class");
-    accept_entry_handle = menu_handler.insert(
-        "Accept",
-        boost::bind(&PlannerControlInterface::acceptButtonFeedback, this, _1));
-
-    sub_class_entry_handle = menu_handler.insert(
-        class_entry_handle, kStaircaseStr,
-        boost::bind(&PlannerControlInterface::selectSemanticsFeedback, this,
-                    _1));
-    menu_handler.setCheckState(sub_class_entry_handle,
-                               interactive_markers::MenuHandler::UNCHECKED);
-    sub_class_entry_handle = menu_handler.insert(
-        class_entry_handle, kDoorStr,
-        boost::bind(&PlannerControlInterface::selectSemanticsFeedback, this,
-                    _1));
-    menu_handler.setCheckState(sub_class_entry_handle,
-                               interactive_markers::MenuHandler::UNCHECKED);
-
-    menu_initialized = true;
-  }
-  menu_handler.apply(*semantic_server, "semantic");
-
-  semantic_server->applyChanges();
-}
-
-void PlannerControlInterface::semanticMarkerFeedback(
-    const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback) {
-  visualization_msgs::InteractiveMarker marker;
-  semantic_server->get("semantic", marker);
-
-  semantic_position.x = marker.pose.position.x;
-  semantic_position.y = marker.pose.position.y;
-  semantic_position.z = marker.pose.position.z;
-}
-
-void PlannerControlInterface::acceptButtonFeedback(
-    const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback) {
-  visualization_msgs::InteractiveMarker marker;
-  semantic_server->get("semantic", marker);
-
-  semantic_position.x = marker.pose.position.x;
-  semantic_position.y = marker.pose.position.y;
-  semantic_position.z = marker.pose.position.z;
-
-  semantic_location.point = semantic_position;
-  semantic_location.type.value = current_semantic_class_.value;
-
-  semantic_pub.publish(semantic_location);
-}
-
-void PlannerControlInterface::selectSemanticsFeedback(
-    const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback) {
-  visualization_msgs::InteractiveMarker marker;
-  semantic_server->get("semantic", marker);
-
-  menu_handler.setCheckState(sub_class_entry_handle,
-                             interactive_markers::MenuHandler::UNCHECKED);
-  sub_class_entry_handle = feedback->menu_entry_id;
-  menu_handler.setCheckState(sub_class_entry_handle,
-                             interactive_markers::MenuHandler::CHECKED);
-  menu_handler.reApply(*semantic_server);
-  semantic_server->applyChanges();
-  std::string semantic_class;
-  menu_handler.getTitle(sub_class_entry_handle, semantic_class);
-  if (!semantic_class.compare(kStaircaseStr))
-    current_semantic_class_.value =
-        planner_semantic_msgs::SemanticClass::kStaircase;
-  else if (!semantic_class.compare(kDoorStr))
-    current_semantic_class_.value = planner_semantic_msgs::SemanticClass::kDoor;
-  else
-    current_semantic_class_.value = planner_semantic_msgs::SemanticClass::kNone;
-}
 
 }  // namespace explorer

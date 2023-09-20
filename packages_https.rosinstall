@@ -51,24 +51,3 @@
     local-name: src/exploration/pci_general/
     uri: https://github.com/ntnu-arl/pci_general.git
     version: main
-- git:
-    local-name: src/exploration/adaptive_obb_ros/
-    uri: https://github.com/ntnu-arl/adaptive_obb_ros.git
-
-# sim
-- git:
-    local-name: src/sim/rotors_simulator/
-    uri: https://github.com/ntnu-arl/rotors_simulator.git
-    version: dev/rmf_obelix
-- git:
-    local-name: src/sim/lidar_simulator/
-    uri: https://github.com/ntnu-arl/lidar_simulator.git
-    version: psuedo_bpearl
-- git:
-    local-name: src/sim/smb_simulator/
-    uri: https://github.com/ntnu-arl/smb_simulator.git
-- git:
-    local-name: src/sim/subt_cave_sim/
-    uri: https://github.com/ntnu-arl/subt_cave_sim.git
-    version: master
-

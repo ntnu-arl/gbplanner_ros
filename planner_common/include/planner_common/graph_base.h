@@ -5,7 +5,6 @@
 #include <ros/serialization.h>
 
 #include "planner_common/params.h"
-#include "planner_semantic_msgs/SemanticClass.h"
 
 // namespace explorer {
 
@@ -169,7 +168,6 @@ struct Vertex {
     type = VertexType::kUnvisited;
     cluster_id = 0;
     dm = 0;
-    semantic_class.value = planner_semantic_msgs::SemanticClass::kNone;
   }
 
   // Unique id for each vertex (root: 0, others: positive number).
@@ -193,8 +191,6 @@ struct Vertex {
   int cluster_id;
   // Distance to closest obstacle in the map
   double dm;
-  // Semantic
-  planner_semantic_msgs::SemanticClass semantic_class;
 };
 
 struct SerializeVertex {

@@ -40,7 +40,6 @@
 #include "planner_msgs/planner_set_homing_pos.h"
 #include "planner_msgs/planner_set_planning_mode.h"
 #include "planner_msgs/planner_srv.h"
-#include "planner_semantic_msgs/SemanticPoint.h"
 
 namespace explorer {
 
@@ -135,22 +134,10 @@ class PlannerControlInterface {
 
   std::string world_frame_name = "world";
 
-  // Semantics marker
-  boost::shared_ptr<interactive_markers::InteractiveMarkerServer>
-      semantic_server;
-
   interactive_markers::MenuHandler menu_handler;
   interactive_markers::MenuHandler::EntryHandle accept_entry_handle;
   interactive_markers::MenuHandler::EntryHandle class_entry_handle;
   interactive_markers::MenuHandler::EntryHandle sub_class_entry_handle;
-
-  const std::string kStaircaseStr = "Stairs";
-  const std::string kDoorStr = "Door";
-  planner_semantic_msgs::SemanticPoint semantic_location;
-  planner_semantic_msgs::SemanticClass current_semantic_class_;
-  geometry_msgs::Point32 semantic_position;
-
-  ros::Publisher semantic_pub;
 
   double control_size = 1.0;
 
@@ -247,14 +234,6 @@ class PlannerControlInterface {
                             bool success);
   void publishGoToWaypointVisualization(
       const geometry_msgs::PoseStamped& poseStamped);
-  // Semantics i-marker
-  void initSemanticIMarker();
-  void semanticMarkerFeedback(
-      const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
-  void acceptButtonFeedback(
-      const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
-  void selectSemanticsFeedback(
-      const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
 };
 }  // namespace explorer
 

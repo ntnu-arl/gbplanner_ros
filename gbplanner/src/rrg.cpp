@@ -15,8 +15,6 @@ Rrg::Rrg(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private)
       new MapManagerVoxblox<MapManagerVoxbloxServer, MapManagerVoxbloxVoxel>(
           nh_, nh_private_);
 
-  adaptive_obb_ = new AdaptiveObb(map_manager_);
-
   initializeAttributes();
 }
 
@@ -24,7 +22,6 @@ Rrg::Rrg(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private,
          MapManagerVoxblox<MapManagerVoxbloxServer, MapManagerVoxbloxVoxel>*
              map_manager)
     : nh_(nh), nh_private_(nh_private), map_manager_(map_manager) {
-  adaptive_obb_ = new AdaptiveObb(map_manager_);
 
   initializeAttributes();
 }
@@ -84,10 +81,6 @@ void Rrg::initializeAttributes() {
   free_pointcloud_update_timer_ =
       nh_.createTimer(ros::Duration(kFreePointCloudUpdatePeriod),
                       &Rrg::freePointCloudtimerCallback, this);
-
-  // FIX-ME
-  semantics_subscriber_ =
-      nh_.subscribe("semantic_location", 100, &Rrg::semanticsCallback, this);
 
   stop_srv_subscriber_ = nh_.subscribe("planner_control_interface/stop_request",
                                        100, &Rrg::stopMsgCallback, this);
@@ -1064,11 +1057,6 @@ Rrg::GraphStatus Rrg::buildGraph() {
     // 1. Construct the box
     Eigen::Vector3d min_val, max_val, rotations, mean_val, std_val;
     Eigen::Vector3d pos = root_vertex_->state.head(3);
-    // adaptive obb will extend this bounding box
-    min_val = adaptive_orig_min_val_;
-    max_val = adaptive_orig_max_val_;
-    adaptive_obb_->constructBoundingBox(pos, min_val, max_val, rotations,
-                                        mean_val, std_val);
 
     // 2. Update bounding box
     local_adaptive_params_.setBound(min_val, max_val);
@@ -2072,106 +2060,6 @@ void Rrg::expandGlobalGraphTimerCallback(const ros::TimerEvent& event) {
   time_elapsed = GET_ELAPSED_TIME(time_lim);
 }
 
-void Rrg::semanticsCallback(
-    const planner_semantic_msgs::SemanticPoint& semantic) {
-  std::cout << "Inside semantic callback" << std::endl;
-  StateVec* new_state =
-      new StateVec(semantic.point.x, semantic.point.y, semantic.point.z, 0.0);
-  Eigen::Vector3d sem((*new_state)[0], (*new_state)[1], (*new_state)[2]);
-
-  if (MapManager::VoxelStatus::kFree !=
-      map_manager_->getBoxStatus(sem + robot_params_.center_offset,
-                                 robot_box_size_, true)) {
-    ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "[SEMANTICS]: Marker state not free.");
-    return;
-  }
-
-  Vertex* temp_nearest_vertex;
-  if (!global_graph_->getNearestVertex(new_state, &temp_nearest_vertex)) {
-    ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "[SEMANTICS]: No nearest vertex found.");
-    return;
-  }
-  std::vector<Vertex*> nearest_vertices;
-  Vertex* nearest_vertex;
-  Eigen::Vector3d nv(temp_nearest_vertex->state[0],
-                     temp_nearest_vertex->state[1],
-                     temp_nearest_vertex->state[2]);
-
-  // Range of search = 2*closest node
-  if (!global_graph_->getNearestVertices(new_state, 2.0 * ((sem - nv).norm()),
-                                         &nearest_vertices)) {
-    ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "[SEMANTICS]: No nearest vertex found.");
-    return;
-  }
-
-  std::vector<geometry_msgs::Pose> path_ret;
-  bool path_status = false;
-  const int kMaxNumTrials = 5;
-  for (int i = 0; (i < nearest_vertices.size()) && (i < kMaxNumTrials); ++i) {
-    nearest_vertex = nearest_vertices[i];
-    geometry_msgs::Pose start, end;
-    end.position.x = semantic.point.x;
-    end.position.y = semantic.point.y;
-    end.position.z = semantic.point.z;
-    end.orientation.x = 0.0;
-    end.orientation.y = 0.0;
-    end.orientation.z = 0.0;
-    end.orientation.w = 1.0;
-
-    start.position.x = nearest_vertex->state[0];
-    start.position.y = nearest_vertex->state[1];
-    start.position.z = nearest_vertex->state[2];
-    start.orientation.x = 0.0;
-    start.orientation.y = 0.0;
-    start.orientation.z = 0.0;
-    start.orientation.w = 1.0;
-
-    path_status = search(start, end, false, path_ret);
-
-    if (path_status) break;
-  }
-
-  if (!path_status) {
-    ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "[SEMANTICS]: Cannot connect to nearest node");
-    return;
-  } else {
-    std::vector<Vertex*> semantic_path;
-    ROS_INFO_COND(global_verbosity >= Verbosity::INFO, 
-        "[SEMANTICS]: Found a path to the semantic point with %d vertices.",
-        (int)path_ret.size());
-    if (path_ret.size() > 2) {
-      for (int i = 1; i < path_ret.size(); ++i) {
-        StateVec next_state(path_ret[i].position.x, path_ret[i].position.y,
-                            path_ret[i].position.z, 0.0);
-        Vertex* vert = new Vertex(i, next_state);
-        if (i == path_ret.size() - 1) {
-          vert->semantic_class.value = semantic.type.value;
-          vert->type = VertexType::kFrontier;
-          vert->is_leaf_vertex = true;
-        } else {
-          vert->semantic_class.value =
-              planner_semantic_msgs::SemanticClass::kNone;
-        }
-        semantic_path.push_back(vert);
-      }
-    } else {
-      StateVec next_state(path_ret[1].position.x, path_ret[1].position.y,
-                          path_ret[1].position.z, 0.0);
-      Vertex* vert = new Vertex(global_graph_->generateVertexID(), next_state);
-      vert->semantic_class.value = semantic.type.value;
-      vert->type = VertexType::kFrontier;
-      vert->is_leaf_vertex = true;
-      global_graph_->addVertex(vert);
-      Eigen::Vector3d tgt_pos(vert->state[0], vert->state[1], vert->state[2]);
-      Eigen::Vector3d src_pos(nearest_vertex->state[0],
-                              nearest_vertex->state[1],
-                              nearest_vertex->state[2]);
-      global_graph_->addEdge(nearest_vertex, vert, (tgt_pos - src_pos).norm());
-    }
-  }
-  visualization_->visualizeGlobalGraph(global_graph_);
-}
-
 void Rrg::printShortestPath(int id) {
   std::vector<int> id_list;
   local_graph_->getShortestPath(id, local_graph_rep_, false, id_list);
@@ -2487,9 +2375,7 @@ bool Rrg::loadParams(bool shared_params) {
           ns + "/BoundedSpaceParams/LocalAdaptiveExp")) {
     ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "No setting for adaptive exploration mode.");
   }
-  if (!adaptive_obb_->loadParams(ns + "/AdaptiveObbParams")) {
-    ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "No setting for adaptive exploration mode.");
-  }
+
   adaptive_orig_min_val_ = local_adaptive_params_.min_val;
   adaptive_orig_max_val_ = local_adaptive_params_.max_val;
 

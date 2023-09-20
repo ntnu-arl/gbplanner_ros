@@ -30,7 +30,6 @@
 #include <tf/transform_datatypes.h>
 #include <tf/transform_listener.h>
 
-#include "adaptive_obb/adaptive_obb.h"
 #include "gbplanner/gbplanner_rviz.h"
 #include "planner_common/geofence_manager.h"
 #include "planner_common/graph.h"
@@ -45,7 +44,6 @@
 #include "planner_msgs/PlanningMode.h"
 #include "planner_msgs/planner_dynamic_global_bound.h"
 #include "planner_msgs/planner_srv.h"
-#include "planner_semantic_msgs/SemanticPoint.h"
 
 // Publish all gbplanner rviz topics or not.
 #define FULL_PLANNER_VIZ 1
@@ -263,8 +261,6 @@ class Rrg {
   // Add frontiers from the local graph to the global graph
   void addFrontiers(int best_vertex_id);
 
-  void semanticsCallback(const planner_semantic_msgs::SemanticPoint& semantic);
-
   std::string world_frame_ = "world";
 
   ros::NodeHandle nh_;
@@ -276,7 +272,6 @@ class Rrg {
   ros::Publisher time_log_pub_;
   ros::Publisher pci_reset_pub_;
 
-  ros::Subscriber semantics_subscriber_;
   ros::Subscriber stop_srv_subscriber_;
 
   ros::ServiceClient pci_homing_;
@@ -431,8 +426,6 @@ class Rrg {
 #endif
 
   std::shared_ptr<GeofenceManager> geofence_manager_;
-
-  AdaptiveObb* adaptive_obb_;
 
   // Mission time tracking
   ros::Time rostime_start_;

@@ -21,7 +21,6 @@
   <depend>kdtree</depend>
   <depend>voxblox_ros</depend>
   <depend>planner_msgs</depend>
-  <depend>planner_semantic_msgs</depend>
   <depend>roscpp_serialization</depend>
   <depend>pcl_conversions</depend>
   <depend>pcl_ros</depend>

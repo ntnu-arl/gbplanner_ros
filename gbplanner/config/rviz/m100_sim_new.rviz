@@ -480,15 +480,6 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: false
-    - Class: rviz/InteractiveMarkers
-      Enable Transparency: true
-      Enabled: false
-      Name: InteractiveMarkers
-      Show Axes: false
-      Show Descriptions: true
-      Show Visual Aids: false
-      Update Topic: /semantics/update
-      Value: false
     - Class: rviz/Marker
       Enabled: true
       Marker Topic: /arl_ui/waypoint_markers

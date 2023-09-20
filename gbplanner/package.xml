@@ -18,8 +18,6 @@
   <depend>voxblox_ros</depend>
   <depend>planner_common</depend>
   <depend>planner_msgs</depend>
-  <depend>planner_semantic_msgs</depend>
-  <depend>adaptive_obb</depend>
   <depend>pcl_ros</depend>
   
 </package>
