@@ -1,7 +1,5 @@
 #include "gbplanner/rrg.h"
 
-#include <opencv2/highgui.hpp>
-#include <opencv2/opencv.hpp>
 #include <pcl/common/transforms.h>
 #include <tf/transform_listener.h>
 

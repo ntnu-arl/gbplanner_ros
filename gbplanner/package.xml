@@ -9,7 +9,6 @@
   <buildtool_depend>catkin</buildtool_depend>
   <buildtool_depend>catkin_simple</buildtool_depend>
   <depend>roscpp</depend>
-  <depend>cv_bridge</depend>
   <depend>tf</depend>
   <depend>message_generation</depend>
   <depend>geometry_msgs</depend>

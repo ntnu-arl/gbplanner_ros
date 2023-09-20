@@ -13,7 +13,6 @@
   <depend>message_generation</depend>
   <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>
-  <depend>cv_bridge</depend>
   <depend>tf</depend>
   <depend>geometry_msgs</depend>
   <depend>visualization_msgs</depend>
