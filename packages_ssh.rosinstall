@@ -46,7 +46,7 @@
 - git:
     local-name: src/exploration/gbplanner_ros/
     uri: git@github.com:ntnu-arl/gbplanner_ros.git
-    version: gbplanner2
+    version: starling
 - git:
     local-name: src/exploration/pci_general/
     uri: git@github.com:ntnu-arl/pci_general.git
