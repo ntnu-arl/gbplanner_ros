@@ -31,10 +31,6 @@
     local-name: src/misc/mav_comm/
     uri: https://github.com/ethz-asl/mav_comm.git
     version: master
-- git:
-    local-name: src/misc/yaml_cpp_catkin/
-    uri: https://github.com/ethz-asl/yaml_cpp_catkin.git
-    version: master
 
 # MAPPING
 - git:
@@ -46,7 +42,7 @@
 - git:
     local-name: src/exploration/gbplanner_ros/
     uri: https://github.com/ntnu-arl/gbplanner_ros.git
-    version: gbplanner2
+    version: starling
 - git:
     local-name: src/exploration/pci_general/
     uri: https://github.com/ntnu-arl/pci_general.git

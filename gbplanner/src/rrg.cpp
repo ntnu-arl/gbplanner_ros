@@ -1056,7 +1056,7 @@ Rrg::GraphStatus Rrg::buildGraph() {
   if (planning_params_.type == PlanningModeType::kAdaptiveExploration) {
     // 1. Construct the box
     Eigen::Vector3d min_val, max_val, rotations, mean_val, std_val;
-    Eigen::Vector3d pos = root_vertex_->state.head(3);
+    // Eigen::Vector3d pos = root_vertex_->state.head(3);
 
     // 2. Update bounding box
     local_adaptive_params_.setBound(min_val, max_val);
@@ -2090,13 +2090,13 @@ bool Rrg::search(geometry_msgs::Pose source_pose,
   int final_target_id;
   ConnectStatus status = findPathToConnect(
       source, target, graph_search, sampling_params, final_target_id, path_ret);
+  // visualization
+  visualization_->visualizeGraph(graph_search);
+  visualization_->visualizeSampler(random_sampler_to_search_);
   if (status == ConnectStatus::kSuccess)
     return true;
   else
     return false;
-  // visualization
-  visualization_->visualizeGraph(graph_search);
-  visualization_->visualizeSampler(random_sampler_to_search_);
 }
 
 ConnectStatus Rrg::findPathToConnect(
