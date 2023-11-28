@@ -35,6 +35,10 @@
     local-name: src/misc/yaml_cpp_catkin/
     uri: https://github.com/ethz-asl/yaml_cpp_catkin.git
     version: master
+- git:
+    local-name: src/misc/protobuf_catkin/
+    uri: https://github.com/ethz-asl/protobuf_catkin.git
+    version: master
 
 # MAPPING
 - git:
