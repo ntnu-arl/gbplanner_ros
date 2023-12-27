@@ -286,8 +286,10 @@ MapManagerVoxblox<SDFServerType, SDFVoxelType>::getPathStatus(
   Eigen::Vector3d start_e;
   start_e = start;
   int check_count = std::ceil(edge_vec.norm() * voxel_size_inv);
-  for (int i = 0; i < check_count; i++) {
-    Eigen::Vector3d vox_center = start_e + i * edge_vec / edge_vec.norm();
+  // for (int i = 0; i < check_count; i++) {
+  //   Eigen::Vector3d vox_center = start_e + i * edge_vec / edge_vec.norm();
+  for(double dx = 0.0; dx <= edge_vec.norm(); dx += voxel_size) {
+    Eigen::Vector3d vox_center = start_e + edge_vec.normalized() * dx;
     double dist = getPointDistance(vox_center);
     if (dist < robot_radius_) {
       if (dist < 0.0) {

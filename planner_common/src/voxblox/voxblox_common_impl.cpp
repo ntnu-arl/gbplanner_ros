@@ -340,10 +340,10 @@ double MapManagerVoxblox<SDFServerType, SDFVoxelType>::getPointDistance(
     if (!success)
       out_dist = -1.0;  // Unknown
     else {
-      if (out_dist < 0.0) out_dist = 0.0;  // Occupied
+      if (out_dist < 0.0) out_dist = 0.001;  // Occupied
     }
   } else {
-    if (out_dist < 0.0) out_dist = 0.0;  // Occupied
+    if (out_dist < 0.0) out_dist = 0.001;  // Occupied
   }
 
   return out_dist;  // Free
