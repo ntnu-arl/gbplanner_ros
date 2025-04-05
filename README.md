@@ -1,5 +1,9 @@
 # GBPlanner3
 
+We present the State-Of-The_Art Graph-Based Exploration and Inspection Path Planner: GBPlanner3. 
+
+For an extensive documentation, installation instructions, and demos please visit the documentation page of the repository here: [**Documetation**](https://github.com/ntnu-arl/gbplanner3_wiki/wiki).
+
 ## Installation
 
 ### Create workspace for GBPlanner3
@@ -95,3 +99,41 @@ catkin build
 ```bash
 source ~/gbplanner3_dev_env/gbplanner3_ws/devel/setup.sh
 ```
+
+## Robots using GBPlanner, GBPlanner2, GBPlanner3:
+![robots](img/gbplanner3_robots.png)
+
+
+If you use this work in your research, please cite the following publications:
+
+**Graph-based subterranean exploration path planning using aerial and legged robots**
+```
+@article{dang2020graph,
+  title={Graph-based subterranean exploration path planning using aerial and legged robots},
+  author={Dang, Tung and Tranzatto, Marco and Khattak, Shehryar and Mascarich, Frank and Alexis, Kostas and Hutter, Marco},
+  journal={Journal of Field Robotics},
+  volume = {37},
+  number = {8},
+  pages = {1363-1388},  
+  year={2020},
+  note={Wiley Online Library}
+}
+```
+**Autonomous Teamed Exploration of Subterranean Environments using Legged and Aerial Robots**
+```
+@INPROCEEDINGS{9812401,
+  author={Kulkarni, Mihir and Dharmadhikari, Mihir and Tranzatto, Marco and Zimmermann, Samuel and Reijgwart, Victor and De Petris, Paolo and Nguyen, Huan and Khedekar, Nikhil and Papachristos, Christos and Ott, Lionel and Siegwart, Roland and Hutter, Marco and Alexis, Kostas},
+  booktitle={2022 International Conference on Robotics and Automation (ICRA)}, 
+  title={Autonomous Teamed Exploration of Subterranean Environments using Legged and Aerial Robots}, 
+  year={2022},
+  volume={},
+  number={},
+  pages={3306-3313},
+  doi={10.1109/ICRA46639.2022.9812401}}
+```
+
+You can contact us for any question:
+* [Tung Dang](mailto:tung.dang@nevada.unr.edu)
+* [Mihir Dharmadhikari](mailto:mihir.dharmadhikari@ntnu.no)
+* [Angelos Zacharia](mailto:angelos.zacharia@ntnu.no)
+* [Kostas Alexis](mailto:konstantinos.alexis@ntnu.no)
