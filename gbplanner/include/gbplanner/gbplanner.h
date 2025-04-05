@@ -44,7 +44,7 @@ class Gbplanner {
     bool local_exp_exhausted = false;
     bool homing_triggered = false;
     bool global_exp_exhausted = false;
-    bool mh_phase1_failed = false;
+    bool opening_phase1_failed = false;
   };
    
 
@@ -82,7 +82,7 @@ class Gbplanner {
   bool getInspectionPath();
   bool getHomingPath();
   bool homingRequired();
-  void getManholeTraversalPath(ManholeTraversalMode mode, ManholeTraversalStatus &status);
+  void getOpeningTraversalPath(OpeningTraversalMode mode, OpeningTraversalStatus &status);
   bool transitionCompartment();
   bool allCompartmentsInspected();
   
@@ -138,8 +138,8 @@ class Gbplanner {
   bool getCompartmentTransitionPath(planner_msgs::planner_srv::Request& req,
       planner_msgs::planner_srv::Response& res);
 
-  bool manhole_traversal_ongoing_ = false;
-  bool manhole_traversal_requested_ = false;
+  bool opening_traversal_ongoing_ = false;
+  bool opening_traversal_requested_ = false;
   bool inspection_requested_ = false;  // Temp
 
   bool homingServiceCallback(planner_msgs::planner_homing::Request& req,

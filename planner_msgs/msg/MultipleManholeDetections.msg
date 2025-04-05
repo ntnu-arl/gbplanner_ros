@@ -1,1 +1,0 @@
-planner_msgs/ManholeDetection[] multiple_detections

@@ -197,30 +197,30 @@ BT::NodeStatus HomingCheck::tick()
 /*******************************************************/
 
 
-/***************** MHPhase1 **********************/
-BT::NodeStatus MHPhase1::onStart()
+/***************** OPENINGPhase1 **********************/
+BT::NodeStatus OPENINGPhase1::onStart()
 {
-  ROS_INFO("[MHPhase1] Triggered.");
-  gbplanner_->in_srv_req_.bound_mode = std::min(failed_mh_phase1_count_, 2);  // TODO: Set the max bound number through param
+  ROS_INFO("[OPENINGPhase1] Triggered.");
+  gbplanner_->in_srv_req_.bound_mode = std::min(failed_opening_phase1_count_, 2);  // TODO: Set the max bound number through param
 
-  ManholeTraversalMode mode = ManholeTraversalMode::kGoingTo;
-  ManholeTraversalStatus status;
+  OpeningTraversalMode mode = OpeningTraversalMode::kGoingTo;
+  OpeningTraversalStatus status;
 
-  gbplanner_->getManholeTraversalPath(mode, status);
-  if(status == ManholeTraversalStatus::CANT_CONNECT)
+  gbplanner_->getOpeningTraversalPath(mode, status);
+  if(status == OpeningTraversalStatus::CANT_CONNECT)
   {
-    ++failed_mh_phase1_count_;
+    ++failed_opening_phase1_count_;
     return BT::NodeStatus::FAILURE;
   }
-  else if(status == ManholeTraversalStatus::OK)
+  else if(status == OpeningTraversalStatus::OK)
   {
-    failed_mh_phase1_count_ = 0;
-    gbplanner_->bt_states_.mh_phase1_failed = false;
+    failed_opening_phase1_count_ = 0;
+    gbplanner_->bt_states_.opening_phase1_failed = false;
     return BT::NodeStatus::RUNNING;
   }
-  else if(status == ManholeTraversalStatus::NO_MANHOLES)
+  else if(status == OpeningTraversalStatus::NO_OPENINGS)
   {
-    gbplanner_->bt_states_.mh_phase1_failed = true;
+    gbplanner_->bt_states_.opening_phase1_failed = true;
     return BT::NodeStatus::SUCCESS;
   }
   else
@@ -229,14 +229,14 @@ BT::NodeStatus MHPhase1::onStart()
   }
 }
 
-BT::NodeStatus MHPhase1::onRunning()
+BT::NodeStatus OPENINGPhase1::onRunning()
 {
-  ManholeTraversalMode mode = ManholeTraversalMode::kPathCheck;
-  ManholeTraversalStatus status;
+  OpeningTraversalMode mode = OpeningTraversalMode::kPathCheck;
+  OpeningTraversalStatus status;
 
-  gbplanner_->getManholeTraversalPath(mode, status);
+  gbplanner_->getOpeningTraversalPath(mode, status);
 
-  if(status == ManholeTraversalStatus::OK)
+  if(status == OpeningTraversalStatus::OK)
   {
     return BT::NodeStatus::SUCCESS;
   }
@@ -246,19 +246,19 @@ BT::NodeStatus MHPhase1::onRunning()
   }
 }
 
-void MHPhase1::onHalted()
+void OPENINGPhase1::onHalted()
 {
-  std::cout << "[MHPhase1] Halted" << std::endl;
+  std::cout << "[OPENINGPhase1] Halted" << std::endl;
 }
 /*******************************************************/
 
 
-/***************** MHP1FailCheck **************/
-BT::NodeStatus MHP1FailCheck::tick()
+/***************** OPENINGP1FailCheck **************/
+BT::NodeStatus OPENINGP1FailCheck::tick()
 {
-  if(gbplanner_->bt_states_.mh_phase1_failed)
+  if(gbplanner_->bt_states_.opening_phase1_failed)
   {
-    ROS_WARN("MH Phase1 Failed");
+    ROS_WARN("OPENING Phase1 Failed");
     return BT::NodeStatus::SUCCESS;
   }
   return BT::NodeStatus::FAILURE;
@@ -266,16 +266,16 @@ BT::NodeStatus MHP1FailCheck::tick()
 /*******************************************************/
 
 
-/***************** MHPhaseCheck **********************/
-BT::NodeStatus MHPhaseCheck::onStart()
+/***************** OPENINGPhaseCheck **********************/
+BT::NodeStatus OPENINGPhaseCheck::onStart()
 {
-  ROS_INFO("[MHPhaseCheck] Triggered.");
+  ROS_INFO("[OPENINGPhaseCheck] Triggered.");
 
-  ManholeTraversalMode mode = ManholeTraversalMode::kPathCheck;
-  ManholeTraversalStatus status;
+  OpeningTraversalMode mode = OpeningTraversalMode::kPathCheck;
+  OpeningTraversalStatus status;
 
-  gbplanner_->getManholeTraversalPath(mode, status);
-  if(status == ManholeTraversalStatus::OK)
+  gbplanner_->getOpeningTraversalPath(mode, status);
+  if(status == OpeningTraversalStatus::OK)
   {
     return BT::NodeStatus::SUCCESS;
   }
@@ -285,28 +285,28 @@ BT::NodeStatus MHPhaseCheck::onStart()
   }
 }
 
-BT::NodeStatus MHPhaseCheck::onRunning()
+BT::NodeStatus OPENINGPhaseCheck::onRunning()
 {
   return BT::NodeStatus::SUCCESS;
 }
 
-void MHPhaseCheck::onHalted()
+void OPENINGPhaseCheck::onHalted()
 {
-  std::cout << "[MHPhaseCheck] Halted" << std::endl;
+  std::cout << "[OPENINGPhaseCheck] Halted" << std::endl;
 }
 /*******************************************************/
 
 
-/***************** MHPhase2 **********************/
-BT::NodeStatus MHPhase2::onStart()
+/***************** OPENINGPhase2 **********************/
+BT::NodeStatus OPENINGPhase2::onStart()
 {
-  ROS_INFO("[MHPhase2] Triggered.");
+  ROS_INFO("[OPENINGPhase2] Triggered.");
 
-  ManholeTraversalMode mode = ManholeTraversalMode::kPassingThrough;
-  ManholeTraversalStatus status;
+  OpeningTraversalMode mode = OpeningTraversalMode::kPassingThrough;
+  OpeningTraversalStatus status;
 
-  gbplanner_->getManholeTraversalPath(mode, status);
-  if(status == ManholeTraversalStatus::OK)
+  gbplanner_->getOpeningTraversalPath(mode, status);
+  if(status == OpeningTraversalStatus::OK)
   {
     return BT::NodeStatus::SUCCESS;
   }
@@ -316,14 +316,14 @@ BT::NodeStatus MHPhase2::onStart()
   }
 }
 
-BT::NodeStatus MHPhase2::onRunning()
+BT::NodeStatus OPENINGPhase2::onRunning()
 {
   return BT::NodeStatus::SUCCESS;
 }
 
-void MHPhase2::onHalted()
+void OPENINGPhase2::onHalted()
 {
-  std::cout << "[MHPhase2] Halted" << std::endl;
+  std::cout << "[OPENINGPhase2] Halted" << std::endl;
 }
 /*******************************************************/
 

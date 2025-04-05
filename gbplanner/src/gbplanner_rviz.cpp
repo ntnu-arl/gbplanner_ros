@@ -60,8 +60,8 @@ Visualization::Visualization(const ros::NodeHandle& nh,
   pcl_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("vis/occupied_pcl", 10);
   path_pub_ =
       nh_.advertise<visualization_msgs::MarkerArray>("vis/alternate_path", 10);
-  manhole_traversal_path_pub_ =
-      nh_.advertise<visualization_msgs::MarkerArray>("vis/manhole_traversal_path", 10);
+  opening_traversal_path_pub_ =
+      nh_.advertise<visualization_msgs::MarkerArray>("vis/opening_traversal_path", 10);
   graph_vertices_pub_ =
       nh_.advertise<visualization_msgs::MarkerArray>("vis/graph_vertices", 10);
   viewpoints_pub_ =
@@ -1545,8 +1545,8 @@ void Visualization::visualizeGlobalPaths(
   planning_global_pub_.publish(marker_array);
 }
 
-void Visualization::visualizeManholeTraversalPath(const std::vector<geometry_msgs::Pose>& path) {
-  if(path.size() <= 0 || manhole_traversal_path_pub_.getNumSubscribers() <= 0) {
+void Visualization::visualizeOpeningTraversalPath(const std::vector<geometry_msgs::Pose>& path) {
+  if(path.size() <= 0 || opening_traversal_path_pub_.getNumSubscribers() <= 0) {
     return;
   }
 
@@ -1612,7 +1612,7 @@ void Visualization::visualizeManholeTraversalPath(const std::vector<geometry_msg
   }
   marker_array.markers.push_back(vertex_marker);
 
-  manhole_traversal_path_pub_.publish(marker_array);
+  opening_traversal_path_pub_.publish(marker_array);
 }
 
 void Visualization::visualizePath(

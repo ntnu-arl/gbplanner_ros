@@ -216,9 +216,9 @@ bool Gbplanner::plannerServiceCallback(
   rrg_->reset();
   
   if(planning_params_.exploration_only) {
-    if(planning_params_.enable_manhole_traversal) {
+    if(planning_params_.enable_opening_traversal) {
       if(exploration_counter_ >= planning_params_.max_exploration_iterations) {
-        manhole_traversal_requested_ = true;
+        opening_traversal_requested_ = true;
         exploration_counter_ = 0;
         ROS_WARN("Exploration Iterations Complete, switching to: %d", (int)planner_mode_);
       }
@@ -519,19 +519,19 @@ bool Gbplanner::getExplorationPath(planner_msgs::planner_srv::Request& req,
   t1 = std::chrono::high_resolution_clock::now();
   rrg_->reset();
 
-  if(manhole_traversal_requested_ || rrg_->manholeTraversalOngoing()) {
-    if(manhole_traversal_requested_) {
-      manhole_traversal_requested_ = false;
+  if(opening_traversal_requested_ || rrg_->openingTraversalOngoing()) {
+    if(opening_traversal_requested_) {
+      opening_traversal_requested_ = false;
     }
-    res.path = rrg_->getManholeTraversalPath();
-    if(rrg_->autoManholePathApproval()) {
+    res.path = rrg_->getOpeningTraversalPath();
+    if(rrg_->autoOpeningPathApproval()) {
       res.status = planner_msgs::planner_srv::Response::kAutoCustomPath;
     }
     else {
       res.status = planner_msgs::planner_srv::Response::kManualCustomPath;
     }
     if(res.path.empty()) {
-      if(rrg_->manholeTraversalOngoing()) {
+      if(rrg_->openingTraversalOngoing()) {
         return true;
       }
     }
@@ -579,13 +579,13 @@ bool Gbplanner::getExplorationPath(planner_msgs::planner_srv::Request& req,
         int status;
         res.path = rrg_->runGlobalPlanner(0, false, false, status);
         if(status < 0) {
-          if(rrg_->autoManholePathApproval()) {
+          if(rrg_->autoOpeningPathApproval()) {
             res.status = planner_msgs::planner_srv::Response::kAutoCustomPath;
           }
           else {
             res.status = planner_msgs::planner_srv::Response::kManualCustomPath;
           }
-          manhole_traversal_ongoing_ = true;
+          opening_traversal_ongoing_ = true;
         }
         else {
           res.status = status;
@@ -637,12 +637,12 @@ bool Gbplanner::getInspectionPath(planner_msgs::planner_srv::Request& req,
     return false;
 }
 
-void Gbplanner::getManholeTraversalPath(ManholeTraversalMode mode, ManholeTraversalStatus &status)
+void Gbplanner::getOpeningTraversalPath(OpeningTraversalMode mode, OpeningTraversalStatus &status)
 {
   rrg_->setBoundMode(static_cast<BoundModeType>(in_srv_req_.bound_mode));
-  out_srv_res_.path = rrg_->getManholeTraversalPath(mode, status);
+  out_srv_res_.path = rrg_->getOpeningTraversalPath(mode, status);
   out_srv_res_.status = planner_msgs::planner_srv::Response::kAutoCustomPath;
-  if(status != ManholeTraversalStatus::OK)
+  if(status != OpeningTraversalStatus::OK)
   {
     out_srv_res_.path.clear();
   }
@@ -653,18 +653,18 @@ bool Gbplanner::getCompartmentTransitionPath(planner_msgs::planner_srv::Request&
   //
   std::vector<geometry_msgs::Pose> empty_path;
 
-  if(planning_params_.enable_manhole_traversal) {
+  if(planning_params_.enable_opening_traversal) {
     rrg_->setNextCompartmentCenter(planning_params_.compartment_centers[compartment_counter_+1]);
     rrg_->setNextCompartmentIndex(compartment_counter_+1);
-    res.path = rrg_->getManholeTraversalPath();
-    if(rrg_->autoManholePathApproval()) {
+    res.path = rrg_->getOpeningTraversalPath();
+    if(rrg_->autoOpeningPathApproval()) {
       res.status = planner_msgs::planner_srv::Response::kAutoCustomPath;
     }
     else {
       res.status = planner_msgs::planner_srv::Response::kManualCustomPath;
     }
 
-    if(!rrg_->manholeTraversalOngoing()) {  // Manhole traversal finished
+    if(!rrg_->openingTraversalOngoing()) {  // Opening traversal finished
       planner_mode_ = PlannerMode::kExploration;
       ++compartment_counter_;
       BoundedSpaceParams translated_bound = planning_params_.compartment_dimensions;
@@ -682,7 +682,7 @@ bool Gbplanner::getCompartmentTransitionPath(planner_msgs::planner_srv::Request&
 
     bool success = false;
     if(res.path.empty()) {
-      if(rrg_->manholeTraversalOngoing()) {
+      if(rrg_->openingTraversalOngoing()) {
         success = true;
       }
     }

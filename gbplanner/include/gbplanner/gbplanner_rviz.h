@@ -110,7 +110,7 @@ class Visualization {
   void visualizeModPath(const std::vector<geometry_msgs::Pose>& path);
   void visualizeBlindModPath(const std::vector<geometry_msgs::Pose>& path);
 
-  void visualizeManholeTraversalPath(const std::vector<geometry_msgs::Pose>& path);
+  void visualizeOpeningTraversalPath(const std::vector<geometry_msgs::Pose>& path);
 
   // Set the fixed frame of the mission for visualization
   void setGlobalFrame(std::string frame_id) { world_frame_id = frame_id; }
@@ -147,7 +147,7 @@ class Visualization {
   ros::Publisher state_history_pub_;
   ros::Publisher pcl_pub_;
   ros::Publisher path_pub_;
-  ros::Publisher manhole_traversal_path_pub_;
+  ros::Publisher opening_traversal_path_pub_;
   ros::Publisher graph_vertices_pub_;
   ros::Publisher viewpoints_pub_;
 

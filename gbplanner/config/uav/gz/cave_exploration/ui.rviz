@@ -552,7 +552,7 @@ Visualization Manager:
       Value: true
     - Class: rviz/MarkerArray
       Enabled: true
-      Marker Topic: /vis/manhole_traversal_path
+      Marker Topic: /vis/opening_traversal_path
       Name: MarkerArray
       Namespaces:
         {}

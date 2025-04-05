@@ -217,19 +217,19 @@ private:
 /*
 onStart():
  Returns:
-  SUCCESS: No manholes. The parameter gbplanner_->bt_states_.mh_phase1_failed is set to true
+  SUCCESS: No openings. The parameter gbplanner_->bt_states_.opening_phase1_failed is set to true
   FAILURE: Can't find connecting path
   RUNNING: Phase 1 path calculated successfully
 onRunning():
- Performs MHCheck
+ Performs OPENINGCheck
  Returns:
   SUCCESS: If check successfull
   FAILURE: Otherwise
 */
-class MHPhase1 : public BT::StatefulActionNode
+class OPENINGPhase1 : public BT::StatefulActionNode
 {
 public:
-  MHPhase1(const std::string& name, const BT::NodeConfig& config, std::shared_ptr<Gbplanner> gbplanner)
+  OPENINGPhase1(const std::string& name, const BT::NodeConfig& config, std::shared_ptr<Gbplanner> gbplanner)
     :StatefulActionNode(name, config), gbplanner_(std::move(gbplanner))
   {}
 
@@ -246,19 +246,19 @@ public:
 
 private:
   std::shared_ptr<Gbplanner> gbplanner_;
-  int failed_mh_phase1_count_ = 0;
-  int max_mh_phase1_tries_ = 3;
+  int failed_opening_phase1_count_ = 0;
+  int max_opening_phase1_tries_ = 3;
 };
 
 /*
 Returns:
-  SUCCESS: If gbplanner_->bt_states_.mh_phase1_failed == true
+  SUCCESS: If gbplanner_->bt_states_.opening_phase1_failed == true
   FAILURE: Otherwise
 */
-class MHP1FailCheck : public BT::SyncActionNode
+class OPENINGP1FailCheck : public BT::SyncActionNode
 {
 public:
-  MHP1FailCheck(const std::string& name, const BT::NodeConfig& config, std::shared_ptr<Gbplanner> gbplanner)
+  OPENINGP1FailCheck(const std::string& name, const BT::NodeConfig& config, std::shared_ptr<Gbplanner> gbplanner)
         :SyncActionNode(name, config), gbplanner_(std::move(gbplanner)) {}
 
   BT::NodeStatus tick() override;
@@ -275,10 +275,10 @@ private:
 /*
 NOT USED ANYMORE
 */
-class MHPhaseCheck : public BT::StatefulActionNode
+class OPENINGPhaseCheck : public BT::StatefulActionNode
 {
 public:
-  MHPhaseCheck(const std::string& name, const BT::NodeConfig& config, std::shared_ptr<Gbplanner> gbplanner)
+  OPENINGPhaseCheck(const std::string& name, const BT::NodeConfig& config, std::shared_ptr<Gbplanner> gbplanner)
     :StatefulActionNode(name, config), gbplanner_(std::move(gbplanner))
   {}
 
@@ -302,10 +302,10 @@ Returns:
   SUCCESS: Path calculated successfully. 
   FAILURE: Otherwise. THIS SHOULD NEVER HAPPEN
 */
-class MHPhase2 : public BT::StatefulActionNode
+class OPENINGPhase2 : public BT::StatefulActionNode
 {
 public:
-  MHPhase2(const std::string& name, const BT::NodeConfig& config, std::shared_ptr<Gbplanner> gbplanner)
+  OPENINGPhase2(const std::string& name, const BT::NodeConfig& config, std::shared_ptr<Gbplanner> gbplanner)
     :StatefulActionNode(name, config), gbplanner_(std::move(gbplanner))
   {}
 

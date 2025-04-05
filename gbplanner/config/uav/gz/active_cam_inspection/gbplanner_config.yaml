@@ -225,12 +225,12 @@ PlanningParams:
 
   keep_leaf_yaw_only: true
 
-  enable_manhole_traversal: false
-  manhole_alignment_z_offset: 0.0 # -0.25
-  only_manhole_traversal: false
+  enable_opening_traversal: false
+  opening_alignment_z_offset: 0.0 # -0.25
+  only_opening_traversal: false
 
-  auto_manhole_path_approval: true
-  max_manhole_height: 20.0
+  auto_opening_path_approval: true
+  max_opening_height: 20.0
 
   box_check_method: 0
   line_check_method: 1

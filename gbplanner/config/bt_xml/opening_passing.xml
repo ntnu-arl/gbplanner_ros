@@ -1,37 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- When ticked:
 Returns:
-  RUNNING: MHPhase1 successful, MHPhase1 needs retriggering
-  SUCCESS: MHCheck successful, MHPhase2 successful
+  RUNNING: OPENINGPhase1 successful, OPENINGPhase1 needs retriggering
+  SUCCESS: OPENINGCheck successful, OPENINGPhase2 successful
   FAILURE: No malholes left hence going to Idle
 -->
 <root BTCPP_format="4">
-  <BehaviorTree ID="mh_passing">
+  <BehaviorTree ID="opening_passing">
     <Sequence>
       <Inverter>
         <KeepRunningUntilFailure>
           <Inverter>
-            <MHPhase1/>
+            <OPENINGPhase1/>
           </Inverter>
         </KeepRunningUntilFailure>
       </Inverter>
       <Fallback>
         <Inverter>
-          <MHP1FailCheck/>
+          <OPENINGP1FailCheck/>
         </Inverter>
         <Idle/>
       </Fallback>
-      <MHPhase2/>
+      <OPENINGPhase2/>
     </Sequence>
   </BehaviorTree>
 
   <!-- Description of Node Models (used by Groot) -->
   <TreeNodesModel>
-    <Action ID="MHPhase1">
+    <Action ID="OPENINGPhase1">
       <output_port name="mode"
                    type="int"/>
     </Action>
-    <Action ID="MHPhase2">
+    <Action ID="OPENINGPhase2">
       <output_port name="mode"
                    type="int"/>
     </Action>

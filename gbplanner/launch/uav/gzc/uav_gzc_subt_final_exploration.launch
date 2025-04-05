@@ -14,7 +14,6 @@
 	<arg name="pci_file" default="$(find gbplanner)/config/$(arg config_folder)/planner_control_interface_sim_config.yaml"/>
 	<arg name="voxblox_config_file" default="$(find gbplanner)/config/$(arg config_folder)/voxblox_sim_config.yaml"/>
 	<arg name="map_config_file" default="$(arg voxblox_config_file)"/>
-	<arg name="manhole_config_file" default="$(find manhole_detector)/config/manhole_detector.yaml"/>
 
 	<arg name="odometry_topic" default="/rmf_obelix/ground_truth/odometry_throttled"/>
 
@@ -28,7 +27,6 @@
 	<node pkg="gbplanner" type="gbplanner_node" name="gbplanner_node" output="screen" launch-prefix="$(arg launch_prefix)">
 		<remap from="odometry" to="$(arg odometry_topic)" />
 		<remap from="/pointcloud" to="/rmf_obelix/velodyne_points" />
-		<remap from="manhole_detections" to="stable_detections"/>
 		<remap from="query_point" to="/rmf_obelix/tsdf_query_pt"/>
 		<rosparam command="load" file="$(arg gbplanner_config_file)" />
 		<rosparam command="load" file="$(arg map_config_file)" />

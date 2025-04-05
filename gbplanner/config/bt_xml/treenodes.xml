@@ -22,13 +22,13 @@
         <Action ID="LocalExploration">
             <output_port name="mode" type="int"/>
         </Action>
-        <Action ID="MHPhase1">
+        <Action ID="OPENINGPhase1">
             <output_port name="mode" type="int"/>
         </Action>
-        <Action ID="MHPhase2">
+        <Action ID="OPENINGPhase2">
             <output_port name="mode" type="int"/>
         </Action>
-        <Action ID="MHPhaseCheck">
+        <Action ID="OPENINGPhaseCheck">
             <output_port name="mode" type="int"/>
         </Action>
     </TreeNodesModel>

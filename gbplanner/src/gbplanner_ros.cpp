@@ -33,12 +33,12 @@ void GbplannerRos::registerTree()
   factory_.registerNodeType<Inspection>("Inspection", gbplanner_);
   factory_.registerNodeType<Homing>("Homing", gbplanner_);
   factory_.registerNodeType<HomingCheck>("HomingCheck", gbplanner_);
-  factory_.registerNodeType<MHPhase1>("MHPhase1", gbplanner_);
-  factory_.registerNodeType<MHPhaseCheck>("MHPhaseCheck", gbplanner_);
-  factory_.registerNodeType<MHPhase2>("MHPhase2", gbplanner_);
+  factory_.registerNodeType<OPENINGPhase1>("OPENINGPhase1", gbplanner_);
+  factory_.registerNodeType<OPENINGPhaseCheck>("OPENINGPhaseCheck", gbplanner_);
+  factory_.registerNodeType<OPENINGPhase2>("OPENINGPhase2", gbplanner_);
   factory_.registerNodeType<LocalExpExhaustedReset>("LocalExpExhaustedReset", gbplanner_);
   factory_.registerNodeType<Idle>("Idle", gbplanner_);
-  factory_.registerNodeType<MHP1FailCheck>("MHP1FailCheck", gbplanner_);
+  factory_.registerNodeType<OPENINGP1FailCheck>("OPENINGP1FailCheck", gbplanner_);
   factory_.registerNodeType<SetNextCompartment>("SetNextCompartment", gbplanner_);
   factory_.registerNodeType<AllCompartmentsInspectedCheck>("AllCompartmentsInspectedCheck", gbplanner_);
   

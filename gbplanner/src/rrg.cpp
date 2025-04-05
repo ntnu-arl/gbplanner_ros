@@ -92,8 +92,8 @@ void Rrg::initializeAttributes() {
 
   stop_srv_subscriber_ = nh_.subscribe("planner_control_interface/stop_request",
                                        100, &Rrg::stopMsgCallback, this);
-	manhole_detection_sub_ = nh_.subscribe("manhole_detections",
-                                       100, &Rrg::manholeDetectionCallback, this);
+	opening_detection_sub_ = nh_.subscribe("opening_detections",
+                                       100, &Rrg::openingDetectionCallback, this);
   query_pt_sub_ = nh_.subscribe("query_point", 1, &Rrg::queryPtCallback, this);
   cam_pitch_sub_ = nh_.subscribe("cam_pitch", 1, &Rrg::camPitchCallback, this);
 
@@ -108,8 +108,8 @@ void Rrg::initializeAttributes() {
   reset_timer_srv_ = nh_.advertiseService("gbplanner/reset_timer",
       &Rrg::resetTimerCallback, this);
 
-	pass_manhole_srv_ = nh_.advertiseService("get_manhole_traversal_path", &Rrg::getManholePathCallback, this);
-  approve_passing_srv_ = nh_.advertiseService("approve_manhole_traversal", &Rrg::approvePassingCallback, this);
+	pass_opening_srv_ = nh_.advertiseService("get_opening_traversal_path", &Rrg::getOpeningPathCallback, this);
+  approve_passing_srv_ = nh_.advertiseService("approve_opening_traversal", &Rrg::approvePassingCallback, this);
   reset_map_srv_ = nh_.advertiseService("reset_map", &Rrg::resetMapCallback, this);
   query_srv_ = nh_.advertiseService("query_srv", &Rrg::queryCallback, this);
 
@@ -318,37 +318,37 @@ bool Rrg::queryCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Resp
 
 void Rrg::clear() {}
 
-void Rrg::manholeDetectionCallback(const planner_msgs::MultipleManholeDetections &detections) {
-	std::map<int, std::shared_ptr<Manhole>> remaining_detected_manholes;
+void Rrg::openingDetectionCallback(const planner_msgs::MultipleOpeningDetections &detections) {
+	std::map<int, std::shared_ptr<Opening>> remaining_detected_openings;
   
   for(auto det : detections.multiple_detections)
 	{
-    // Find det.id in detected_manholes_ and update the pose. Create a new manhole if not found.
+    // Find det.id in detected_openings_ and update the pose. Create a new opening if not found.
     bool found = false;
-    // auto itr = std::find(detected_manholes_.begin(), detected_manholes_.end(), det.id);
-    auto itr = detected_manholes_.find(det.id);
-    if(itr != detected_manholes_.end()) 
+    // auto itr = std::find(detected_openings_.begin(), detected_openings_.end(), det.id);
+    auto itr = detected_openings_.find(det.id);
+    if(itr != detected_openings_.end()) 
     {
       itr->second->pose = det.pose;
-      remaining_detected_manholes[det.id] = itr->second;
+      remaining_detected_openings[det.id] = itr->second;
     }
     else
     {
-      std::shared_ptr<Manhole> new_manhole;
-      new_manhole.reset(new Manhole());
-      new_manhole->id = det.id;
-      new_manhole->pose = det.pose;
-      detected_manholes_[det.id] = new_manhole;
-      remaining_detected_manholes[det.id] = new_manhole;
-      std::cout << "New manhole detected: " << det.id << std::endl;
+      std::shared_ptr<Opening> new_opening;
+      new_opening.reset(new Opening());
+      new_opening->id = det.id;
+      new_opening->pose = det.pose;
+      detected_openings_[det.id] = new_opening;
+      remaining_detected_openings[det.id] = new_opening;
+      std::cout << "New opening detected: " << det.id << std::endl;
     }
 	}
 
-  detected_manholes_.clear();
+  detected_openings_.clear();
 
-  for(auto det : remaining_detected_manholes)
+  for(auto det : remaining_detected_openings)
   {
-    detected_manholes_[det.first] = det.second;
+    detected_openings_[det.first] = det.second;
   }
 
 }
@@ -356,7 +356,7 @@ void Rrg::manholeDetectionCallback(const planner_msgs::MultipleManholeDetections
 void Rrg::stopMsgCallback(const std_msgs::Bool& msg) {
   global_exploration_ongoing_ = false;
   auto_global_planner_trig_ = false;
-  manhole_traversal_mode_ = ManholeTraversalMode::kNone;
+  opening_traversal_mode_ = OpeningTraversalMode::kNone;
 }
 
 void Rrg::camPitchCallback(const sensor_msgs::JointState &state)
@@ -1514,7 +1514,7 @@ Rrg::GraphStatus Rrg::batchGraph(){
     }
   }
 
-  if(planning_params_.only_manhole_traversal) {
+  if(planning_params_.only_opening_traversal) {
     local_exploration_ongoing_ = false;
     return GraphStatus::OK;
   }
@@ -1687,7 +1687,7 @@ Rrg::GraphStatus Rrg::buildGraph() {
     }
   }
 
-  if(planning_params_.only_manhole_traversal) {
+  if(planning_params_.only_opening_traversal) {
     local_exploration_ongoing_ = false;
     return GraphStatus::OK;
   }
@@ -2130,7 +2130,7 @@ void Rrg::correctYaw() {
 Rrg::GraphStatus Rrg::evaluateGraph() {
   Rrg::GraphStatus gstatus = Rrg::GraphStatus::OK;
 
-  if(planning_params_.only_manhole_traversal) {
+  if(planning_params_.only_opening_traversal) {
     auto_global_planner_trig_ = true;
     return Rrg::GraphStatus::NOT_OK;
   }
@@ -7002,8 +7002,8 @@ bool Rrg::isRemainingTimeSufficient(const double& time_cost,
   return true;
 }
 
-bool Rrg::getManholePathCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res) {
-	std::vector<geometry_msgs::Pose> path = getManholeTraversalPath();
+bool Rrg::getOpeningPathCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res) {
+	std::vector<geometry_msgs::Pose> path = getOpeningTraversalPath();
 	
 	if(!path.empty()) {
 		res.success = true;
@@ -7011,18 +7011,18 @@ bool Rrg::getManholePathCallback(std_srvs::Trigger::Request &req, std_srvs::Trig
 	return true;
 }
 
-bool Rrg::approvePassingCallback(planner_msgs::planner_manhole_approval::Request &req, planner_msgs::planner_manhole_approval::Response &res) {
-  if(req.approval == planner_msgs::planner_manhole_approval::Request::kApproved) {
-    manhole_passing_approved_ = ManholeApproval::kApproved;
-    ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Manhole Passing Approved");
+bool Rrg::approvePassingCallback(planner_msgs::planner_opening_approval::Request &req, planner_msgs::planner_opening_approval::Response &res) {
+  if(req.approval == planner_msgs::planner_opening_approval::Request::kApproved) {
+    opening_passing_approved_ = OpeningApproval::kApproved;
+    ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Opening Passing Approved");
   }
-  else if(req.approval == planner_msgs::planner_manhole_approval::Request::kRejected) {
-    manhole_passing_approved_ = ManholeApproval::kRejected;
-    ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Manhole Passing Rejected");
+  else if(req.approval == planner_msgs::planner_opening_approval::Request::kRejected) {
+    opening_passing_approved_ = OpeningApproval::kRejected;
+    ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Opening Passing Rejected");
   }
-  else if(req.approval == planner_msgs::planner_manhole_approval::Request::kReEvaluate) {
-    manhole_passing_approved_ = ManholeApproval::kReEvaluate;
-    ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Manhole Passing to be Re-evaluated");
+  else if(req.approval == planner_msgs::planner_opening_approval::Request::kReEvaluate) {
+    opening_passing_approved_ = OpeningApproval::kReEvaluate;
+    ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Opening Passing to be Re-evaluated");
   }
   
   return true;
@@ -7033,128 +7033,128 @@ void Rrg::setNextCompartmentCenter(Eigen::Vector3d &center)
   next_compartment_ = center;
 }
 
-std::vector<geometry_msgs::Pose> Rrg::getManholeTraversalPath(ManholeTraversalMode mode, ManholeTraversalStatus &status) {
+std::vector<geometry_msgs::Pose> Rrg::getOpeningTraversalPath(OpeningTraversalMode mode, OpeningTraversalStatus &status) {
 	std::vector<geometry_msgs::Pose> through_path;
 
-  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "MH Mode: %d", mode);
+  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "OPENING Mode: %d", mode);
 
-  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "MH under exect: %d", manhole_under_execution_);
+  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "OPENING under exect: %d", opening_under_execution_);
 
-  bool manhole_still_exists = true;
-  if(mode == ManholeTraversalMode::kPathCheck)
+  bool opening_still_exists = true;
+  if(mode == OpeningTraversalMode::kPathCheck)
   {
-    // auto itr = std::find(detected_manholes_.begin(), detected_manholes_.end(), manhole_under_execution_);
-    auto itr = detected_manholes_.find(manhole_under_execution_);
-    if(itr == detected_manholes_.end())
+    // auto itr = std::find(detected_openings_.begin(), detected_openings_.end(), opening_under_execution_);
+    auto itr = detected_openings_.find(opening_under_execution_);
+    if(itr == detected_openings_.end())
     {
-      manhole_still_exists = false;
+      opening_still_exists = false;
     }
   }
 
-  if(mode == ManholeTraversalMode::kPathCheck)
+  if(mode == OpeningTraversalMode::kPathCheck)
   {
-    if(manhole_still_exists) 
+    if(opening_still_exists) 
     {
-      status = ManholeTraversalStatus::OK;
+      status = OpeningTraversalStatus::OK;
       return through_path;
     }
-    else // If after second detection, the manhole is found to be a false detection, reject it and go to the next closest
+    else // If after second detection, the opening is found to be a false detection, reject it and go to the next closest
     {
-      ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "This MH [%d] does not exist", manhole_under_execution_);
-      status = ManholeTraversalStatus::MANHOLE_DOUBLE_CHECK_FAILED;
+      ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "This OPENING [%d] does not exist", opening_under_execution_);
+      status = OpeningTraversalStatus::OPENING_DOUBLE_CHECK_FAILED;
       return through_path;
     }
   }
   ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Detections updated");
 
 
-	if(detected_manholes_.empty()) {
-    ROS_ERROR_COND(global_verbosity >= Verbosity::ERROR, "No Manholes at all");
-    status = ManholeTraversalStatus::NO_MANHOLES;
+	if(detected_openings_.empty()) {
+    ROS_ERROR_COND(global_verbosity >= Verbosity::ERROR, "No Openings at all");
+    status = OpeningTraversalStatus::NO_OPENINGS;
 		return through_path;
 	}
 
-	std::shared_ptr<Manhole> best_manhole;
+	std::shared_ptr<Opening> best_opening;
 	double closest_distance = std::numeric_limits<double>::max();
   bool found = false;
-  if(mode == ManholeTraversalMode::kGoingTo) {
-  // if(mode != ManholeTraversalMode::kPassingThrough && mode != ManholeTraversalMode::kPathCheck) {
-    for(auto it : detected_manholes_) {
-      std::shared_ptr<Manhole> current_manhole = it.second;
-      if(!current_manhole->active || current_manhole->num_tries >= planning_params_.max_mh_attempts) {
+  if(mode == OpeningTraversalMode::kGoingTo) {
+  // if(mode != OpeningTraversalMode::kPassingThrough && mode != OpeningTraversalMode::kPathCheck) {
+    for(auto it : detected_openings_) {
+      std::shared_ptr<Opening> current_opening = it.second;
+      if(!current_opening->active || current_opening->num_tries >= planning_params_.max_opening_attempts) {
         /* TODO: Update active status of all the semantics based on this */
         continue;
       }
       
-      if(planning_params_.exploration_only)  // If exploration only, go to the closest manhole
+      if(planning_params_.exploration_only)  // If exploration only, go to the closest opening
       {
-        double mh_robot_dist = (current_state_.head(3) 
-              - Eigen::Vector3d(current_manhole->pose.position.x, 
-                                current_manhole->pose.position.y, 
-                                current_manhole->pose.position.z)).norm();
-        if(mh_robot_dist < closest_distance) {
-          closest_distance = mh_robot_dist;
-          best_manhole = current_manhole;
+        double opening_robot_dist = (current_state_.head(3) 
+              - Eigen::Vector3d(current_opening->pose.position.x, 
+                                current_opening->pose.position.y, 
+                                current_opening->pose.position.z)).norm();
+        if(opening_robot_dist < closest_distance) {
+          closest_distance = opening_robot_dist;
+          best_opening = current_opening;
           found = true;
         }
       }
-      else // If exploration + inspection, find the manhole that leads to the next compartment
+      else // If exploration + inspection, find the opening that leads to the next compartment
       {
-        double mh_robot_dist = (planning_params_.compartment_centers[next_compartment_index_-1] - Eigen::Vector3d(current_manhole->pose.position.x, current_manhole->pose.position.y, current_manhole->pose.position.z)).norm();
+        double opening_robot_dist = (planning_params_.compartment_centers[next_compartment_index_-1] - Eigen::Vector3d(current_opening->pose.position.x, current_opening->pose.position.y, current_opening->pose.position.z)).norm();
         Eigen::Vector3d compartment_dim = planning_params_.compartment_dimensions.max_val - planning_params_.compartment_dimensions.min_val;
-        if(mh_robot_dist > compartment_dim.norm()/2.0)
+        if(opening_robot_dist > compartment_dim.norm()/2.0)
         {
           continue;
         }
         double dist;
         if(next_compartment_.x() < std::numeric_limits<double>::max())
-          dist = (next_compartment_ - Eigen::Vector3d(current_manhole->pose.position.x, current_manhole->pose.position.y, current_manhole->pose.position.z)).norm();
+          dist = (next_compartment_ - Eigen::Vector3d(current_opening->pose.position.x, current_opening->pose.position.y, current_opening->pose.position.z)).norm();
         else
-          dist = (current_state_.head(3) - Eigen::Vector3d(current_manhole->pose.position.x, current_manhole->pose.position.y, current_manhole->pose.position.z)).norm();
+          dist = (current_state_.head(3) - Eigen::Vector3d(current_opening->pose.position.x, current_opening->pose.position.y, current_opening->pose.position.z)).norm();
         if(dist < closest_distance) {
           closest_distance = dist;
-          best_manhole = current_manhole;
+          best_opening = current_opening;
           found = true;
         }
       }
     }
     if(found)
-      manhole_under_execution_ = best_manhole->id;
+      opening_under_execution_ = best_opening->id;
   }
   else {
-    best_manhole = detected_manholes_[manhole_under_execution_];
+    best_opening = detected_openings_[opening_under_execution_];
     found = true;
   }
 
   if(!found) {
-    ROS_ERROR_COND(global_verbosity >= Verbosity::ERROR, "No Appropriate Manhole Found");
-    status = ManholeTraversalStatus::NO_MANHOLES;
+    ROS_ERROR_COND(global_verbosity >= Verbosity::ERROR, "No Appropriate Opening Found");
+    status = OpeningTraversalStatus::NO_OPENINGS;
     return through_path;
   }
 
-  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Best mh found: %d", manhole_under_execution_);
+  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Best opening found: %d", opening_under_execution_);
 
   int max_tries = 5;
   std::vector<geometry_msgs::Pose> empty_path;
   
 
   if(global_verbosity >= Verbosity::DEBUG) {
-    std::cout << best_manhole->pose.position.x << " " << best_manhole->pose.position.y << " " << best_manhole->pose.position.z << " | "
-              << best_manhole->pose.orientation.x << " " << best_manhole->pose.orientation.y << " " << best_manhole->pose.orientation.z << " " << best_manhole->pose.orientation.w << std::endl;
+    std::cout << best_opening->pose.position.x << " " << best_opening->pose.position.y << " " << best_opening->pose.position.z << " | "
+              << best_opening->pose.orientation.x << " " << best_opening->pose.orientation.y << " " << best_opening->pose.orientation.z << " " << best_opening->pose.orientation.w << std::endl;
   }
   
-  double direction = tf::getYaw(best_manhole->pose.orientation);
+  double direction = tf::getYaw(best_opening->pose.orientation);
   geometry_msgs::Pose p0;
-  p0.position.x = best_manhole->pose.position.x - planning_params_.manhole_traversal_path_edge_length * std::cos(direction);
-  p0.position.y = best_manhole->pose.position.y - planning_params_.manhole_traversal_path_edge_length * std::sin(direction);
-  p0.position.z = best_manhole->pose.position.z;
-  p0.orientation = best_manhole->pose.orientation;
+  p0.position.x = best_opening->pose.position.x - planning_params_.opening_traversal_path_edge_length * std::cos(direction);
+  p0.position.y = best_opening->pose.position.y - planning_params_.opening_traversal_path_edge_length * std::sin(direction);
+  p0.position.z = best_opening->pose.position.z;
+  p0.orientation = best_opening->pose.orientation;
   
   geometry_msgs::Pose p1;
-  p1.position.x = best_manhole->pose.position.x + planning_params_.manhole_traversal_path_edge_length * std::cos(direction);
-  p1.position.y = best_manhole->pose.position.y + planning_params_.manhole_traversal_path_edge_length * std::sin(direction);
-  p1.position.z = best_manhole->pose.position.z;
-  p1.orientation = best_manhole->pose.orientation;
+  p1.position.x = best_opening->pose.position.x + planning_params_.opening_traversal_path_edge_length * std::cos(direction);
+  p1.position.y = best_opening->pose.position.y + planning_params_.opening_traversal_path_edge_length * std::sin(direction);
+  p1.position.z = best_opening->pose.position.z;
+  p1.orientation = best_opening->pose.orientation;
 
   geometry_msgs::Pose first_pose;
   if(getDistance(current_state_, p0) < getDistance(current_state_, p1)) {
@@ -7166,7 +7166,7 @@ std::vector<geometry_msgs::Pose> Rrg::getManholeTraversalPath(ManholeTraversalMo
 
   ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Path direction set");
 
-  geometry_msgs::Quaternion corrected_quat = best_manhole->pose.orientation;
+  geometry_msgs::Quaternion corrected_quat = best_opening->pose.orientation;
 
   if(getDistance(current_state_, p0) < getDistance(current_state_, p1)) {
       tf::Quaternion quat;
@@ -7174,7 +7174,7 @@ std::vector<geometry_msgs::Pose> Rrg::getManholeTraversalPath(ManholeTraversalMo
       quat.setEuler(0.0, 0.0, corrected_yaw);
       tf::quaternionTFToMsg(quat, corrected_quat);
       tf::quaternionTFToMsg(quat, p0.orientation);
-      tf::quaternionTFToMsg(quat, best_manhole->pose.orientation);
+      tf::quaternionTFToMsg(quat, best_opening->pose.orientation);
       tf::quaternionTFToMsg(quat, p1.orientation);
   }
   else {
@@ -7183,7 +7183,7 @@ std::vector<geometry_msgs::Pose> Rrg::getManholeTraversalPath(ManholeTraversalMo
     quat.setEuler(0.0, 0.0, corrected_yaw);
     tf::quaternionTFToMsg(quat, corrected_quat);
     tf::quaternionTFToMsg(quat, p0.orientation);
-    tf::quaternionTFToMsg(quat, best_manhole->pose.orientation);
+    tf::quaternionTFToMsg(quat, best_opening->pose.orientation);
     tf::quaternionTFToMsg(quat, p1.orientation);
   }
 
@@ -7193,30 +7193,30 @@ std::vector<geometry_msgs::Pose> Rrg::getManholeTraversalPath(ManholeTraversalMo
 
   ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Corrected quat: %f", corrected_yaw);
 
-  if(mode == ManholeTraversalMode::kPassingThrough) {
+  if(mode == OpeningTraversalMode::kPassingThrough) {
     if(getDistance(current_state_, p0) < getDistance(current_state_, p1)) {
       p0.orientation = corrected_quat;
-      best_manhole->pose.orientation = corrected_quat;
+      best_opening->pose.orientation = corrected_quat;
       p1.orientation = corrected_quat;
       through_path.push_back(p0);
-      through_path.push_back(best_manhole->pose);
+      through_path.push_back(best_opening->pose);
       through_path.push_back(p1);
 
     }
     else {
       p0.orientation = corrected_quat;
-      best_manhole->pose.orientation = corrected_quat;
+      best_opening->pose.orientation = corrected_quat;
       p1.orientation = corrected_quat;
       through_path.push_back(p1);
-      through_path.push_back(best_manhole->pose);
+      through_path.push_back(best_opening->pose);
       through_path.push_back(p0);
     }
 
   }
   else {
     first_pose.orientation = corrected_quat;
-    first_pose.position.z += planning_params_.manhole_alignment_z_offset;
-    // std::cout << "First Pose z: " << first_pose.position.z << " offset: " << planning_params_.manhole_alignment_z_offset << std::endl;
+    first_pose.position.z += planning_params_.opening_alignment_z_offset;
+    // std::cout << "First Pose z: " << first_pose.position.z << " offset: " << planning_params_.opening_alignment_z_offset << std::endl;
   }
 
   ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Path set 1");
@@ -7231,19 +7231,19 @@ std::vector<geometry_msgs::Pose> Rrg::getManholeTraversalPath(ManholeTraversalMo
   ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Path set 2");
 
   std::vector<geometry_msgs::Pose> connecting_path;
-  if(mode != ManholeTraversalMode::kPassingThrough)
+  if(mode != OpeningTraversalMode::kPassingThrough)
   {
     bool success = search(current_pose, first_pose, false, connecting_path);
     if(success) {
-      // connecting_path.back().orientation = best_manhole->pose.orientation;
+      // connecting_path.back().orientation = best_opening->pose.orientation;
       connecting_path.push_back(first_pose);
       connecting_path.back().orientation = corrected_quat;
       through_path.insert(through_path.begin(), connecting_path.begin(), connecting_path.end());
     }
     else {
       ROS_ERROR_COND(global_verbosity >= Verbosity::PLANNER_STATUS, "Connecting path not found");
-      ++best_manhole->num_tries;
-      status = ManholeTraversalStatus::CANT_CONNECT;
+      ++best_opening->num_tries;
+      status = OpeningTraversalStatus::CANT_CONNECT;
       return empty_path;
     }
   }
@@ -7252,163 +7252,163 @@ std::vector<geometry_msgs::Pose> Rrg::getManholeTraversalPath(ManholeTraversalMo
 
   ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Path set 3");
 
-  // ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "MH Mode (even later): %d", manhole_traversal_mode_);
+  // ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "OPENING Mode (even later): %d", opening_traversal_mode_);
 
-  visualization_->visualizeManholeTraversalPath(through_path);
+  visualization_->visualizeOpeningTraversalPath(through_path);
 
-  if(mode == ManholeTraversalMode::kPathCheck) {
-    status = ManholeTraversalStatus::OK;
+  if(mode == OpeningTraversalMode::kPathCheck) {
+    status = OpeningTraversalStatus::OK;
     return empty_path;
   } 
-  else if(mode == ManholeTraversalMode::kPassingThrough) {
+  else if(mode == OpeningTraversalMode::kPassingThrough) {
     for(int i=0; i<through_path.size(); ++i) {
-      // through_path[i].orientation = best_manhole->pose.orientation;
+      // through_path[i].orientation = best_opening->pose.orientation;
       through_path[i].orientation = corrected_quat;
     }
     through_path.insert(through_path.begin(), current_pose);
-    best_manhole->active = false;
-    status = ManholeTraversalStatus::OK;
+    best_opening->active = false;
+    status = OpeningTraversalStatus::OK;
     return through_path;
   }
   else {
-    status = ManholeTraversalStatus::OK;
+    status = OpeningTraversalStatus::OK;
     return through_path;
   }
 }
 
 
-std::vector<geometry_msgs::Pose> Rrg::getManholeTraversalPath() {
+std::vector<geometry_msgs::Pose> Rrg::getOpeningTraversalPath() {
 	std::vector<geometry_msgs::Pose> through_path;
 
 
-  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "MH Mode: %d", manhole_traversal_mode_);
+  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "OPENING Mode: %d", opening_traversal_mode_);
   
-  if(manhole_traversal_mode_ == ManholeTraversalMode::kNone) {
-    manhole_traversal_mode_ = ManholeTraversalMode::kGoingTo;
+  if(opening_traversal_mode_ == OpeningTraversalMode::kNone) {
+    opening_traversal_mode_ = OpeningTraversalMode::kGoingTo;
   }
-  else if(manhole_traversal_mode_ == ManholeTraversalMode::kGoingTo) {
+  else if(opening_traversal_mode_ == OpeningTraversalMode::kGoingTo) {
 
-    if(planning_params_.auto_manhole_path_approval) {
-    	manhole_traversal_mode_ = ManholeTraversalMode::kPassingThrough;
+    if(planning_params_.auto_opening_path_approval) {
+    	opening_traversal_mode_ = OpeningTraversalMode::kPassingThrough;
     }
     else{
-    	manhole_traversal_mode_ = ManholeTraversalMode::kPathCheck;
+    	opening_traversal_mode_ = OpeningTraversalMode::kPathCheck;
     }
   }
-  else if(manhole_traversal_mode_ == ManholeTraversalMode::kPathCheck) {
-    if(planning_params_.auto_manhole_path_approval) {
-      manhole_passing_approved_ = ManholeApproval::kApproved;
+  else if(opening_traversal_mode_ == OpeningTraversalMode::kPathCheck) {
+    if(planning_params_.auto_opening_path_approval) {
+      opening_passing_approved_ = OpeningApproval::kApproved;
     }
-    if(manhole_passing_approved_ == ManholeApproval::kApproved) {
-      ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Manhole Traversal Approved");
-      manhole_passing_approved_ = ManholeApproval::kWaiting;
-      manhole_traversal_mode_ = ManholeTraversalMode::kPassingThrough;
+    if(opening_passing_approved_ == OpeningApproval::kApproved) {
+      ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Opening Traversal Approved");
+      opening_passing_approved_ = OpeningApproval::kWaiting;
+      opening_traversal_mode_ = OpeningTraversalMode::kPassingThrough;
     }
-    else if(manhole_passing_approved_ == ManholeApproval::kRejected) {
-      ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Manhole Traversal Rejected");
-      manhole_traversal_mode_ = ManholeTraversalMode::kNone;
-      detected_manholes_[manhole_under_execution_]->active = false;
+    else if(opening_passing_approved_ == OpeningApproval::kRejected) {
+      ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Opening Traversal Rejected");
+      opening_traversal_mode_ = OpeningTraversalMode::kNone;
+      detected_openings_[opening_under_execution_]->active = false;
       return through_path;
     }
-    else if(manhole_passing_approved_ == ManholeApproval::kReEvaluate) {
-      ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Manhole Traversal ReEvaluate");
-      manhole_traversal_mode_ = ManholeTraversalMode::kPathCheck;
+    else if(opening_passing_approved_ == OpeningApproval::kReEvaluate) {
+      ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Opening Traversal ReEvaluate");
+      opening_traversal_mode_ = OpeningTraversalMode::kPathCheck;
     }
   }
 
-  // if(!manhole_detector_->getStableManholes(updated_detections)) {
+  // if(!opening_detector_->getStableOpenings(updated_detections)) {
   //   return through_path;
   // }
-  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "MH Mode: %d", manhole_traversal_mode_);
-  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "MH under exect: %d", manhole_under_execution_);
+  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "OPENING Mode: %d", opening_traversal_mode_);
+  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "OPENING under exect: %d", opening_under_execution_);
 
-  if(manhole_traversal_mode_ == ManholeTraversalMode::kPathCheck)
+  if(opening_traversal_mode_ == OpeningTraversalMode::kPathCheck)
   {
-    // auto itr = std::find(detected_manholes_.begin(), detected_manholes_.end(), manhole_under_execution_);
-    auto itr = detected_manholes_.find(manhole_under_execution_);
-    if(itr == detected_manholes_.end())
+    // auto itr = std::find(detected_openings_.begin(), detected_openings_.end(), opening_under_execution_);
+    auto itr = detected_openings_.find(opening_under_execution_);
+    if(itr == detected_openings_.end())
     {
-      ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "This MH [%d] does not exist", manhole_under_execution_);
-      manhole_traversal_mode_ = ManholeTraversalMode::kGoingTo;
+      ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "This OPENING [%d] does not exist", opening_under_execution_);
+      opening_traversal_mode_ = OpeningTraversalMode::kGoingTo;
     }
   }
 
 
-	if(detected_manholes_.empty()) {
-    ROS_ERROR_COND(global_verbosity >= Verbosity::ERROR, "No Manholes at all");
+	if(detected_openings_.empty()) {
+    ROS_ERROR_COND(global_verbosity >= Verbosity::ERROR, "No Openings at all");
 		return through_path;
 	}
 
-	std::shared_ptr<Manhole> best_manhole;
+	std::shared_ptr<Opening> best_opening;
 	double closest_distance = std::numeric_limits<double>::max();
   bool found = false;
-  if(manhole_traversal_mode_ != ManholeTraversalMode::kPassingThrough && manhole_traversal_mode_ != ManholeTraversalMode::kPathCheck) {
-    for(auto it : detected_manholes_) {
-      std::shared_ptr<Manhole> current_manhole = it.second;
-      if(!current_manhole->active) {
+  if(opening_traversal_mode_ != OpeningTraversalMode::kPassingThrough && opening_traversal_mode_ != OpeningTraversalMode::kPathCheck) {
+    for(auto it : detected_openings_) {
+      std::shared_ptr<Opening> current_opening = it.second;
+      if(!current_opening->active) {
         /* TODO: Update active status of all the semantics based on this */
         continue;
       }
       
-      double mh_robot_dist = (planning_params_.compartment_centers[next_compartment_index_-1] - Eigen::Vector3d(current_manhole->pose.position.x, current_manhole->pose.position.y, current_manhole->pose.position.z)).norm();
+      double opening_robot_dist = (planning_params_.compartment_centers[next_compartment_index_-1] - Eigen::Vector3d(current_opening->pose.position.x, current_opening->pose.position.y, current_opening->pose.position.z)).norm();
       Eigen::Vector3d compartment_dim = planning_params_.compartment_dimensions.max_val - planning_params_.compartment_dimensions.min_val;
-      if(mh_robot_dist > compartment_dim.norm()/2.0)
+      if(opening_robot_dist > compartment_dim.norm()/2.0)
       {
         continue;
       }
       double dist;
       if(next_compartment_.x() < std::numeric_limits<double>::max())
-        dist = (next_compartment_ - Eigen::Vector3d(current_manhole->pose.position.x, current_manhole->pose.position.y, current_manhole->pose.position.z)).norm();
+        dist = (next_compartment_ - Eigen::Vector3d(current_opening->pose.position.x, current_opening->pose.position.y, current_opening->pose.position.z)).norm();
       else
-        dist = (current_state_.head(3) - Eigen::Vector3d(current_manhole->pose.position.x, current_manhole->pose.position.y, current_manhole->pose.position.z)).norm();
+        dist = (current_state_.head(3) - Eigen::Vector3d(current_opening->pose.position.x, current_opening->pose.position.y, current_opening->pose.position.z)).norm();
       if(dist < closest_distance) {
         closest_distance = dist;
-        best_manhole = current_manhole;
+        best_opening = current_opening;
         found = true;
       }
     }
     if(found)
-      manhole_under_execution_ = best_manhole->id;
+      opening_under_execution_ = best_opening->id;
   }
   else {
-    best_manhole = detected_manholes_[manhole_under_execution_];
+    best_opening = detected_openings_[opening_under_execution_];
     found = true;
   }
 
   if(!found) {
-    ROS_ERROR_COND(global_verbosity >= Verbosity::ERROR, "No Manhole Found");
-    manhole_traversal_mode_ = ManholeTraversalMode::kNone;
+    ROS_ERROR_COND(global_verbosity >= Verbosity::ERROR, "No Opening Found");
+    opening_traversal_mode_ = OpeningTraversalMode::kNone;
     return through_path;
   }
 
-  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Best mh found: %d", manhole_under_execution_);
+  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Best opening found: %d", opening_under_execution_);
 
   bool decision_made = false;
   int max_tries = 5;
   std::vector<geometry_msgs::Pose> empty_path;
   
-  if(manhole_traversal_mode_ != ManholeTraversalMode::kPassingThrough) {
+  if(opening_traversal_mode_ != OpeningTraversalMode::kPassingThrough) {
     decision_made = true;
   }
 
   if(global_verbosity >= Verbosity::DEBUG) {
-    std::cout << best_manhole->pose.position.x << " " << best_manhole->pose.position.y << " " << best_manhole->pose.position.z << " | "
-              << best_manhole->pose.orientation.x << " " << best_manhole->pose.orientation.y << " " << best_manhole->pose.orientation.z << " " << best_manhole->pose.orientation.w << std::endl;
+    std::cout << best_opening->pose.position.x << " " << best_opening->pose.position.y << " " << best_opening->pose.position.z << " | "
+              << best_opening->pose.orientation.x << " " << best_opening->pose.orientation.y << " " << best_opening->pose.orientation.z << " " << best_opening->pose.orientation.w << std::endl;
   }
   
-  double direction = tf::getYaw(best_manhole->pose.orientation);
+  double direction = tf::getYaw(best_opening->pose.orientation);
   // std::cout << "Direction: " << direction << std::endl;
   geometry_msgs::Pose p0;
-  p0.position.x = best_manhole->pose.position.x - planning_params_.manhole_traversal_path_edge_length * std::cos(direction);
-  p0.position.y = best_manhole->pose.position.y - planning_params_.manhole_traversal_path_edge_length * std::sin(direction);
-  p0.position.z = best_manhole->pose.position.z;
-  p0.orientation = best_manhole->pose.orientation;
+  p0.position.x = best_opening->pose.position.x - planning_params_.opening_traversal_path_edge_length * std::cos(direction);
+  p0.position.y = best_opening->pose.position.y - planning_params_.opening_traversal_path_edge_length * std::sin(direction);
+  p0.position.z = best_opening->pose.position.z;
+  p0.orientation = best_opening->pose.orientation;
   
   geometry_msgs::Pose p1;
-  p1.position.x = best_manhole->pose.position.x + planning_params_.manhole_traversal_path_edge_length * std::cos(direction);
-  p1.position.y = best_manhole->pose.position.y + planning_params_.manhole_traversal_path_edge_length * std::sin(direction);
-  p1.position.z = best_manhole->pose.position.z;
-  p1.orientation = best_manhole->pose.orientation;
+  p1.position.x = best_opening->pose.position.x + planning_params_.opening_traversal_path_edge_length * std::cos(direction);
+  p1.position.y = best_opening->pose.position.y + planning_params_.opening_traversal_path_edge_length * std::sin(direction);
+  p1.position.z = best_opening->pose.position.z;
+  p1.orientation = best_opening->pose.orientation;
   
 
   geometry_msgs::Pose first_pose;
@@ -7420,9 +7420,9 @@ std::vector<geometry_msgs::Pose> Rrg::getManholeTraversalPath() {
   }
 
   ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Path direction set");
-  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "MH Mode (later): %d", manhole_traversal_mode_);
+  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "OPENING Mode (later): %d", opening_traversal_mode_);
 
-  geometry_msgs::Quaternion corrected_quat = best_manhole->pose.orientation;
+  geometry_msgs::Quaternion corrected_quat = best_opening->pose.orientation;
 
   if(getDistance(current_state_, p0) < getDistance(current_state_, p1)) {
       tf::Quaternion quat;
@@ -7430,7 +7430,7 @@ std::vector<geometry_msgs::Pose> Rrg::getManholeTraversalPath() {
       quat.setEuler(0.0, 0.0, corrected_yaw);
       tf::quaternionTFToMsg(quat, corrected_quat);
       tf::quaternionTFToMsg(quat, p0.orientation);
-      tf::quaternionTFToMsg(quat, best_manhole->pose.orientation);
+      tf::quaternionTFToMsg(quat, best_opening->pose.orientation);
       tf::quaternionTFToMsg(quat, p1.orientation);
   }
   else {
@@ -7439,7 +7439,7 @@ std::vector<geometry_msgs::Pose> Rrg::getManholeTraversalPath() {
     quat.setEuler(0.0, 0.0, corrected_yaw);
     tf::quaternionTFToMsg(quat, corrected_quat);
     tf::quaternionTFToMsg(quat, p0.orientation);
-    tf::quaternionTFToMsg(quat, best_manhole->pose.orientation);
+    tf::quaternionTFToMsg(quat, best_opening->pose.orientation);
     tf::quaternionTFToMsg(quat, p1.orientation);
   }
 
@@ -7449,23 +7449,23 @@ std::vector<geometry_msgs::Pose> Rrg::getManholeTraversalPath() {
 
   ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Corrected quat: %f", corrected_yaw);
 
-  if(manhole_traversal_mode_ != ManholeTraversalMode::kGoingTo) {
+  if(opening_traversal_mode_ != OpeningTraversalMode::kGoingTo) {
     if(getDistance(current_state_, p0) < getDistance(current_state_, p1)) {
 
       p0.orientation = corrected_quat;
-      best_manhole->pose.orientation = corrected_quat;
+      best_opening->pose.orientation = corrected_quat;
       p1.orientation = corrected_quat;
       through_path.push_back(p0);
-      through_path.push_back(best_manhole->pose);
+      through_path.push_back(best_opening->pose);
       through_path.push_back(p1);
 
     }
     else {
       p0.orientation = corrected_quat;
-      best_manhole->pose.orientation = corrected_quat;
+      best_opening->pose.orientation = corrected_quat;
       p1.orientation = corrected_quat;
       through_path.push_back(p1);
-      through_path.push_back(best_manhole->pose);
+      through_path.push_back(best_opening->pose);
       through_path.push_back(p0);
     }
 
@@ -7473,7 +7473,7 @@ std::vector<geometry_msgs::Pose> Rrg::getManholeTraversalPath() {
   }
   else {
     first_pose.orientation = corrected_quat;
-    first_pose.position.z += planning_params_.manhole_alignment_z_offset;
+    first_pose.position.z += planning_params_.opening_alignment_z_offset;
   }
 
   ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Path set 1");
@@ -7490,7 +7490,7 @@ std::vector<geometry_msgs::Pose> Rrg::getManholeTraversalPath() {
   std::vector<geometry_msgs::Pose> connecting_path;
   bool success = search(current_pose, first_pose, false, connecting_path);
   if(success) {
-    // connecting_path.back().orientation = best_manhole->pose.orientation;
+    // connecting_path.back().orientation = best_opening->pose.orientation;
     connecting_path.push_back(first_pose);
     connecting_path.back().orientation = corrected_quat;
     through_path.insert(through_path.begin(), connecting_path.begin(), connecting_path.end());
@@ -7504,21 +7504,21 @@ std::vector<geometry_msgs::Pose> Rrg::getManholeTraversalPath() {
 
   ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Path set 3");
 
-  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "MH Mode (even later): %d", manhole_traversal_mode_);
+  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "OPENING Mode (even later): %d", opening_traversal_mode_);
 
-  visualization_->visualizeManholeTraversalPath(through_path);
+  visualization_->visualizeOpeningTraversalPath(through_path);
 
-  if(manhole_traversal_mode_ == ManholeTraversalMode::kPathCheck) {
+  if(opening_traversal_mode_ == OpeningTraversalMode::kPathCheck) {
     return empty_path;
   } 
-  else if(manhole_traversal_mode_ == ManholeTraversalMode::kPassingThrough) {
+  else if(opening_traversal_mode_ == OpeningTraversalMode::kPassingThrough) {
     for(int i=0; i<through_path.size(); ++i) {
-      // through_path[i].orientation = best_manhole->pose.orientation;
+      // through_path[i].orientation = best_opening->pose.orientation;
       through_path[i].orientation = corrected_quat;
     }
-    best_manhole->active = false;
+    best_opening->active = false;
 
-    manhole_traversal_mode_ = ManholeTraversalMode::kNone;
+    opening_traversal_mode_ = OpeningTraversalMode::kNone;
     return through_path;
   }
   else {
@@ -7553,10 +7553,10 @@ std::vector<geometry_msgs::Pose> Rrg::runGlobalPlanner(int vertex_id,
   
   status = planner_msgs::planner_srv::Response::kRepositioning;
 
-  if(!vertex_id && planning_params_.enable_manhole_traversal && planning_params_.exploration_only)  // Don't do manhole traversal if asked to go to a specific vertex
+  if(!vertex_id && planning_params_.enable_opening_traversal && planning_params_.exploration_only)  // Don't do opening traversal if asked to go to a specific vertex
   {
     status = -1;
-		return getManholeTraversalPath();	
+		return getOpeningTraversalPath();	
   }
 
   START_TIMER(ttime);

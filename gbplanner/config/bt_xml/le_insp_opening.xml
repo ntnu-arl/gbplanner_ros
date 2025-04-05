@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <root BTCPP_format="4">
   <include path="./le.xml" />
-  <include path="./manhole_passing.xml" />
-  <BehaviorTree ID="le_insp_mh">
+  <include path="./opening_passing.xml" />
+  <BehaviorTree ID="le_insp_opening">
     <Sequence>
       <SetNextCompartment/>
       <SubTree ID="le"/>
@@ -13,7 +13,7 @@
         </Inverter>
         <Idle/>
       </Fallback>
-      <SubTree ID="mh_passing"/>
+      <SubTree ID="opening_passing"/>
       <LocalExpExhaustedReset/>
     </Sequence>
   </BehaviorTree>

@@ -1,7 +1,7 @@
 <root BTCPP_format="4">
   <include path="../../../bt_xml/lge_insp.xml" />
-  <include path="../../../bt_xml/le_insp_mh.xml" />
-  <include path="../../../bt_xml/le_mh.xml" />
+  <include path="../../../bt_xml/le_insp_opening.xml" />
+  <include path="../../../bt_xml/le_opening.xml" />
   <include path="../../../bt_xml/lge_homing.xml" />
   <BehaviorTree ID="MainTree">
     <Sequence>

@@ -1203,34 +1203,34 @@ bool PlanningParams::loadParams(std::string ns) {
     ROSPARAM_WARN(param_name, keep_leaf_yaw_only);
   }
 
-  param_name = ns + "/enable_manhole_traversal";
-  if (!ros::param::get(param_name, enable_manhole_traversal)) {
-    enable_manhole_traversal = false;
-    ROSPARAM_WARN(param_name, enable_manhole_traversal);
+  param_name = ns + "/enable_opening_traversal";
+  if (!ros::param::get(param_name, enable_opening_traversal)) {
+    enable_opening_traversal = false;
+    ROSPARAM_WARN(param_name, enable_opening_traversal);
   }
 
-  param_name = ns + "/manhole_traversal_path_edge_length";
-  if (!ros::param::get(param_name, manhole_traversal_path_edge_length)) {
-    manhole_traversal_path_edge_length = 1.0;
-    ROSPARAM_WARN(param_name, manhole_traversal_path_edge_length);
+  param_name = ns + "/opening_traversal_path_edge_length";
+  if (!ros::param::get(param_name, opening_traversal_path_edge_length)) {
+    opening_traversal_path_edge_length = 1.0;
+    ROSPARAM_WARN(param_name, opening_traversal_path_edge_length);
   }
 
-  param_name = ns + "/manhole_alignment_z_offset";
-  if (!ros::param::get(param_name, manhole_alignment_z_offset)) {
-    manhole_alignment_z_offset = 0.0;
-    ROSPARAM_WARN(param_name, manhole_alignment_z_offset);
+  param_name = ns + "/opening_alignment_z_offset";
+  if (!ros::param::get(param_name, opening_alignment_z_offset)) {
+    opening_alignment_z_offset = 0.0;
+    ROSPARAM_WARN(param_name, opening_alignment_z_offset);
   }
 
-  param_name = ns + "/only_manhole_traversal";
-  if (!ros::param::get(param_name, only_manhole_traversal)) {
-    only_manhole_traversal = false;
-    ROSPARAM_WARN(param_name, only_manhole_traversal);
+  param_name = ns + "/only_opening_traversal";
+  if (!ros::param::get(param_name, only_opening_traversal)) {
+    only_opening_traversal = false;
+    ROSPARAM_WARN(param_name, only_opening_traversal);
   }
 
-  param_name = ns + "/auto_manhole_path_approval";
-  if (!ros::param::get(param_name, auto_manhole_path_approval)) {
-    auto_manhole_path_approval = false;
-    ROSPARAM_WARN(param_name, auto_manhole_path_approval);
+  param_name = ns + "/auto_opening_path_approval";
+  if (!ros::param::get(param_name, auto_opening_path_approval)) {
+    auto_opening_path_approval = false;
+    ROSPARAM_WARN(param_name, auto_opening_path_approval);
   }
 
   param_name = ns + "/min_coverage_percentage";
@@ -1311,10 +1311,10 @@ bool PlanningParams::loadParams(std::string ns) {
     ROSPARAM_WARN(param_name, use_flipped_yaw);
   }
 
-  param_name = ns + "/max_manhole_height";
-  if (!ros::param::get(param_name, max_manhole_height)) {
-    max_manhole_height = 100.0;  // Too high so won't be used
-    ROSPARAM_WARN(param_name, max_manhole_height);
+  param_name = ns + "/max_opening_height";
+  if (!ros::param::get(param_name, max_opening_height)) {
+    max_opening_height = 100.0;  // Too high so won't be used
+    ROSPARAM_WARN(param_name, max_opening_height);
   }
 
   param_name = ns + "/max_surface_distance";
@@ -1335,10 +1335,10 @@ bool PlanningParams::loadParams(std::string ns) {
     ROSPARAM_WARN(param_name, min_occ_surface);
   }
 
-  param_name = ns + "/max_mh_attempts";
-  if (!ros::param::get(param_name, max_mh_attempts)) {
-    max_mh_attempts = 3;
-    ROSPARAM_WARN(param_name, max_mh_attempts);
+  param_name = ns + "/max_opening_attempts";
+  if (!ros::param::get(param_name, max_opening_attempts)) {
+    max_opening_attempts = 3;
+    ROSPARAM_WARN(param_name, max_opening_attempts);
   }
 
   param_name = ns + "/global_graph_odom_dist";

@@ -48,13 +48,13 @@
 #include "planner_msgs/planner_dynamic_global_bound.h"
 #include "planner_msgs/planner_srv.h"
 #include "planner_semantic_msgs/SemanticPoint.h"
-#include "planner_msgs/ManholeDetection.h"
-#include "planner_msgs/MultipleManholeDetections.h"
-#include "planner_msgs/planner_manhole_approval.h"
+#include "planner_msgs/OpeningDetection.h"
+#include "planner_msgs/MultipleOpeningDetections.h"
+#include "planner_msgs/planner_opening_approval.h"
 
 #include <ros/package.h>
 
-// #include "manhole_detector/manhole_detector.hpp"
+// #include "opening_detector/opening_detector.hpp"
 // Publish all gbplanner rviz topics or not.
 #define FULL_PLANNER_VIZ 1
 
@@ -80,7 +80,7 @@ class RobotStateHistory {
   kdtree* kd_tree_;
 };
 
-struct Manhole {
+struct Opening {
   int id;
   geometry_msgs::Pose pose;
   bool active = true;
@@ -89,22 +89,22 @@ struct Manhole {
   bool exists = true;
 };
 
-enum ManholeTraversalMode {
+enum OpeningTraversalMode {
   kNone = 0,
   kGoingTo,
   kPathCheck,
   kPassingThrough
 };
 
-enum ManholeTraversalStatus
+enum OpeningTraversalStatus
 {
   OK = 0,
   CANT_CONNECT,
-  MANHOLE_DOUBLE_CHECK_FAILED,
-  NO_MANHOLES
+  OPENING_DOUBLE_CHECK_FAILED,
+  NO_OPENINGS
 };
 
-enum ManholeApproval {
+enum OpeningApproval {
   kWaiting = 0,
   kApproved,
   kRejected,
@@ -250,8 +250,8 @@ class Rrg {
   std::vector<geometry_msgs::Pose> getGlobalPath(
       geometry_msgs::PoseStamped& waypoint);
 
-  std::vector<geometry_msgs::Pose> getManholeTraversalPath();
-  std::vector<geometry_msgs::Pose> getManholeTraversalPath(ManholeTraversalMode mode, ManholeTraversalStatus &status);
+  std::vector<geometry_msgs::Pose> getOpeningTraversalPath();
+  std::vector<geometry_msgs::Pose> getOpeningTraversalPath(OpeningTraversalMode mode, OpeningTraversalStatus &status);
   void setNextCompartmentCenter(Eigen::Vector3d &center);
   void setNextCompartmentIndex(int ind) {next_compartment_index_ = ind;}
 
@@ -322,8 +322,8 @@ class Rrg {
     }
   }
 
-  bool manholeTraversalOngoing() {
-    if(manhole_traversal_mode_ == ManholeTraversalMode::kNone) {
+  bool openingTraversalOngoing() {
+    if(opening_traversal_mode_ == OpeningTraversalMode::kNone) {
       return false;
     }
     else {
@@ -331,8 +331,8 @@ class Rrg {
     }
   }
 
-  bool autoManholePathApproval() {
-    return planning_params_.auto_manhole_path_approval;
+  bool autoOpeningPathApproval() {
+    return planning_params_.auto_opening_path_approval;
   }
 
   void getBestPitchAngles(StateVec state, std::vector<std::pair<StateVec, VolumetricGain>> &out_states);
@@ -386,21 +386,21 @@ class Rrg {
 
   ros::Subscriber semantics_subscriber_;
   ros::Subscriber stop_srv_subscriber_;
-  ros::Subscriber manhole_detection_sub_;
+  ros::Subscriber opening_detection_sub_;
   ros::Subscriber query_pt_sub_;
   ros::Subscriber cam_pitch_sub_;
 
   ros::ServiceClient pci_homing_;
   ros::ServiceClient landing_srv_client_;
   ros::ServiceServer reset_timer_srv_;
-  ros::ServiceServer pass_manhole_srv_;
+  ros::ServiceServer pass_opening_srv_;
   ros::ServiceServer approve_passing_srv_;
   ros::ServiceServer reset_map_srv_;
   ros::ServiceServer query_srv_;
 
   bool resetTimerCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
-  bool getManholePathCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
-  bool approvePassingCallback(planner_msgs::planner_manhole_approval::Request &req, planner_msgs::planner_manhole_approval::Response &res);
+  bool getOpeningPathCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
+  bool approvePassingCallback(planner_msgs::planner_opening_approval::Request &req, planner_msgs::planner_opening_approval::Response &res);
   bool resetMapCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
   bool queryCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
 
@@ -408,7 +408,7 @@ class Rrg {
   void queryPtCallback(const geometry_msgs::PoseStamped& pose);
   void camPitchCallback(const sensor_msgs::JointState &state);
 
-  void manholeDetectionCallback(const planner_msgs::MultipleManholeDetections &detections);
+  void openingDetectionCallback(const planner_msgs::MultipleOpeningDetections &detections);
 
   // Graphs.
   std::shared_ptr<GraphManager> local_graph_;
@@ -458,8 +458,8 @@ class Rrg {
   std::queue<StateVec> robot_backtracking_queue_;
   Vertex* robot_backtracking_prev_;
 
-  // Manholes detected so far
-  std::map<int, std::shared_ptr<Manhole>> detected_manholes_;
+  // Openings detected so far
+  std::map<int, std::shared_ptr<Opening>> detected_openings_;
 
   // Compare 2 angles within a threshold (positive).
   bool compareAngles(double dir_angle_a, double dir_angle_b, double thres);
@@ -632,10 +632,10 @@ class Rrg {
 
   AdaptiveObb* adaptive_obb_;
 
-  // std::shared_ptr<ManholeDetector> manhole_detector_;
-  ManholeTraversalMode manhole_traversal_mode_;
-  int manhole_under_execution_ = -1;
-  ManholeApproval manhole_passing_approved_ = ManholeApproval::kWaiting;
+  // std::shared_ptr<OpeningDetector> opening_detector_;
+  OpeningTraversalMode opening_traversal_mode_;
+  int opening_under_execution_ = -1;
+  OpeningApproval opening_passing_approved_ = OpeningApproval::kWaiting;
   Eigen::Vector3d next_compartment_;
   int next_compartment_index_ = -1;
 
