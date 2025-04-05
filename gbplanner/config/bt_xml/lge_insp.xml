@@ -1,0 +1,19 @@
+<root BTCPP_format="4">
+  <include path="./lge.xml" />
+  <include path="./inspection.xml" />
+  <BehaviorTree ID="lge_insp">
+    <Sequence>
+      <Inverter>
+        <KeepRunningUntilFailure>
+          <Sequence>
+            <SubTree ID="lge"/>
+            <Inverter>
+              <GlobalExpExhaustedCheck/>
+            </Inverter>
+          </Sequence>
+        </KeepRunningUntilFailure>
+      </Inverter>
+      <SubTree ID="inspection"/>
+    </Sequence>
+  </BehaviorTree>
+</root>

@@ -3,6 +3,7 @@
 
 #include <eigen3/Eigen/Dense>
 #include <geometry_msgs/PolygonStamped.h>
+#include <geometry_msgs/PoseArray.h>
 #include <pcl/point_cloud.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <ros/ros.h>
@@ -14,12 +15,10 @@
 #include "planner_common/graph.h"
 #include "planner_common/graph_base.h"
 #include "planner_common/graph_manager.h"
-#include "planner_common/map_manager.h"
 #include "planner_common/params.h"
 #include "planner_common/random_sampler.h"
 #include "planner_common/trajectory.h"
-
-namespace explorer {
+#include "map_manager/map_manager.h"
 
 class Visualization {
  public:
@@ -31,6 +30,8 @@ class Visualization {
   void visualizeNoGainZones(std::vector<BoundedSpaceParams>& no_gain_zones);
   // Visualize a graph including its vertices, egdes, and heading angles.
   void visualizeGraph(const std::shared_ptr<GraphManager> graph_manager);
+  // Visualize subset of graph vertices
+  void visualizeGraphVertices(const std::shared_ptr<GraphManager> graph_manager, const std::vector<int> &ids);
   // Visualize a graph including its vertices, egdes, and heading angles.
   // Used to visualize the graph projected on ground for ground robots
   void visualizeProjectedGraph(
@@ -65,7 +66,7 @@ class Visualization {
   // Visualize volumetric gain.
   void visualizeVolumetricGain(
       Eigen::Vector3d& bound_min, Eigen::Vector3d& bound_max,
-      std::vector<std::pair<Eigen::Vector3d, MapManager::VoxelStatus>>& voxels,
+      std::vector<std::pair<Eigen::Vector3d, VoxelStatus>>& voxels,
       double voxel_size);
   // Visualize sampled points.
   void visualizeSampler(RandomSampler& random_sampler);
@@ -109,8 +110,12 @@ class Visualization {
   void visualizeModPath(const std::vector<geometry_msgs::Pose>& path);
   void visualizeBlindModPath(const std::vector<geometry_msgs::Pose>& path);
 
+  void visualizeManholeTraversalPath(const std::vector<geometry_msgs::Pose>& path);
+
   // Set the fixed frame of the mission for visualization
   void setGlobalFrame(std::string frame_id) { world_frame_id = frame_id; }
+
+  void visualizeViewpoints(std::vector<StateVec>& viewpoints);
 
  private:
   ros::NodeHandle nh_;
@@ -142,6 +147,9 @@ class Visualization {
   ros::Publisher state_history_pub_;
   ros::Publisher pcl_pub_;
   ros::Publisher path_pub_;
+  ros::Publisher manhole_traversal_path_pub_;
+  ros::Publisher graph_vertices_pub_;
+  ros::Publisher viewpoints_pub_;
 
   std::string world_frame_id = "world";
   // 0 = infinite
@@ -155,7 +163,5 @@ class Visualization {
   int best_path_id_;
   bool getHeatMapColor(float value, float& red, float& green, float& blue);
 };
-
-}  // namespace explorer
 
 #endif

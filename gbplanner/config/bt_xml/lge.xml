@@ -1,0 +1,28 @@
+<!-- When ticked:
+Returns:
+  RUNNING: If needs re-triggering
+  SUCCESS: Global exp complete, global exp failed for more than max allowed tries
+-->
+<root BTCPP_format="4">
+  <BehaviorTree ID="lge">
+    <Sequence>
+      <Inverter>
+        <KeepRunningUntilFailure>
+          <Sequence>
+            <LocalExploration/>
+            <Inverter>
+              <LocalExpExhaustedCheck/>
+            </Inverter>
+          </Sequence>
+        </KeepRunningUntilFailure>
+      </Inverter>
+      <Inverter>
+        <KeepRunningUntilFailure>
+          <Inverter>
+            <GlobalExploration/>
+          </Inverter>
+        </KeepRunningUntilFailure>
+      </Inverter>
+    </Sequence>
+  </BehaviorTree>
+</root>

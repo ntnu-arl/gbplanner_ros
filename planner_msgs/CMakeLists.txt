@@ -33,6 +33,7 @@ add_service_files(
   planner_go_to_waypoint.srv
   planner_dynamic_global_bound.srv
   planner_set_planning_mode.srv
+  planner_manhole_approval.srv
 )
 
 add_message_files(
@@ -51,6 +52,8 @@ add_message_files(
   Graph.msg
   CoveragePlannerLogger.msg
   BehaviourPlannerLogger.msg
+  ManholeDetection.msg
+  MultipleManholeDetections.msg
 )
 
 add_action_files(

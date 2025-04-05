@@ -5,6 +5,8 @@ namespace gbplanner_ui {
 gbplanner_panel::gbplanner_panel(QWidget* parent) : rviz::Panel(parent) {
   planner_client_start_planner = nh.serviceClient<std_srvs::Trigger>(
       "/planner_control_interface/std_srvs/automatic_planning");
+  planner_client_start_planner_single = nh.serviceClient<std_srvs::Trigger>(
+      "/planner_control_interface/std_srvs/single_planning");   
   planner_client_stop_planner = nh.serviceClient<std_srvs::Trigger>(
       "/planner_control_interface/std_srvs/stop");
   planner_client_homing = nh.serviceClient<std_srvs::Trigger>(
@@ -20,6 +22,7 @@ gbplanner_panel::gbplanner_panel(QWidget* parent) : rviz::Panel(parent) {
   QVBoxLayout* v_box_layout = new QVBoxLayout;
 
   button_start_planner = new QPushButton;
+  button_start_planner_single = new QPushButton;
   button_stop_planner = new QPushButton;
   button_homing = new QPushButton;
   button_init_motion = new QPushButton;
@@ -27,6 +30,7 @@ gbplanner_panel::gbplanner_panel(QWidget* parent) : rviz::Panel(parent) {
   button_global_planner = new QPushButton;
 
   button_start_planner->setText("Start Planner");
+  button_start_planner_single->setText("Start Single Planner");
   button_stop_planner->setText("Stop Planner");
   button_homing->setText("Go Home");
   button_init_motion->setText("Initialization");
@@ -34,6 +38,7 @@ gbplanner_panel::gbplanner_panel(QWidget* parent) : rviz::Panel(parent) {
   button_global_planner->setText("Run Global");
 
   v_box_layout->addWidget(button_start_planner);
+  v_box_layout->addWidget(button_start_planner_single);
   v_box_layout->addWidget(button_stop_planner);
   v_box_layout->addWidget(button_homing);
   v_box_layout->addWidget(button_init_motion);
@@ -56,6 +61,8 @@ gbplanner_panel::gbplanner_panel(QWidget* parent) : rviz::Panel(parent) {
 
   connect(button_start_planner, SIGNAL(clicked()), this,
           SLOT(on_start_planner_click()));
+  connect(button_start_planner_single, SIGNAL(clicked()), this,
+          SLOT(on_start_planner_single_click()));
   connect(button_stop_planner, SIGNAL(clicked()), this,
           SLOT(on_stop_planner_click()));
   connect(button_homing, SIGNAL(clicked()), this, SLOT(on_homing_click()));
@@ -72,6 +79,14 @@ void gbplanner_panel::on_start_planner_click() {
   if (!planner_client_start_planner.call(srv)) {
     ROS_ERROR("[GBPLANNER-UI] Service call failed: %s",
               planner_client_start_planner.getService().c_str());
+  }
+}
+
+void gbplanner_panel::on_start_planner_single_click() {
+  std_srvs::Trigger srv;
+  if (!planner_client_start_planner_single.call(srv)) {
+    ROS_ERROR("[GBPLANNER-UI] Service call failed: %s",
+              planner_client_start_planner_single.getService().c_str());
   }
 }
 

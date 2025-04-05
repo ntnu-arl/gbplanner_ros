@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- When ticked:
+Returns:
+  RUNNING: If local planner needs triggering again (next iteration or failed iteration)
+  SUCCESS: Local exploration exhausted
+-->
+
+<root BTCPP_format="4">
+  <BehaviorTree ID="le">
+    <Inverter>
+      <KeepRunningUntilFailure>
+        <Sequence>
+          <LocalExploration/>
+          <Inverter>
+            <LocalExpExhaustedCheck/>
+          </Inverter>
+        </Sequence>
+      </KeepRunningUntilFailure>
+    </Inverter>
+  </BehaviorTree>
+
+  <!-- Description of Node Models (used by Groot) -->
+  <TreeNodesModel>
+    <Action ID="LocalExpExhaustedCheck">
+      <output_port name="mode"
+                   type="int"/>
+    </Action>
+    <Action ID="LocalExploration">
+      <output_port name="mode"
+                   type="int"/>
+    </Action>
+  </TreeNodesModel>
+
+</root>

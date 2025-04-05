@@ -1,0 +1,31 @@
+run_mode: kReal
+trigger_mode: kManual
+robot_type: kAerial
+output_type: kTopic
+init_motion_enable: false
+planner_trigger_lead_time: 0.1
+smooth_heading_enable: false
+path_end_dist_thr: 0.7
+path_end_yaw_thr: 0.4
+path_progression_dist_thr: 1.0
+path_progression_dist_thr_min: 1.0
+path_progression_pitch_thr: 0.4
+path_progression_yaw_thr: 0.4
+path_progression_yaw_thr_min: 0.4
+interpolate_traj: true
+use_time_from_start: true
+set_first_wp_speed: false
+reconnect_path: true
+init_motion:
+  z_takeoff: 1.2
+  z_drop: 0.5
+  x_forward: 0.7
+
+# Group related parameters to be shared between nodes.
+RobotDynamics:
+  v_max: 1.0 # 2.0
+  v_init_max: 1.0
+  v_homing_max: 1.0
+  yaw_rate_max: 0.75 # 0.3
+  dt: 0.2
+  a_max: 0.5

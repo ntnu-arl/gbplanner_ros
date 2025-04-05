@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- When ticked:
+Returns:
+  RUNNING: MHPhase1 successful, MHPhase1 needs retriggering
+  SUCCESS: MHCheck successful, MHPhase2 successful
+  FAILURE: No malholes left hence going to Idle
+-->
+<root BTCPP_format="4">
+  <BehaviorTree ID="mh_passing">
+    <Sequence>
+      <Inverter>
+        <KeepRunningUntilFailure>
+          <Inverter>
+            <MHPhase1/>
+          </Inverter>
+        </KeepRunningUntilFailure>
+      </Inverter>
+      <Fallback>
+        <Inverter>
+          <MHP1FailCheck/>
+        </Inverter>
+        <Idle/>
+      </Fallback>
+      <MHPhase2/>
+    </Sequence>
+  </BehaviorTree>
+
+  <!-- Description of Node Models (used by Groot) -->
+  <TreeNodesModel>
+    <Action ID="MHPhase1">
+      <output_port name="mode"
+                   type="int"/>
+    </Action>
+    <Action ID="MHPhase2">
+      <output_port name="mode"
+                   type="int"/>
+    </Action>
+  </TreeNodesModel>
+
+</root>

@@ -1,0 +1,101 @@
+repositories:
+  src/exploration/BehaviorTree.CPP:
+    type: git
+    url: https://github.com/BehaviorTree/BehaviorTree.CPP.git
+    version: 14589e589c5049fbb7f1fb30ccaa3efc66c84f18
+  src/exploration/adaptive_obb_ros:
+    type: git
+    url: git@github.com:ntnu-arl/adaptive_obb_ros.git
+    version: 7a6a9f244ec35800808cb4610931f09c1ff8c4a8
+  src/exploration/gbplanner3:
+    type: git
+    url: git@github.com:ntnu-arl/gbplanner3.git
+    version: 2ace105bd6207ca9d4ee3d29e199886f91a3bb67
+  src/exploration/manhole_detector_ros:
+    type: git
+    url: git@github.com:ntnu-arl/manhole_detector_ros.git
+    version: 8443b19c6696d3057e59412cc04b9a3071ff0589
+  src/exploration/pci_general:
+    type: git
+    url: git@github.com:ntnu-arl/pci_general.git
+    version: cb61a68028f66b053d532529e92fe83b0ae32ee2
+  src/mapping/voxblox:
+    type: git
+    url: git@github.com:ntnu-arl/voxblox.git
+    version: d1db0e19049fb441655eddefcdba9c9af596ead7
+  src/misc/catkin_boost_python_buildtool:
+    type: git
+    url: git@github.com:ethz-asl/catkin_boost_python_buildtool.git
+    version: c8ea6e25bc5d98772d57b2ffd7619973952a6839
+  src/misc/catkin_simple:
+    type: git
+    url: git@github.com:catkin/catkin_simple.git
+    version: 0e62848b12da76c8cc58a1add42b4f894d1ac21e
+  src/misc/eigen_catkin:
+    type: git
+    url: git@github.com:ethz-asl/eigen_catkin.git
+    version: 3323b388540fa95ec9da6f9cd887f70ead055edb
+  src/misc/eigen_checks:
+    type: git
+    url: git@github.com:ethz-asl/eigen_checks.git
+    version: 22a6247a3df11bc285d43d1a030f4e874a413997
+  src/misc/gflags_catkin:
+    type: git
+    url: git@github.com:ethz-asl/gflags_catkin.git
+    version: fc38fc525f7d48881aebb27a7b9978453556bbd4
+  src/misc/glog_catkin:
+    type: git
+    url: git@github.com:ethz-asl/glog_catkin.git
+    version: 40a9edadd15c59f8b57dc947d0135b0a007ea10b
+  src/misc/kindr:
+    type: git
+    url: git@github.com:ANYbotics/kindr.git
+    version: 32800890d546e306f73c3ee3091fb6903452f925
+  src/misc/mav_comm:
+    type: git
+    url: git@github.com:ethz-asl/mav_comm.git
+    version: 56122218eb1ec34deaa641598ebacf24e26c349b
+  src/misc/minkindr:
+    type: git
+    url: git@github.com:ethz-asl/minkindr.git
+    version: 564f12639a8447d4d3e5e7707851424302941056
+  src/misc/minkindr_ros:
+    type: git
+    url: git@github.com:ethz-asl/minkindr_ros.git
+    version: 8ef67b01c76e6dcba69dc5143692989b6a8dbc32
+  src/misc/multi_dof_joint_trajectory_rviz_plugins:
+    type: git
+    url: git@github.com:ntnu-arl/multi_dof_joint_trajectory_rviz_plugins.git
+    version: b3420ee7c5f4ed4315bf2b056d3b9841096293e5
+  src/misc/numpy_eigen:
+    type: git
+    url: git@github.com:ethz-asl/numpy_eigen.git
+    version: f63b1dfe3b0a1ee21138caa1dcedd32c7f0411d9
+  src/misc/protobuf_catkin:
+    type: git
+    url: git@github.com:ethz-asl/protobuf_catkin.git
+    version: 721a6cc17e7e937e7accfb88a9967b26134db6f9
+  src/sim/arl_gazebo_sim_ros:
+    type: git
+    url: git@github.com:ntnu-arl/arl_gazebo_sim_ros.git
+    version: 3ab08992f7fb425552cce06b87529bcf6fe91ccb
+  src/sim/lidar_simulator:
+    type: git
+    url: git@github.com:ntnu-arl/lidar_simulator.git
+    version: f20550e8e4a34e770d8ebf40dc883db83baa0164
+  src/sim/ros_gz:
+    type: git
+    url: git@github.com:ntnu-arl/ros_gz.git
+    version: d5fc8e925294c0b8f31b357e7d1ffa7f3f1bdfee
+  src/sim/rotors_simulator:
+    type: git
+    url: git@github.com:ntnu-arl/rotors_simulator.git
+    version: e8c6f170de51620f572664656f10603334bf5057
+  src/sim/smb_simulator:
+    type: git
+    url: git@github.com:ntnu-arl/smb_simulator.git
+    version: 98533075380682c63970c29447a08dae0085c911
+  src/sim/subt_cave_sim:
+    type: git
+    url: git@github.com:ntnu-arl/subt_cave_sim.git
+    version: 6b79d077e31d5e2e1e2873a770abf401c97671ab

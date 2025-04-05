@@ -9,7 +9,9 @@ namespace explorer {
 
 enum Verbosity { SILENT = 0, PLANNER_STATUS = 1, ERROR = 2, WARN = 3, INFO = 4, DEBUG = 5 };
 
-#define global_verbosity Verbosity::ERROR
+typedef Eigen::Matrix<double, 5, 1> StateVec;
+
+#define global_verbosity Verbosity::WARN
 #define param_verbosity Verbosity::SILENT
 class PCIManager {
  public:
@@ -35,7 +37,8 @@ class PCIManager {
     kGlobalPath = 2,
     kNarrowEnvPath =
         3,           // For special case, to slow down the copter in narrow env.
-    kManualPath = 4  // Manually set path.
+    kManualPath = 4,  // Manually set path.
+    kAutoCustomPath = 5
   };
 
   enum struct RobotType { kAerial = 0, kGround };
@@ -59,6 +62,8 @@ class PCIManager {
 
   // Set max linear velocity allowed.
   virtual void setVelocity(double v) = 0;
+
+  virtual void setCurrentVelocity(const geometry_msgs::Vector3 &vel) = 0;
 
   // Check if we should trigger planner in advance.
   virtual bool planAhead() = 0;
@@ -90,6 +95,7 @@ class PCIManager {
 
   PCIStatus pci_status_;
   geometry_msgs::Pose current_pose_;
+  Eigen::Vector3d current_vel_;
 
   bool force_stop_;
 };

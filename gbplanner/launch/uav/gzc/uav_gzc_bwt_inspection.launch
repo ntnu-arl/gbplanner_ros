@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+<launch>
+	<!-- All settings -->
+	<arg name="robot_name" default="rmf_obelix"/>
+	<arg name="config_folder" default="uav/gzc/bwt_inspection"/>
+	<arg name="gazebo_gui_en" default="false"/>
+  <arg name="use_sim_time" default="true"/>
+  <arg name="rviz_en" default="true" />
+  <arg name="launch_prefix" default=""/> <!-- gdb -ex run //args -->
+  <param name="use_sim_time" value="$(arg use_sim_time)"/>
+
+	<!-- Config files -->
+	<arg name="gbplanner_config_file" default="$(find gbplanner)/config/$(arg config_folder)/gbplanner_config.yaml"/>
+	<arg name="pci_file" default="$(find gbplanner)/config/$(arg config_folder)/planner_control_interface_sim_config.yaml"/>
+	<arg name="voxblox_config_file" default="$(find gbplanner)/config/$(arg config_folder)/voxblox_sim_config.yaml"/>
+	<arg name="map_config_file" default="$(arg voxblox_config_file)"/>
+	<arg name="manhole_config_file" default="$(find manhole_detector)/config/manhole_detector.yaml"/>
+
+	<arg name="odometry_topic" default="/rmf_obelix/ground_truth/odometry_throttled"/>
+
+	<!-- Simulation -->
+	<include file="$(find arl_gazebo_sim)/gzc/uav_sim/launch/uav_gzc_bwt_inspection.launch">
+		<arg name="robot_name" value="$(arg robot_name)"/>
+		<arg name="launch_prefix" value="$(arg launch_prefix)"/>
+		<arg name="gazebo_gui_en" value="$(arg gazebo_gui_en)"/>
+	</include>
+	<!-- Graph based planning -->
+	<node pkg="gbplanner" type="gbplanner_node" name="gbplanner_node" output="screen" launch-prefix="$(arg launch_prefix)">
+		<remap from="odometry" to="$(arg odometry_topic)" />
+		<remap from="/pointcloud" to="/rmf_obelix/velodyne_points" />
+		<remap from="manhole_detections" to="stable_detections"/>
+		<remap from="query_point" to="/rmf_obelix/tsdf_query_pt"/>
+		<rosparam command="load" file="$(arg gbplanner_config_file)" />
+		<rosparam command="load" file="$(arg map_config_file)" />
+		<param name="behavior_tree_path" value="$(find gbplanner)/config/$(arg config_folder)/main_tree.xml"/>
+	</node>
+
+	<!-- Planner and Control Interface -->
+	<node pkg="pci_general" type="pci_general_ros_node" name="pci_general_ros_node" output="screen">
+		<remap from="command/trajectory" to="/rmf_obelix/command/trajectory" />
+		<remap from="planner_server" to="gbplanner_ros" />
+		<remap from="planner_homing_server" to="gbplanner/homing" />
+		<remap from="odometry" to="$(arg odometry_topic)"/>     
+		<rosparam command="load" file="$(arg pci_file)" />
+	</node>
+
+	<node pkg="manhole_detector" type="manhole_detector_node" name="manhole_detector_node" output="screen">
+		<remap from="pcl_in" to="/rmf_obelix/velodyne_points" />
+		<remap from="depth_img_in" to="/img_node/range_image" />
+		<remap from="odometry" to="$(arg odometry_topic)" />
+		<rosparam command="load" file="$(arg manhole_config_file)" />
+	</node>
+
+	<include file="$(find manhole_detector)/launch/depth_image_publisher.launch">
+			<arg name="point_cloud_topic_name" 	default="/rmf_obelix/velodyne_points"/>
+	</include>
+
+	<!-- Rviz -->
+	<node pkg="rviz" type="rviz" name="gbplanner_ui" output="screen" args="-d $(find gbplanner)/config/$(arg config_folder)/ui.rviz"/>
+
+</launch>

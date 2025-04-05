@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="world_name" default=""/>
+    <arg name="ugv_name" default=""/>
+    <arg name="sdf_ugv_file" default="$(find ugv_gazebo)/models/$(arg ugv_name)/model.sdf" />
+    <arg name="allow_renaming" default="true" />
+    
+    <!-- Pose initialization for the spawned model -->
+    <arg name="x" default="0.0"/>
+    <arg name="y" default="0.0"/>
+    <arg name="z" default="1.7"/>
+    <arg name="R" default="0.0" />
+    <arg name="P" default="0.0" />
+    <arg name="Y" default="0.0" />
+    
+    <!-- Spawn UGV robot -->
+    <node pkg="ros_ign_gazebo" type="create" name="$(anon ros_ign_create_ugv)" output="screen" args="
+        -world $(arg world_name) 
+        -file $(arg sdf_ugv_file) 
+        -name $(arg ugv_name) 
+        -allow_renaming $(arg allow_renaming) 
+        -x $(arg x) 
+        -y $(arg y) 
+        -z $(arg z)
+        -R $(arg R)
+        -P $(arg P)
+        -Y $(arg Y)">
+    </node>
+
+    <!-- Topics -->
+    <include file="$(find ugv_gazebo)/launch/$(arg ugv_name)/topics.launch">
+        <arg name="world_name" value="$(arg world_name)"/>
+        <arg name="ugv_name" value="$(arg ugv_name)"/>
+    </include>
+</launch>

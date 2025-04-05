@@ -19,7 +19,6 @@
   <depend>visualization_msgs</depend>
   <depend>nav_msgs</depend>
   <depend>kdtree</depend>
-  <depend>voxblox_ros</depend>
   <depend>planner_msgs</depend>
   <depend>planner_semantic_msgs</depend>
   <depend>roscpp_serialization</depend>

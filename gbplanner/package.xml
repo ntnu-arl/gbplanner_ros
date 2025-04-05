@@ -15,11 +15,12 @@
   <depend>geometry_msgs</depend>
   <depend>visualization_msgs</depend>
   <depend>kdtree</depend>
-  <depend>voxblox_ros</depend>
   <depend>planner_common</depend>
+  <depend>map_manager</depend>
   <depend>planner_msgs</depend>
   <depend>planner_semantic_msgs</depend>
   <depend>adaptive_obb</depend>
   <depend>pcl_ros</depend>
+  <depend>behaviortree_cpp</depend>
   
 </package>

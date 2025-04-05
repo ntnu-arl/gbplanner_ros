@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- All settings -->
+    <arg name="world_name" default="cosmos" />
+    <arg name="uav_name" default="rmf_owl"/>
+    <arg name="config_folder" default="uav/gz/active_cam_inspection"/>
+    <arg name="verbosity" default="0"/>
+    <arg name="launch_prefix" default=""/>
+
+    <!-- Config files -->
+    <arg name="gbplanner_config_file" default="$(find gbplanner)/config/$(arg config_folder)/gbplanner_config.yaml"/>
+    <arg name="pci_file" default="$(find gbplanner)/config/$(arg config_folder)/planner_control_interface_sim_config.yaml"/>
+    <arg name="voxblox_config_file" default="$(find gbplanner)/config/$(arg config_folder)/voxblox_sim_config.yaml"/>
+    <arg name="map_config_file" default="$(arg voxblox_config_file)"/>
+
+    <include file="$(find arl_gazebo_sim)/gz/uav_sim/launch/uav_gz_cargo_inspection.launch" />
+
+    <arg name="odometry_topic" default="/$(arg uav_name)/ground_truth/odometry_throttled"/>
+
+    <!-- Graph based planning -->
+    <node pkg="gbplanner" type="gbplanner_node" name="gbplanner_node" output="screen" launch-prefix="$(arg launch_prefix)">
+        <remap from="odometry" to="$(arg odometry_topic)" />
+        <remap from="/pointcloud" to="/rmf_owl/lidar/points" />
+        <remap from="pcl_in" to="/rmf_owl/lidar/points" />
+        <rosparam command="load" file="$(arg gbplanner_config_file)" />
+        <rosparam command="load" file="$(arg map_config_file)" />
+        <remap from="cam_pitch" to="/camera_joint_pitch_state"/>
+        <param name="behavior_tree_path" value="$(find gbplanner)/config/$(arg config_folder)/main_tree.xml"/>
+    </node>
+
+    <!-- Planner and Control Interface -->
+    <node pkg="pci_general" type="pci_general_ros_node" name="pci_general_ros_node" output="screen">
+        <remap from="command/trajectory" to="$(arg uav_name)/command/trajectory" />
+        <remap from="planner_server" to="gbplanner_ros" />
+        <remap from="planner_homing_server" to="gbplanner/homing" />
+        <remap from="act_cam_cmd" to="/camera_joint_pitch"/>
+        <remap from="cam_pitch" to="/camera_joint_pitch_state"/>
+        <remap from="odometry" to="$(arg odometry_topic)"/>
+        <rosparam command="load" file="$(arg pci_file)" />
+    </node>
+
+    <!-- Rviz -->
+    <node pkg="rviz" type="rviz" name="gbplanner_ui" output="screen" args="-d $(find gbplanner)/config/$(arg config_folder)/ui.rviz"/>
+
+</launch>

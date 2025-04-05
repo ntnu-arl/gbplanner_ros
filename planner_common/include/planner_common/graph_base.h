@@ -6,6 +6,7 @@
 
 #include "planner_common/params.h"
 #include "planner_semantic_msgs/SemanticClass.h"
+// #include "planner_common/map_manager.h"
 
 // namespace explorer {
 
@@ -86,13 +87,23 @@ struct VolumetricGain {
   int num_free_voxels;
   int num_occupied_voxels;
   int num_unknown_surf_voxels;
-  std::vector<std::size_t> unseen_voxel_hash_keys;
+  std::set<std::size_t> unseen_voxel_hash_keys;
 
   bool is_frontier;
 
   void printGain() {
     std::cout << "Gains: " << gain << ", " << num_unknown_voxels << ", "
               << num_occupied_voxels << ", " << num_free_voxels << std::endl;
+  }
+};
+
+struct VoxelLog {
+  Eigen::Vector3d voxel_center;
+  std::size_t voxel_hash;
+
+  VoxelLog(Eigen::Vector3d center, std::size_t hash) {
+    voxel_center = center;
+    voxel_hash = hash;
   }
 };
 
@@ -160,7 +171,7 @@ enum struct VertexType {
 struct Vertex {
   Vertex(int v_id, StateVec v_state) {
     id = v_id;
-    state << v_state[0], v_state[1], v_state[2], v_state[3];
+    state << v_state[0], v_state[1], v_state[2], v_state[3], v_state[4];
     vol_gain.reset();
     parent = NULL;
     distance = 0;
@@ -168,6 +179,7 @@ struct Vertex {
     is_hanging = false;
     type = VertexType::kUnvisited;
     cluster_id = 0;
+    is_checked = false;
     dm = 0;
     semantic_class.value = planner_semantic_msgs::SemanticClass::kNone;
   }
@@ -181,6 +193,7 @@ struct Vertex {
   // NBVP legacy, keeping for now if wants to build a tree to compare.
   Vertex* parent;
   std::vector<Vertex*> children;
+  std::vector<Vertex*> orientation_sub_vertices;
   // Distance to root.
   double distance;
   // Set true if this is a leaf in the simplified tree from the graph.
@@ -193,6 +206,7 @@ struct Vertex {
   int cluster_id;
   // Distance to closest obstacle in the map
   double dm;
+  bool is_checked;
   // Semantic
   planner_semantic_msgs::SemanticClass semantic_class;
 };
@@ -295,6 +309,7 @@ struct Serializer<StateVec> {
     stream.next(m[1]);
     stream.next(m[2]);
     stream.next(m[3]);
+    stream.next(m[4]);
   }
 
   ROS_DECLARE_ALLINONE_SERIALIZER

@@ -82,6 +82,7 @@ class PlannerControlInterface {
   ros::ServiceClient planner_set_exp_mode_client_;
   ros::ServiceClient nav_goal_client_;
   ros::ServiceClient planner_set_trigger_mode_client_;
+  ros::ServiceClient planner_inspection_srv_client_;
 
   ros::ServiceServer pci_server_;
   ros::ServiceServer pci_std_automatic_planning_server_;
@@ -101,6 +102,7 @@ class PlannerControlInterface {
   ros::ServiceServer pci_passing_gate_server_;
   ros::ServiceServer rotate_180_deg_server_;
   ros::ServiceServer pci_std_global_last_specified_frontier_server_;
+  ros::ServiceServer pci_inspection_srv_server_;
 
   tf::TransformListener tf_listener_;
 
@@ -116,6 +118,7 @@ class PlannerControlInterface {
   bool init_request_;
   bool global_request_;
   bool stop_planner_request_;
+  bool inspection_srv_request_ = false;
 
   bool passing_gate_success_;
   bool passing_gate_request_;
@@ -216,6 +219,9 @@ class PlannerControlInterface {
   bool rotate180DegCallback(std_srvs::Trigger::Request& req,
                             std_srvs::Trigger::Response& res);
 
+  bool inspectionSrvCallback(std_srvs::Trigger::Request& req,
+                           std_srvs::Trigger::Response& res);
+
   bool stdSrvReplanLastSpecifiedFrontierCallback(
       std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
   void resetPlanner();
@@ -231,6 +237,7 @@ class PlannerControlInterface {
   void runPassingGate();
   void runGlobalRepositioning();
   geometry_msgs::Pose getPoseToStart();
+  void runInspection();
 
   bool search_request_;
   bool use_current_state_;

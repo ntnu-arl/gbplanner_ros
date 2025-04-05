@@ -1,0 +1,24 @@
+<!-- When ticked:
+Returns:
+  RUNNING: If needs re-triggering
+  SUCCESS: Homing path calculated successfully (i.e. mission ended)
+-->
+<root BTCPP_format="4">
+  <include path="./lge.xml" />
+  <include path="./homing.xml" />
+  <BehaviorTree ID="lge_homing">
+    <Sequence>
+      <Inverter>
+        <KeepRunningUntilFailure>
+          <Sequence>
+            <SubTree ID="lge"/>
+            <Inverter>
+              <GlobalExpExhaustedCheck/>
+            </Inverter>
+          </Sequence>
+        </KeepRunningUntilFailure>
+      </Inverter>
+      <SubTree ID="homing"/>
+    </Sequence>
+  </BehaviorTree>
+</root>

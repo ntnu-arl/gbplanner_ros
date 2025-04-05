@@ -249,14 +249,20 @@ void GraphManager::convertGraphToMsg(planner_msgs::Graph& graph_msg) {
     vertex.id = v.second->id;
 
     // convertStateToPoseMsg
-    vertex.pose.position.x = v.second->state[0];
-    vertex.pose.position.y = v.second->state[1];
-    vertex.pose.position.z = v.second->state[2];
-    double yawhalf = v.second->state[3] * 0.5;
-    vertex.pose.orientation.x = 0.0;
-    vertex.pose.orientation.y = 0.0;
-    vertex.pose.orientation.z = sin(yawhalf);
-    vertex.pose.orientation.w = cos(yawhalf);
+    // vertex.pose.position.x = v.second->state[0];
+    // vertex.pose.position.y = v.second->state[1];
+    // vertex.pose.position.z = v.second->state[2];
+    // double yawhalf = v.second->state[3] * 0.5;
+    // vertex.pose.orientation.x = 0.0;
+    // vertex.pose.orientation.y = 0.0;
+    // vertex.pose.orientation.z = sin(yawhalf);
+    // vertex.pose.orientation.w = cos(yawhalf);
+
+    tf::Quaternion quat;
+    quat.setEuler(0.0, v.second->state[4], v.second->state[3]);
+    tf::Vector3 origin(v.second->state[0], v.second->state[1], v.second->state[2]);
+    tf::Pose poseTF(quat, origin);
+    tf::poseTFToMsg(poseTF, vertex.pose);
 
     vertex.num_unknown_voxels = v.second->vol_gain.num_unknown_voxels;
     vertex.num_occupied_voxels = v.second->vol_gain.num_occupied_voxels;
@@ -285,7 +291,17 @@ void GraphManager::convertMsgToGraph(const planner_msgs::Graph& graph_msg) {
     state[0] = v.pose.position.x;
     state[1] = v.pose.position.y;
     state[2] = v.pose.position.z;
-    state[3] = tf::getYaw(v.pose.orientation);
+
+    Eigen::Quaterniond q;
+    q.x() = v.pose.orientation.x;
+    q.y() = v.pose.orientation.y;
+    q.z() = v.pose.orientation.z;
+    q.w() = v.pose.orientation.w;
+
+    auto euler = q.toRotationMatrix().eulerAngles(2, 1, 0);
+    state[3] = euler[0];
+    state[4] = euler[1];
+
     Vertex* vertex = new Vertex(v.id, state);
     // Copy other info
     vertex->vol_gain.num_unknown_voxels = v.num_unknown_voxels;

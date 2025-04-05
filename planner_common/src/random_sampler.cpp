@@ -25,9 +25,22 @@ bool RandomSamplerBase::loadParams(std::string ns) {
     pdf_type_ = RandomDistributionType::kCauchy;
   else if (!parse_str.compare("kConst"))
     pdf_type_ = RandomDistributionType::kConst;
+  else if (!parse_str.compare("kNormalUniform"))
+    pdf_type_ = RandomDistributionType::kNormalUniform;
   else {
     ROSPARAM_ERROR(ns);
     return false;
+  }
+
+  
+  if ((pdf_type_ == RandomDistributionType::kNormalUniform) || (pdf_type_ == RandomDistributionType::kNormal)){
+    param_name = ns + "/std_val";
+    if (!ros::param::get(param_name, std_val_)) {
+      ROSPARAM_ERROR(param_name);
+      return false;
+    }
+    init_pdf_type_ = pdf_type_; // In case of kNormalUnform: pdf_type will change
+    init_std_val_ = std_val_;   // In case of kAdaptiveExploration: std_val will change based on the local bounding box
   }
 
   param_name = ns + "/sample_mode";
@@ -61,8 +74,8 @@ bool RandomSamplerBase::loadParams(std::string ns) {
         ROSPARAM_ERROR(param_name);
         return false;
       }
-    } else if (pdf_type_ == RandomDistributionType::kNormal) {
-      // Normal pdf: mean, std, as well as min and max to truncate if required
+    } else if (pdf_type_ == RandomDistributionType::kNormalUniform || pdf_type_ == RandomDistributionType::kNormal) {
+      // NormalUniform and Normal pdf: mean, as well as min and max to truncate if required
       use_bound_ = true;
       param_name = ns + "/min_val";
       if (!ros::param::get(param_name, min_val_)) {
@@ -79,11 +92,11 @@ bool RandomSamplerBase::loadParams(std::string ns) {
         ROSPARAM_ERROR(param_name);
         return false;
       }
-      param_name = ns + "/std_val";
-      if (!ros::param::get(param_name, std_val_)) {
-        ROSPARAM_ERROR(param_name);
-        return false;
-      }
+      // param_name = ns + "/std_val";
+      // if (!ros::param::get(param_name, std_val_)) {
+      //   ROSPARAM_ERROR(param_name);
+      //   return false;
+      // }
     } else if (pdf_type_ == RandomDistributionType::kConst) {
       // Set const value.
       param_name = ns + "/const_val";
@@ -108,7 +121,8 @@ void RandomSamplerBase::setParams(int ind, BoundedSpaceParams& global_params,
   else
     return;
 
-  if (pdf_type_ == RandomDistributionType::kUniform) {
+  if ((pdf_type_ == RandomDistributionType::kUniform) || 
+      (pdf_type_ == RandomDistributionType::kNormal)) {
     if (params->type == BoundedSpaceType::kCuboid) {
       min_val_ = params->min_val[ind];
       max_val_ = params->max_val[ind];
@@ -131,12 +145,21 @@ void RandomSamplerBase::setDistributionParams(double mean_val, double std_val) {
   std_val_ = std_val;
 }
 
+void RandomSamplerBase::setSTD(double scl_factor){
+  // It is applicable only in the case of kAdapiveExploration
+  std_val_ = init_std_val_*scl_factor;
+}
+
+void RandomSamplerBase::setPDF(RandomSamplerBase::RandomDistributionType pdf_type){
+  // It is applicable only in the case of kNormalUniform
+  pdf_type_ = pdf_type;
+}
+
 void RandomSamplerBase::reset() {
   std::random_device rd;
   generator_.seed(rd());
   if (pdf_type_ == RandomDistributionType::kUniform) {
-    uniform_pdf_.reset(
-        new std::uniform_real_distribution<>(min_val_, max_val_));
+    uniform_pdf_.reset(new std::uniform_real_distribution<>(min_val_, max_val_));
   } else if (pdf_type_ == RandomDistributionType::kNormal) {
     normal_pdf_.reset(new std::normal_distribution<>(mean_val_, std_val_));
   } else if (pdf_type_ == RandomDistributionType::kCauchy) {
@@ -150,7 +173,10 @@ double RandomSamplerBase::generate(double current_val, double chi_sq_var) {
   if (pdf_type_ == RandomDistributionType::kUniform) {
     r = (*uniform_pdf_)(generator_);
   } else if (pdf_type_ == RandomDistributionType::kNormal) {
-    r = normal_pdf_->operator()(generator_);
+    int while_thres = 1000;  // magic number
+    do {
+      r = normal_pdf_->operator()(generator_);
+    } while ((r < min_val_ || r > max_val_) && while_thres--);
   } else if (pdf_type_ == RandomDistributionType::kCauchy) {
     r = normal_pdf_->operator()(generator_) / sqrt(chi_sq_var) + mean_val_;
   } else if (pdf_type_ == RandomDistributionType::kConst) {
@@ -174,9 +200,23 @@ double RandomSamplerBase::getZOffset() {
   }
 }
 
+RandomSamplerBase::RandomDistributionType RandomSamplerBase::getInitPDF(){
+  // It is applicable only in the case of kNormalUniform
+  return init_pdf_type_;
+}
+
+RandomSamplerBase::RandomDistributionType RandomSamplerBase::getPDF(){
+  return pdf_type_;
+}
+
+double RandomSamplerBase::getRange(){
+  // It is applicable only in the case of kAdapiveExploration
+  return (max_val_-min_val_);
+}
+
 RandomSampler::RandomSampler() {
   random_sampler_base_.clear();
-  random_sampler_base_.resize(4);
+  random_sampler_base_.resize(5);
   valid_samples_.clear();
 }
 RandomSampler::~RandomSampler() {}
@@ -186,7 +226,9 @@ bool RandomSampler::loadParams(std::string ns) {
   if (!random_sampler_base_[1].loadParams(ns + "/Y")) return false;
   if (!random_sampler_base_[2].loadParams(ns + "/Z")) return false;
   if (!random_sampler_base_[3].loadParams(ns + "/Heading")) return false;
+  if (!random_sampler_base_[4].loadParams(ns + "/Pitch")) return false;
   isReady = true;
+
   return true;
 }
 
@@ -221,9 +263,19 @@ bool RandomSampler::setDistributionParams(Eigen::Vector3d& mean_val,
 bool RandomSampler::setParams(BoundedSpaceParams& global_params,
                               BoundedSpaceParams& local_params, bool rotation) {
   // This applied to x,y,z only
+  double largerRange = 0;
+  double scaling_factor;
   for (int i = 0; i < 3; ++i) {
     random_sampler_base_[i].setParams(i, global_params, local_params);
+    if (largerRange < random_sampler_base_[i].getRange())
+      largerRange = random_sampler_base_[i].getRange();
   }
+  // It is applicable only in the case of kBasicExploration
+  for (int i = 0; i < 3; ++i){
+    scaling_factor = random_sampler_base_[i].getRange()/largerRange;
+    random_sampler_base_[i].setSTD(scaling_factor);
+  }
+
   if (rotation) {
     Eigen::Matrix3d rot_W2B;
     rot_W2B =
@@ -239,11 +291,54 @@ bool RandomSampler::setParams(BoundedSpaceParams& global_params,
   return true;
 }
 
+void RandomSampler::setSTD(){
+  // It is applicable only in the case of kAdapiveExploration
+  double largerRange = 0;
+  double scaling_factor;
+  for (int i = 0; i < 3; ++i) {
+    if (largerRange < random_sampler_base_[i].getRange())
+      largerRange = random_sampler_base_[i].getRange();
+  }
+  for (int i = 0; i < 3; ++i){
+    scaling_factor = random_sampler_base_[i].getRange()/largerRange;
+    random_sampler_base_[i].setSTD(scaling_factor);
+  }
+}
+
+void RandomSampler::setPDF(RandomSamplerBase::RandomDistributionType pdf_type, int axis){
+  std::random_device rd;
+  generator_.seed(rd());
+  chi_squared_.reset(new std::chi_squared_distribution<>(1));
+  random_sampler_base_[axis].setPDF(pdf_type);
+  random_sampler_base_[axis].reset();
+}
+
+std::vector<RandomSamplerBase::RandomDistributionType> RandomSampler::getInitPDF(){
+  // It is applicable only in the case of kNormalUniform
+  std::vector<RandomSamplerBase::RandomDistributionType> tmp;
+  for (int i=0; i<5; i++){
+    tmp.push_back(random_sampler_base_[i].getInitPDF());
+  }
+  return tmp;
+}
+
+std::vector<RandomSamplerBase::RandomDistributionType> RandomSampler::getPDF(){
+  std::vector<RandomSamplerBase::RandomDistributionType> tmp;
+  for (int i=0; i<5; i++){
+    tmp.push_back(random_sampler_base_[i].getPDF());
+  }
+  return tmp;
+}
+
+int RandomSampler::getInvalidSamplesNum(){
+  return invalid_samples_.size();
+}
+
 void RandomSampler::RandomSampler::reset() {
   std::random_device rd;
   generator_.seed(rd());
   chi_squared_.reset(new std::chi_squared_distribution<>(1));
-  for (int i = 0; i < 4; ++i) {
+  for (int i = 0; i < 5; ++i) {
     random_sampler_base_[i].reset();
   }
   valid_samples_.clear();
@@ -252,7 +347,7 @@ void RandomSampler::RandomSampler::reset() {
 
 void RandomSampler::generate(StateVec& current_state, StateVec& sample_state) {
   double r = chi_squared_->operator()(generator_);
-  for (int i = 0; i < 4; ++i) {
+  for (int i = 0; i < 5; ++i) {
     sample_state[i] = random_sampler_base_[i].generate(0, r);
   }
   Eigen::Vector3d sample_xyz = rot_B2W * sample_state.head(3);
@@ -260,6 +355,7 @@ void RandomSampler::generate(StateVec& current_state, StateVec& sample_state) {
   sample_state[1] = sample_xyz[1] + current_state[1];
   sample_state[2] = sample_xyz[2] + current_state[2];
   sample_state[3] = sample_state[3] + current_state[3];
+  sample_state[4] = sample_state[4] + current_state[4];
 }
 
 void RandomSampler::pushSample(StateVec& state, bool valid) {

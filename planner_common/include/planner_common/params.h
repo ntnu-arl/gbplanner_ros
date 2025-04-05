@@ -21,8 +21,8 @@ typedef ros::Time TIMER;
 
 enum Verbosity { SILENT = 0, PLANNER_STATUS = 1, ERROR = 2, WARN = 3, INFO = 4, DEBUG = 5 };
 
-#define global_verbosity Verbosity::ERROR
-#define param_verbosity Verbosity::SILENT
+#define global_verbosity Verbosity::INFO
+#define param_verbosity Verbosity::PLANNER_STATUS
 
 #define ROSPARAM_ERROR(param_name)                                         \
   ({                                                                       \
@@ -89,17 +89,18 @@ enum Verbosity { SILENT = 0, PLANNER_STATUS = 1, ERROR = 2, WARN = 3, INFO = 4, 
             << std::endl
 
 // State of the robot used for planning (x,y,z,yaw)
-typedef Eigen::Vector4d StateVec;
+// typedef Eigen::Vector4d StateVec;
+typedef Eigen::Matrix<double, 5, 1> StateVec;
 
 enum ProjectedEdgeStatus {
   kAdmissible = 0,
   kSteep,
   kOccipied,
-  kUnknown,
+  kUnk,
   kHanging
 };
 
-enum SensorType { kCamera = 0, kLidar = 1 };
+enum SensorType { kCamera = 0, kLidar = 1, kSpherical = 2 };
 enum CameraType { kFixed = 0, kRotating, kZoom, kRotatingZoom };
 
 enum struct PlannerTriggerModeType {
@@ -117,6 +118,7 @@ struct SensorParamsBase {
   Eigen::Vector3d rotations;      // Body to sensor; [Y, P, R] (rad).
   Eigen::Vector2d fov;            // [Horizontal, Vertical] angles (rad).
   Eigen::Vector2d resolution;  // Resolution in rad [H x V] for volumetric gain.
+  Eigen::Vector2d rot_lims;    // Min and max rotation limits in rad for camera.
   std::string frame_id;        // Frame id of the sensor
   std::string callback_topic;  // Topic on which sensor data is being published
   std::string focal_lenght_topic;  // Topic on which Camera's focal lenght is
@@ -255,10 +257,14 @@ enum RRModeType {
   kTree        // Tree based search,
 };
 
+enum GraphBuildingModeType {
+  kBasic = 0,   // RRT based sampli
+  kBatch        // Batch Sampling
+};
+
 struct PlanningParams {
   // Common
   std::string global_frame_id;
-  bool freespace_cloud_enable;
   // Robot dynamics
   double v_max;
   double v_homing_max;
@@ -266,6 +272,7 @@ struct PlanningParams {
   bool yaw_tangent_correction;
   // Graph building
   PlanningModeType type;
+  GraphBuildingModeType graph_building_mode;
   RRModeType rr_mode;
   double edge_length_min;
   double edge_length_max;
@@ -290,6 +297,7 @@ struct PlanningParams {
   bool free_frustum_before_planning;
   // Exploration gain calculation
   std::vector<std::string> exp_sensor_list;
+  std::vector<std::string> inspection_sensor_list;
   std::vector<std::string> no_gain_zones_list;
   double exp_gain_voxel_size;
   bool use_ray_model_for_volumetric_gain;
@@ -319,11 +327,45 @@ struct PlanningParams {
   double time_budget_limit;
   bool auto_landing_enable;
   double time_budget_before_landing;
-  double max_negative_inclination;
+  bool use_camera_gain;
+  bool annotate_map_with_camera;
+  bool inspection_planning;
+  bool keep_leaf_yaw_only;
+  bool enable_manhole_traversal;
+  double manhole_traversal_path_edge_length;
+  double manhole_alignment_z_offset;
+  bool only_manhole_traversal;
+  bool auto_manhole_path_approval;
+  double min_coverage_percentage;
+  int max_inspection_vertices;
+  double inspection_xy_spacing;
+  double inspection_z_spacing;
+  double inspection_thr_esdf_dist;
+  double inspection_target_viewing_range;
+  int inspection_graph_vertices;
+  int max_exploration_iterations;
+  bool exploration_only;
+  BoundedSpaceParams compartment_dimensions;
+  std::vector<Eigen::Vector3d> compartment_centers;
+  int box_check_method;
+  int line_check_method;
+  bool add_only_frontiers_to_global_graph;
+  bool use_flipped_yaw;
+  double max_manhole_height;
+  double max_surface_distance;
+  bool limit_vertices_to_surface;
+  double min_occ_surface;
+  int max_mh_attempts;
+  double global_graph_odom_dist;
+  double global_graph_odom_connect_radius;
+  bool allow_sudden_dir_change;
+  bool select_closest_frontier;
+  int max_num_low_gain_iters;
 
   bool loadParams(std::string ns);
   void setPlanningMode(PlanningModeType pmode);
 };
+
 
 struct RobotDynamicsParams {
   double v_max;

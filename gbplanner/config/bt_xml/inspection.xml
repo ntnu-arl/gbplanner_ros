@@ -1,0 +1,16 @@
+<!-- When ticked:
+Returns:
+  RUNNING: If needs re-triggering due to failure to calculate the path
+  SUCCESS: Inspection path calculated successfully
+-->
+<root BTCPP_format="4">
+  <BehaviorTree ID="inspection">
+    <Inverter>
+      <KeepRunningUntilFailure>
+        <Inverter>
+          <Inspection/>
+        </Inverter>
+      </KeepRunningUntilFailure>
+    </Inverter>
+  </BehaviorTree>
+</root>

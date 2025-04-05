@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(gbplanner)
 
-add_definitions(-std=c++14 -Wall -Wno-sign-compare -Wno-catch-value -Wno-switch -Wno-maybe-uninitialized -Werror=return-type)
+add_definitions(-std=c++17 -Wall -Wno-sign-compare -Wno-catch-value -Wno-switch -Wno-maybe-uninitialized -Werror=return-type)
 
 find_package(catkin_simple REQUIRED)
 find_package(Boost REQUIRED)
@@ -21,6 +21,8 @@ cs_add_library(
   src/gbplanner.cpp
   src/rrg.cpp
   src/gbplanner_rviz.cpp
+  src/gbplanner_ros.cpp
+  src/gbplanner_bt_nodes.cpp
 )
 
 cs_add_executable(gbplanner_node src/gbplanner_ros_node.cpp)
@@ -28,3 +30,4 @@ target_link_libraries(gbplanner_node ${PROJECT_NAME} ${planner_common_LIBRARIES}
 
 cs_install()
 cs_export(LIBRARIES)
+

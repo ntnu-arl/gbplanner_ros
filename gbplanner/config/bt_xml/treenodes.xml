@@ -1,0 +1,35 @@
+<root BTCPP_format="4">
+    <TreeNodesModel>
+        <Action ID="GlobalExpExhaustedCheck">
+            <output_port name="mode" type="int"/>
+        </Action>
+        <Action ID="GlobalExploration">
+            <output_port name="mode" type="int"/>
+        </Action>
+        <Action ID="Homing">
+            <output_port name="mode" type="int"/>
+        </Action>
+        <Action ID="HomingCheck">
+            <output_port name="mode" type="int"/>
+        </Action>
+        <Action ID="Inspection">
+            <output_port name="mode" type="int"/>
+        </Action>
+        <Action ID="LocalExpExhaustedCheck">
+            <output_port name="mode" type="int"/>
+        </Action>
+        <Action ID="LocalExpExhaustedReset"/>
+        <Action ID="LocalExploration">
+            <output_port name="mode" type="int"/>
+        </Action>
+        <Action ID="MHPhase1">
+            <output_port name="mode" type="int"/>
+        </Action>
+        <Action ID="MHPhase2">
+            <output_port name="mode" type="int"/>
+        </Action>
+        <Action ID="MHPhaseCheck">
+            <output_port name="mode" type="int"/>
+        </Action>
+    </TreeNodesModel>
+</root>

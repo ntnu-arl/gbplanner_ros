@@ -78,8 +78,8 @@ bool SensorParamsBase::loadParams(std::string ns) {
     ROSPARAM_WARN(param_name, "{0,0,0}");
   }
   rotations << param_val[0], param_val[1], param_val[2];
-  std::cout << ns << " " << rotations[0] << ", " << rotations[1] << ", "
-            << rotations[2] << std::endl;
+  // std::cout << ns << " " << rotations[0] << ", " << rotations[1] << ", "
+  //           << rotations[2] << std::endl;
 
   param_val.clear();
   param_name = ns + "/fov";
@@ -100,6 +100,16 @@ bool SensorParamsBase::loadParams(std::string ns) {
     ROSPARAM_WARN(param_name, param_val[0] << "," << param_val[1]);
   }
   resolution << param_val[0], param_val[1];
+
+  param_val.clear();
+  param_name = ns + "/rot_lims";
+  if ((!ros::param::get(param_name, param_val)) || (param_val.size() != 2)) {
+    param_val.resize(2);
+    param_val[0] = 0.0;
+    param_val[1] = 0.0;
+    ROSPARAM_WARN(param_name, param_val[0] << "," << param_val[1]);
+  }
+  rot_lims << param_val[0], param_val[1];
 
   param_name = ns + "/frontier_percentage_threshold";
   if (!ros::param::get(param_name, frontier_percentage_threshold)) {
@@ -249,9 +259,13 @@ void SensorParamsBase::getFrustumEndpoints(StateVec& state,
   // Convert rays from B to W.
   Eigen::Vector3d origin(state[0], state[1], state[2]);
   Eigen::Matrix3d rot_W2B;
-  rot_W2B = Eigen::AngleAxisd(state[3], Eigen::Vector3d::UnitZ()) *
-            Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitY()) *
-            Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitX());
+  // rot_W2B = Eigen::AngleAxisd(state[4], Eigen::Vector3d::UnitY()) *
+  //           Eigen::AngleAxisd(state[3], Eigen::Vector3d::UnitZ()) *
+  //           Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitX());
+  rot_W2B = Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitY()) *
+            Eigen::AngleAxisd(state[3], Eigen::Vector3d::UnitZ()) *
+            Eigen::AngleAxisd(0, Eigen::Vector3d::UnitX());
+  rot_W2B = rot_W2B * Eigen::AngleAxisd(state[4], Eigen::Vector3d::UnitY());
   ep.clear();
   for (auto& p : frustum_endpoints_B) {
     Eigen::Vector3d p_tf = origin + rot_W2B * p;
@@ -265,9 +279,13 @@ void SensorParamsBase::getFrustumEndpoints(StateVec& state,
   // Convert rays from B to W.
   Eigen::Vector3d origin(state[0], state[1], state[2]);
   Eigen::Matrix3d rot_W2B;
-  rot_W2B = Eigen::AngleAxisd(state[3], Eigen::Vector3d::UnitZ()) *
-            Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitY()) *
-            Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitX());
+  // rot_W2B = Eigen::AngleAxisd(state[3], Eigen::Vector3d::UnitZ()) *
+  //           Eigen::AngleAxisd(state[4], Eigen::Vector3d::UnitY()) *
+  //           Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitX());
+  rot_W2B = Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitY()) *
+            Eigen::AngleAxisd(state[3], Eigen::Vector3d::UnitZ()) *
+            Eigen::AngleAxisd(0, Eigen::Vector3d::UnitX());
+  rot_W2B = rot_W2B * Eigen::AngleAxisd(state[4], Eigen::Vector3d::UnitY());
   ep.clear();
   for (auto& p : frustum_endpoints_B) {
     Eigen::Vector3d p_tf = origin + rot_W2B * p * darkness_range;
@@ -276,7 +294,11 @@ void SensorParamsBase::getFrustumEndpoints(StateVec& state,
 }
 
 void SensorParamsBase::updateFrustumEndpoints() {
-  ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "[PARAMS]: fov: h: %f v: %f", fov[0], fov[1]);
+  rot_B2S = Eigen::AngleAxisd(rotations[0], Eigen::Vector3d::UnitZ()) *
+            Eigen::AngleAxisd(rotations[1], Eigen::Vector3d::UnitY()) *
+            Eigen::AngleAxisd(rotations[2], Eigen::Vector3d::UnitX());
+  rot_S2B = rot_B2S.inverse();
+  // ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "[PARAMS]: fov: h: %f v: %f", fov[0], fov[1]);
   double v_res, h_res;
   v_res = (resolution[1] > 0) ? resolution[1] : (1.0 * M_PI / 180.0);
   h_res = (resolution[0] > 0) ? resolution[0] : (1.0 * M_PI / 180.0);
@@ -318,10 +340,10 @@ void SensorParamsBase::updateFrustumEndpoints() {
         frustum_endpoints_B.push_back(ep_B);
       }
     }
-    ROS_INFO_COND(global_verbosity >= Verbosity::INFO, 
-        "Computed multiray_endpoints for volumetric gain [kCamera]: [%d] "
-        "points.",
-        frustum_endpoints_B.size());
+    // ROS_INFO_COND(global_verbosity >= Verbosity::INFO, 
+    //     "Computed multiray_endpoints for volumetric gain [kCamera]: [%d] "
+    //     "points.",
+    //     frustum_endpoints_B.size());
   } else if (type == SensorType::kLidar) {
     // Frustum endpoints in (S) for gain calculation.
     frustum_endpoints.clear();
@@ -339,10 +361,27 @@ void SensorParamsBase::updateFrustumEndpoints() {
         frustum_endpoints_B.push_back(ep_B);
       }
     }
-    ROS_INFO_COND(global_verbosity >= Verbosity::INFO, 
-        "Computed multiray_endpoints for volumetric gain [kLidar]: [%d] "
-        "points.",
-        (int)frustum_endpoints_B.size());
+    // ROS_INFO_COND(global_verbosity >= Verbosity::INFO, 
+    //     "Computed multiray_endpoints for volumetric gain [kLidar]: [%d] "
+    //     "points.",
+    //     (int)frustum_endpoints_B.size());
+  }
+  else if(type == SensorType::kSpherical) {
+    frustum_endpoints.clear();
+    frustum_endpoints_B.clear();
+    double h_lim_2 = fov[0] / 2;
+    double v_lim_2 = fov[1] / 2;
+    for (double dv = -v_lim_2; dv < v_lim_2; dv += v_res) {
+      for (double dh = -h_lim_2; dh < h_lim_2; dh += h_res) {
+        double z = max_range * sin(dv);
+        double x = max_range * cos(dv) * cos(dh);
+        double y = max_range * cos(dv) * sin(dh);
+        Eigen::Vector3d ep = Eigen::Vector3d(x, y, z);
+        frustum_endpoints.push_back(ep);
+        Eigen::Vector3d ep_B = rot_B2S * ep + center_offset;
+        frustum_endpoints_B.push_back(ep_B);
+      }
+    }
   }
 }
 
@@ -375,7 +414,7 @@ void SensorParamsBase::getFrustumEdges(StateVec& state,
   Eigen::Vector3d origin(state[0], state[1], state[2]);
   Eigen::Matrix3d rot_W2B;
   rot_W2B = Eigen::AngleAxisd(state[3], Eigen::Vector3d::UnitZ()) *
-            Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitY()) *
+            Eigen::AngleAxisd(state[4], Eigen::Vector3d::UnitY()) *
             Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitX());
   edges.clear();
   for (int i = 0; i < 4; ++i) {
@@ -395,7 +434,7 @@ bool SensorParamsBase::isInsideFOV(StateVec& state, Eigen::Vector3d& pos) {
   // Transform to sensor coordinate.
   Eigen::Vector3d origin(state[0], state[1], state[2]);
   Eigen::Vector3d pos_S =
-      rot_S2B * Eigen::AngleAxisd(-state[3], Eigen::Vector3d::UnitZ()) *
+      rot_S2B * Eigen::AngleAxisd(-state[3], Eigen::Vector3d::UnitZ()) * Eigen::AngleAxisd(-state[4], Eigen::Vector3d::UnitY()) *
           (pos - origin) -
       center_offset;
   float pos_S_norm = pos_S.norm();
@@ -781,6 +820,18 @@ bool PlanningParams::loadParams(std::string ns) {
   }
 
   parse_str = "";
+  param_name = ns + "/graph_building_mode";
+  ros::param::get(param_name, parse_str);
+  if (!parse_str.compare("kBatch"))
+    graph_building_mode = GraphBuildingModeType::kBatch;
+  else if (!parse_str.compare("kBasic"))
+    graph_building_mode = GraphBuildingModeType::kBasic;
+  else {
+    graph_building_mode = GraphBuildingModeType::kBasic;
+    ROSPARAM_WARN(ns + "/graph_building_mode", "kBasic");
+  }
+
+  parse_str = "";
   param_name = ns + "/rr_mode";
   ros::param::get(param_name, parse_str);
   if (!parse_str.compare("kTree"))
@@ -806,13 +857,28 @@ bool PlanningParams::loadParams(std::string ns) {
     ROSPARAM_INFO(str_tmp);
   }
 
+  parse_str_list.clear();
+  param_name = ns + "/inspection_sensor_list";
+  ros::param::get(param_name, parse_str_list);
+  if (parse_str_list.size() <= 0) {
+    ROSPARAM_WARN(param_name, "");
+  } else {
+    inspection_sensor_list = parse_str_list;
+    std::string str_tmp = "Sensors for inspection: ";
+    for (int i = 0; i < inspection_sensor_list.size(); ++i) {
+      str_tmp += inspection_sensor_list[i] + ", ";
+    }
+    ROSPARAM_INFO(str_tmp);
+  }
+
   param_name = ns + "/no_gain_zones_list";
+  parse_str_list.clear();
   ros::param::get(param_name, parse_str_list);
   if (parse_str_list.size() <= 0) {
     ROSPARAM_WARN(param_name, "");
   } else {
     no_gain_zones_list = parse_str_list;
-    std::string str_tmp = "Sensors for scanning: ";
+    std::string str_tmp = "No gain zones: ";
     for (int i = 0; i < no_gain_zones_list.size(); ++i) {
       str_tmp += no_gain_zones_list[i] + ", ";
     }
@@ -1015,18 +1081,12 @@ bool PlanningParams::loadParams(std::string ns) {
   if (!ros::param::get(param_name, path_safety_enhance_enable)) {
     path_safety_enhance_enable = false;
     ROSPARAM_WARN(param_name, "False");
-  }
+  }  
 
   param_name = ns + "/global_frame_id";
   if (!ros::param::get(param_name, global_frame_id)) {
     global_frame_id = "world";
     ROSPARAM_WARN(param_name, global_frame_id);
-  }
-
-  param_name = ns + "/freespace_cloud_enable";
-  if (!ros::param::get(param_name, freespace_cloud_enable)) {
-    freespace_cloud_enable = false;
-    ROSPARAM_WARN(param_name, freespace_cloud_enable);
   }
 
   param_name = ns + "/leafs_only_for_volumetric_gain";
@@ -1119,11 +1179,220 @@ bool PlanningParams::loadParams(std::string ns) {
     ROSPARAM_WARN(param_name, auto_landing_enable);
   }
 
-  param_name = ns + "/max_negative_inclination";
-  if (!ros::param::get(param_name, max_negative_inclination)) {
-    max_negative_inclination = 0.37;
-    ROSPARAM_WARN(param_name, max_negative_inclination);
+  param_name = ns + "/use_camera_gain";
+  if (!ros::param::get(param_name, use_camera_gain)) {
+    use_camera_gain = false;
+    ROSPARAM_WARN(param_name, use_camera_gain);
   }
+
+  param_name = ns + "/annotate_map_with_camera";
+  if (!ros::param::get(param_name, annotate_map_with_camera)) {
+    annotate_map_with_camera = false;
+    ROSPARAM_WARN(param_name, annotate_map_with_camera);
+  }
+
+  param_name = ns + "/inspection_planning";
+  if (!ros::param::get(param_name, inspection_planning)) {
+    inspection_planning = false;
+    ROSPARAM_WARN(param_name, inspection_planning);
+  }
+
+  param_name = ns + "/keep_leaf_yaw_only";
+  if (!ros::param::get(param_name, keep_leaf_yaw_only)) {
+    keep_leaf_yaw_only = false;
+    ROSPARAM_WARN(param_name, keep_leaf_yaw_only);
+  }
+
+  param_name = ns + "/enable_manhole_traversal";
+  if (!ros::param::get(param_name, enable_manhole_traversal)) {
+    enable_manhole_traversal = false;
+    ROSPARAM_WARN(param_name, enable_manhole_traversal);
+  }
+
+  param_name = ns + "/manhole_traversal_path_edge_length";
+  if (!ros::param::get(param_name, manhole_traversal_path_edge_length)) {
+    manhole_traversal_path_edge_length = 1.0;
+    ROSPARAM_WARN(param_name, manhole_traversal_path_edge_length);
+  }
+
+  param_name = ns + "/manhole_alignment_z_offset";
+  if (!ros::param::get(param_name, manhole_alignment_z_offset)) {
+    manhole_alignment_z_offset = 0.0;
+    ROSPARAM_WARN(param_name, manhole_alignment_z_offset);
+  }
+
+  param_name = ns + "/only_manhole_traversal";
+  if (!ros::param::get(param_name, only_manhole_traversal)) {
+    only_manhole_traversal = false;
+    ROSPARAM_WARN(param_name, only_manhole_traversal);
+  }
+
+  param_name = ns + "/auto_manhole_path_approval";
+  if (!ros::param::get(param_name, auto_manhole_path_approval)) {
+    auto_manhole_path_approval = false;
+    ROSPARAM_WARN(param_name, auto_manhole_path_approval);
+  }
+
+  param_name = ns + "/min_coverage_percentage";
+  if (!ros::param::get(param_name, min_coverage_percentage)) {
+    min_coverage_percentage = 0.9;
+    ROSPARAM_WARN(param_name, min_coverage_percentage);
+  }
+
+  param_name = ns + "/inspection_graph_vertices";
+  if (!ros::param::get(param_name, inspection_graph_vertices)) {
+    inspection_graph_vertices = num_vertices_max;
+    ROSPARAM_WARN(param_name, inspection_graph_vertices);
+  }
+
+  param_name = ns + "/max_inspection_vertices";
+  if (!ros::param::get(param_name, max_inspection_vertices)) {
+    max_inspection_vertices = inspection_graph_vertices;
+    ROSPARAM_WARN(param_name, max_inspection_vertices);
+  }
+
+  param_name = ns + "/inspection_xy_spacing";
+  if (!ros::param::get(param_name, inspection_xy_spacing)) {
+    inspection_xy_spacing = 1.0;
+    ROSPARAM_WARN(param_name, inspection_xy_spacing);
+  }
+
+  param_name = ns + "/inspection_z_spacing";
+  if (!ros::param::get(param_name, inspection_z_spacing)) {
+    inspection_z_spacing = 2.0;
+    ROSPARAM_WARN(param_name, inspection_z_spacing);
+  }
+
+  param_name = ns + "/inspection_thr_esdf_dist";
+  if (!ros::param::get(param_name, inspection_thr_esdf_dist)) {
+    inspection_thr_esdf_dist = 1.5;
+    ROSPARAM_WARN(param_name, inspection_thr_esdf_dist);
+  }
+
+  param_name = ns + "/inspection_target_viewing_range";
+  if (!ros::param::get(param_name, inspection_target_viewing_range)) {
+    inspection_target_viewing_range = 2.5;
+    ROSPARAM_WARN(param_name, inspection_target_viewing_range);
+  }
+
+  param_name = ns + "/max_exploration_iterations";
+  if (!ros::param::get(param_name, max_exploration_iterations)) {
+    max_exploration_iterations = 4;
+    ROSPARAM_WARN(param_name, max_exploration_iterations);
+  }
+
+  param_name = ns + "/exploration_only";
+  if (!ros::param::get(param_name, exploration_only)) {
+    exploration_only = true;
+    ROSPARAM_WARN(param_name, exploration_only);
+  }
+
+  param_name = ns + "/box_check_method";
+  if (!ros::param::get(param_name, box_check_method)) {
+    box_check_method = 0;
+    ROSPARAM_WARN(param_name, box_check_method);
+  }
+
+  param_name = ns + "/line_check_method";
+  if (!ros::param::get(param_name, line_check_method)) {
+    line_check_method = 1;
+    ROSPARAM_WARN(param_name, line_check_method);
+  }
+
+  param_name = ns + "/add_only_frontiers_to_global_graph";
+  if (!ros::param::get(param_name, add_only_frontiers_to_global_graph)) {
+    add_only_frontiers_to_global_graph = true;
+    ROSPARAM_WARN(param_name, add_only_frontiers_to_global_graph);
+  }
+
+  param_name = ns + "/use_flipped_yaw";
+  if (!ros::param::get(param_name, use_flipped_yaw)) {
+    use_flipped_yaw = false;
+    ROSPARAM_WARN(param_name, use_flipped_yaw);
+  }
+
+  param_name = ns + "/max_manhole_height";
+  if (!ros::param::get(param_name, max_manhole_height)) {
+    max_manhole_height = 100.0;  // Too high so won't be used
+    ROSPARAM_WARN(param_name, max_manhole_height);
+  }
+
+  param_name = ns + "/max_surface_distance";
+  if (!ros::param::get(param_name, max_surface_distance)) {
+    max_surface_distance = 1.5;  // Too high so won't be used
+    ROSPARAM_WARN(param_name, max_surface_distance);
+  }
+
+  param_name = ns + "/limit_vertices_to_surface";
+  if (!ros::param::get(param_name, limit_vertices_to_surface)) {
+    limit_vertices_to_surface = false;  // Too high so won't be used
+    ROSPARAM_WARN(param_name, limit_vertices_to_surface);
+  }
+
+  param_name = ns + "/min_occ_surface";
+  if (!ros::param::get(param_name, min_occ_surface)) {
+    min_occ_surface = 0.0;
+    ROSPARAM_WARN(param_name, min_occ_surface);
+  }
+
+  param_name = ns + "/max_mh_attempts";
+  if (!ros::param::get(param_name, max_mh_attempts)) {
+    max_mh_attempts = 3;
+    ROSPARAM_WARN(param_name, max_mh_attempts);
+  }
+
+  param_name = ns + "/global_graph_odom_dist";
+  if (!ros::param::get(param_name, global_graph_odom_dist)) {
+    global_graph_odom_dist = 0.5;
+    ROSPARAM_WARN(param_name, global_graph_odom_dist);
+  }
+  
+  param_name = ns + "/global_graph_odom_connect_radius";
+  if (!ros::param::get(param_name, global_graph_odom_connect_radius)) {
+    global_graph_odom_connect_radius = edge_length_max;
+    ROSPARAM_WARN(param_name, global_graph_odom_connect_radius);
+  }
+
+  param_name = ns + "/allow_sudden_dir_change";
+  if (!ros::param::get(param_name, allow_sudden_dir_change)) {
+    allow_sudden_dir_change = true;
+    ROSPARAM_WARN(param_name, allow_sudden_dir_change);
+  }
+
+  param_name = ns + "/max_num_low_gain_iters";
+  if (!ros::param::get(param_name, max_num_low_gain_iters)) {
+    max_num_low_gain_iters = 3;
+    ROSPARAM_WARN(param_name, max_num_low_gain_iters);
+  }
+
+  
+  std::vector<double> param_val;
+
+  param_val.clear();
+  param_name = ns + "/compartment_centers";
+  if ((!ros::param::get(param_name, param_val)) || (param_val.size() % 3 != 0)) {
+    if(!exploration_only) {
+      param_val.resize(3);
+      param_val[0] = 0.0;
+      param_val[1] = 0.0;
+      param_val[2] = 0.0;
+      ROSPARAM_ERROR(param_name);
+    }
+    else {
+      ROSPARAM_WARN(param_name, 0.0);
+    }
+  }
+  for(int i=0; i<param_val.size(); i+=3) {
+    Eigen::Vector3d center;
+    center << param_val[i], param_val[i+1], param_val[i+2];
+    compartment_centers.push_back(center);
+  }
+
+  param_val.clear();
+  param_name = ns + "/compartment_dimensions";
+  compartment_dimensions.loadParams(param_name);
+
+  
 
   ROSPARAM_INFO("Done.");
   return true;

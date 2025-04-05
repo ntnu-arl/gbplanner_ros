@@ -202,31 +202,51 @@ bool Trajectory::interpolatePath(const TrajectoryType& traj,
                   traj[i + 1].position.z);
     VectorType vec = v2 - v1;
     double segment_len = vec.norm();
-    if (segment_len < 0.01) {
-      // Too close, only add one
-      traj_intp.push_back(traj[i]);
-    } else {
-      int n = (int)(segment_len / discrete_length);
-      if (std::abs((double)n - (segment_len / discrete_length)) < 0.01) {
-        // Avoid adding traj[i+1] twice (once in this and once in next
-        // iteration) if segment length is integral multiple of discrete length
-        --n;
-      }
-      VectorType uvec = vec / segment_len * discrete_length;
-      for (int j = 0; j <= n; ++j) {
-        VectorType int_vec = v1 + j * uvec;
-        WayPointType wp;
-        wp.position.x = int_vec(0);
-        wp.position.y = int_vec(1);
-        wp.position.z = int_vec(2);
-        wp.orientation.x = traj[i + 1].orientation.x;
-        wp.orientation.y = traj[i + 1].orientation.y;
-        wp.orientation.z = traj[i + 1].orientation.z;
-        wp.orientation.w = traj[i + 1].orientation.w;
-        traj_intp.push_back(wp);
-      }
+    // if (segment_len < 0.01) {
+    //   // Too close, only add one
+    //   traj_intp.push_back(traj[i]);
+    // } else {
+    //   int n = (int)(segment_len / discrete_length);
+    //   if (std::abs((double)n - (segment_len / discrete_length)) < 0.01) {
+    //     // Avoid adding traj[i+1] twice (once in this and once in next
+    //     // iteration) if segment length is integral multiple of discrete length
+    //     --n;
+    //   }
+    //   VectorType uvec = vec / segment_len * discrete_length;
+    //   for (int j = 0; j <= n; ++j) {
+    //     VectorType int_vec = v1 + j * uvec;
+    //     WayPointType wp;
+    //     wp.position.x = int_vec(0);
+    //     wp.position.y = int_vec(1);
+    //     wp.position.z = int_vec(2);
+    //     wp.orientation.x = traj[i + 1].orientation.x;
+    //     wp.orientation.y = traj[i + 1].orientation.y;
+    //     wp.orientation.z = traj[i + 1].orientation.z;
+    //     wp.orientation.w = traj[i + 1].orientation.w;
+    //     traj_intp.push_back(wp);
+    //   }
+    // }
+    int n = (int)(segment_len / discrete_length);
+    if (std::abs((double)n - (segment_len / discrete_length)) < 0.01) {
+      // Avoid adding traj[i+1] twice (once in this and once in next
+      // iteration) if segment length is integral multiple of discrete length
+      --n;
+    }
+    VectorType uvec = vec / segment_len * discrete_length;
+    for (int j = 0; j <= n; ++j) {
+      VectorType int_vec = v1 + j * uvec;
+      WayPointType wp;
+      wp.position.x = int_vec(0);
+      wp.position.y = int_vec(1);
+      wp.position.z = int_vec(2);
+      wp.orientation.x = traj[i + 1].orientation.x;
+      wp.orientation.y = traj[i + 1].orientation.y;
+      wp.orientation.z = traj[i + 1].orientation.z;
+      wp.orientation.w = traj[i + 1].orientation.w;
+      traj_intp.push_back(wp);
     }
   }
+  traj_intp.push_back(traj.back());
   return true;
 }
 

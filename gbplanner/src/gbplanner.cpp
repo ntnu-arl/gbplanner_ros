@@ -2,7 +2,7 @@
 
 #include <nav_msgs/Path.h>
 
-namespace explorer {
+// namespace explorer {
 
 Gbplanner::Gbplanner(const ros::NodeHandle& nh,
                      const ros::NodeHandle& nh_private)
@@ -20,8 +20,7 @@ Gbplanner::Gbplanner(const ros::NodeHandle& nh,
 
 Gbplanner::Gbplanner(const ros::NodeHandle& nh,
                      const ros::NodeHandle& nh_private,
-                     MapManagerVoxblox<MapManagerVoxbloxServer,
-                                       MapManagerVoxbloxVoxel>* map_manager)
+                     MapManager* map_manager)
     : nh_(nh), nh_private_(nh_private) {
   
   planner_status_ = Gbplanner::PlannerStatus::NOT_READY;
@@ -72,6 +71,14 @@ void Gbplanner::initializeAttributes() {
   planner_set_planning_trigger_mode_service_ = nh_.advertiseService(
       "gbplanner/set_planning_trigger_mode",
       &Gbplanner::plannerSetPlanningTriggerModeCallback, this);
+      
+  inspection_path_service_ = nh_.advertiseService(
+      "gbplanner/get_inspection_path",
+      &Gbplanner::inspectionServiceCallback, this);
+
+  force_compartment_transition_service_ = nh_.advertiseService(
+      "gbplanner/force_compartment_transition",
+      &Gbplanner::forceCompartmentChangeServiceCallback, this);
 
   pose_subscriber_ = nh_.subscribe("pose", 100, &Gbplanner::poseCallback, this);
   pose_stamped_subscriber_ =
@@ -83,6 +90,39 @@ void Gbplanner::initializeAttributes() {
   untraversable_polygon_subscriber_ =
       nh_.subscribe("/traversability_estimation/untraversable_polygon", 100,
                     &Gbplanner::untraversablePolygonCallback, this);
+
+
+  std::string ns = ros::this_node::getName();
+  planning_params_.loadParams(ns + "/PlanningParams");
+
+  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Compartment Centers:");
+  if(global_verbosity >= Verbosity::DEBUG) {
+    for(auto c : planning_params_.compartment_centers) {
+      std::cout << c.transpose() << std::endl;
+    }
+  }
+  
+  planner_mode_ = PlannerMode::kExploration;
+  
+  BoundedSpaceParams rrg_global_bounds;
+  rrg_->getGlobalBoundParams(rrg_global_bounds);
+  rrg_->setExplorationAndInspectionBounds(rrg_global_bounds, rrg_global_bounds);
+}
+
+bool Gbplanner::inspectionServiceCallback(
+    planner_msgs::planner_srv::Request& req,
+    planner_msgs::planner_srv::Response& res) {
+  //
+  res.path = rrg_->getInspectionPath();
+  return true;
+}
+
+bool Gbplanner::forceCompartmentChangeServiceCallback(
+              std_srvs::Trigger::Request& req,
+              std_srvs::Trigger::Response& res) {
+  //
+  planner_mode_ = PlannerMode::kCompartmentChange;
+  return true;
 }
 
 bool Gbplanner::plannerGotoWaypointCallback(
@@ -172,10 +212,302 @@ bool Gbplanner::passingGateCallback(
 bool Gbplanner::plannerServiceCallback(
     planner_msgs::planner_srv::Request& req,
     planner_msgs::planner_srv::Response& res) {
+
+  rrg_->reset();
+  
+  if(planning_params_.exploration_only) {
+    if(planning_params_.enable_manhole_traversal) {
+      if(exploration_counter_ >= planning_params_.max_exploration_iterations) {
+        manhole_traversal_requested_ = true;
+        exploration_counter_ = 0;
+        ROS_WARN("Exploration Iterations Complete, switching to: %d", (int)planner_mode_);
+      }
+      return getExplorationPath(req, res);
+    }
+    else {
+      return getExplorationPath(req, res);
+    }
+  }
+
+  ROS_WARN("Current Planner Mode: %d", (int)planner_mode_);
+
+  bool success = true;
+  std::vector<geometry_msgs::Pose> empty_path;
+  switch (planner_mode_) {
+    case PlannerMode::kExploration:
+    {
+      if(exploration_counter_ >= planning_params_.max_exploration_iterations) {
+        res.path = empty_path;
+        res.status = planner_msgs::planner_srv::Response::kForward;
+        planner_mode_ = PlannerMode::kInspection;
+        success = true;
+        exploration_counter_ = 0;
+        ROS_WARN("Exploration Iterations Complete, switching to: %d", (int)planner_mode_);
+        break;
+      }
+      success = getExplorationPath(req, res);
+      if(success)
+      {
+        ++exploration_counter_;
+        ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Exploration Counter: %d", exploration_counter_);
+        // If exploration is completed
+        if(res.status != planner_msgs::planner_srv::Response::kForward) {
+          res.path = empty_path;
+          res.status = planner_msgs::planner_srv::Response::kForward;
+          planner_mode_ = PlannerMode::kInspection;
+          success = true;
+          exploration_counter_ = 0;
+          ROS_WARN("Exploration Complete, switching to: %d", (int)planner_mode_);
+        }
+      }
+      else
+      {
+        ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "Exploration Failed trying again:");
+      }
+      
+      break;
+    }
+
+    case PlannerMode::kExplorationComplete:
+    {
+      res.path = empty_path;
+      res.status = planner_msgs::planner_srv::Response::kManualCustomPath;
+      planner_mode_ = PlannerMode::kInspection;
+      ROS_WARN("Switching to: %d", (int)planner_mode_);
+      break;
+    }
+
+    case PlannerMode::kInspection:
+    {
+      success = getInspectionPath(req, res);
+      if(!success) {
+        res.path = empty_path;
+        res.status = planner_msgs::planner_srv::Response::kAutoCustomPath;
+        ROS_WARN("Inspection Failed");
+      }
+      else {
+        res.status = planner_msgs::planner_srv::Response::kAutoCustomPath;
+        planner_mode_ = PlannerMode::kCompartmentChange;
+        ROS_WARN("Inspection Successful. Switching to: %d", (int)planner_mode_);
+      }
+      break;
+    }
+
+    case PlannerMode::kCompartmentChange:
+    {
+
+      if(compartment_counter_ >= planning_params_.compartment_centers.size()-1) {
+        res.status = planner_msgs::planner_srv::Response::kManualCustomPath;
+        res.path = empty_path;
+        success = true;
+        compartment_change_tries_ = 0;
+        ROS_WARN("All compartments explored");
+        break;
+      }
+
+      bool search_success = getCompartmentTransitionPath(req, res);
+      
+      if(search_success) {
+        compartment_change_tries_ = 0;
+        success = true;
+      }
+      else {
+        success = true;
+        ++compartment_change_tries_;
+        ROS_WARN_COND(global_verbosity>=Verbosity::WARN, "Path search failed. Try %d", compartment_change_tries_);
+        if(compartment_change_tries_ <= max_compartment_change_tries_) {
+          --compartment_counter_;  // To make sure that we try to replan
+        }
+      }
+      rrg_->reset();
+      
+      break;
+    }
+    
+    default:
+      success = getExplorationPath(req, res);
+      break;
+  }
+
+  return success;
+}
+
+Rrg::GlobalPlannerStatus Gbplanner::getGlobalExplorationPath()
+{
+  rrg_->setBoundMode(static_cast<BoundModeType>(in_srv_req_.bound_mode));
+
+  int status;
+  out_srv_res_.path = rrg_->runGlobalPlanner(0, false, false, status);
+  out_srv_res_.status = status;
+  if(status == planner_msgs::planner_srv::Response::kHoming)
+  {
+    bt_states_.global_exp_exhausted = true;
+    return Rrg::GlobalPlannerStatus::G_HOMING;
+  }
+
+  if(out_srv_res_.path.empty())
+  {
+    return Rrg::GlobalPlannerStatus::G_ERR;
+  }
+  else
+  {
+    if(status == planner_msgs::planner_srv::Response::kHoming)
+    {
+      return Rrg::GlobalPlannerStatus::G_HOMING;
+    }
+  }
+  return Rrg::GlobalPlannerStatus::G_OK;
+}
+
+bool Gbplanner::checkGlobalExplorationStatus()
+{
+  int status;
+  std::vector<geometry_msgs::Pose> path = rrg_->runGlobalPlanner(0, false, false, status);
+  if(status == planner_msgs::planner_srv::Response::kHoming)
+  {
+    bt_states_.global_exp_exhausted = true;
+    return true;
+  }
+
+  return false;
+}
+
+Rrg::LocalPlannerStatus Gbplanner::getExplorationPath()
+{
+  // Extract setting from the request.
+  rrg_->setGlobalFrame(in_srv_req_.header.frame_id);
+  rrg_->setBoundMode(static_cast<BoundModeType>(in_srv_req_.bound_mode));
+  rrg_->setRootStateForPlanning(in_srv_req_.root_pose);
+  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Root state: %f %f %f, %f", in_srv_req_.root_pose.position.x, in_srv_req_.root_pose.position.y, in_srv_req_.root_pose.position.z, tf::getYaw(in_srv_req_.root_pose.orientation));
+
+  Rrg::GraphStatus status;
+  Rrg::LocalPlannerStatus ret_status;
+
+  // Start the planner.
+  out_srv_res_.path.clear();
+  if (getPlannerStatus() == Gbplanner::PlannerStatus::NOT_READY) {
+    ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "The planner is not ready.");
+    status = Rrg::GraphStatus::NOT_OK;
+    out_srv_res_.status = planner_msgs::planner_srv::Response::kForward;
+    return Rrg::LocalPlannerStatus::L_ERR;
+  }
+
+  rrg_->reset();
+
+  if (planning_params_.graph_building_mode == GraphBuildingModeType::kBasic) {
+    status = rrg_->buildGraph();
+  } else if (planning_params_.graph_building_mode == GraphBuildingModeType::kBatch) {
+    status = rrg_->batchGraph();
+  }
+
+  switch (status) {
+    case Rrg::GraphStatus::OK:
+      ret_status = Rrg::LocalPlannerStatus::L_OK;
+      break;
+    case Rrg::GraphStatus::ERR_KDTREE:
+      ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "[PLANNER_ERROR] An issue occurred with kdtree data.");
+      ret_status = Rrg::LocalPlannerStatus::L_ERR;
+      break;
+    case Rrg::GraphStatus::ERR_NO_FEASIBLE_PATH:
+      ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "[PLANNER_ERROR] No feasible path was found.");
+      ret_status = Rrg::LocalPlannerStatus::L_ERR;
+      break;
+    case Rrg::GraphStatus::NOT_OK:
+      ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "[PLANNER_ERROR] Graph building: Not ok");
+      ret_status = Rrg::LocalPlannerStatus::L_ERR;
+      break;
+    default:
+      ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "[PLANNER_ERROR] Error occurred in building graph.");
+      ret_status = Rrg::LocalPlannerStatus::L_ERR;
+      break;
+  }
+
+  if(status != Rrg::GraphStatus::OK) 
+  {
+    out_srv_res_.status = planner_msgs::planner_srv::Response::kForward;
+    return ret_status;
+  }
+  
+  status = rrg_->evaluateGraph();
+  switch (status) {
+    case Rrg::GraphStatus::OK:
+      ret_status = Rrg::LocalPlannerStatus::L_OK;
+      break;
+    case Rrg::GraphStatus::NO_GAIN:
+      ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "[PLANNER_ERROR] No positive gain was found.");
+      ret_status = Rrg::LocalPlannerStatus::L_OK;
+      break;
+    case Rrg::GraphStatus::CONSEC_LOW_GAIN:
+      ROS_WARN_COND(global_verbosity >= Verbosity::PLANNER_STATUS, "[GBPLANNER] Very low local gain. Triggering global planner");
+      ret_status = Rrg::LocalPlannerStatus::L_EXHAUSTED;
+      break;
+    case Rrg::GraphStatus::NOT_OK:
+      ROS_WARN_COND(global_verbosity >= Verbosity::PLANNER_STATUS, "[PLANNER_ERROR] Error occurred in gain calculation.");
+      ret_status = Rrg::LocalPlannerStatus::L_ERR;
+      break;
+    default:
+      ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "[PLANNER_ERROR] Error occurred in gain calculation.");
+      ret_status = Rrg::LocalPlannerStatus::L_ERR;
+      break;
+  }
+
+  if(status != Rrg::GraphStatus::OK) 
+  {
+    out_srv_res_.status = planner_msgs::planner_srv::Response::kForward;
+    return ret_status;
+  }
+
+  if (status == Rrg::GraphStatus::OK) {
+    out_srv_res_.path = rrg_->getBestPathSimplified();
+    out_srv_res_.status = planner_msgs::planner_srv::Response::kForward;
+    ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "[GBPLANNER] Regular Planning");
+    ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "[GBPLANNER] Path status: %d", out_srv_res_.status);
+  }
+  return Rrg::LocalPlannerStatus::L_OK;
+}
+
+bool Gbplanner::transitionCompartment()
+{
+  rrg_->setNextCompartmentCenter(planning_params_.compartment_centers[compartment_counter_+1]);
+  rrg_->setNextCompartmentIndex(compartment_counter_+1);
+  BoundedSpaceParams translated_bound = planning_params_.compartment_dimensions;
+  Eigen::Vector3d max_val = planning_params_.compartment_dimensions.max_val + planning_params_.compartment_centers[compartment_counter_];
+  Eigen::Vector3d max_extension = planning_params_.compartment_dimensions.max_extension + planning_params_.compartment_centers[compartment_counter_];
+  Eigen::Vector3d min_val = planning_params_.compartment_dimensions.min_val + planning_params_.compartment_centers[compartment_counter_];
+  Eigen::Vector3d min_extension = planning_params_.compartment_dimensions.min_extension + planning_params_.compartment_centers[compartment_counter_];
+  translated_bound.setBound(min_val, max_val);
+  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Compartment counter: %d", compartment_counter_);
+  rrg_->setExplorationAndInspectionBounds(translated_bound, translated_bound);
+  ++compartment_counter_;
+  return true;
+}
+
+bool Gbplanner::allCompartmentsInspected()
+{
+  if(compartment_counter_ > planning_params_.compartment_centers.size()-1) 
+  {
+    return true;
+  }
+  else 
+  {
+    return false;
+  }
+}
+
+bool Gbplanner::getExplorationPath(planner_msgs::planner_srv::Request& req,
+      planner_msgs::planner_srv::Response& res) {
+  //
+  auto t1 = std::chrono::high_resolution_clock::now();
+  auto t2 = t1;
   // Extract setting from the request.
   rrg_->setGlobalFrame(req.header.frame_id);
+  t2 = std::chrono::high_resolution_clock::now();
+  double reset_time = std::chrono::duration<double, std::milli>(t2 - t1).count();
+  ROS_WARN("Reset time: %f", reset_time);
   rrg_->setBoundMode(static_cast<BoundModeType>(req.bound_mode));
   rrg_->setRootStateForPlanning(req.root_pose);
+  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Root state: %f %f %f, %f", req.root_pose.position.x, req.root_pose.position.y, req.root_pose.position.z, tf::getYaw(req.root_pose.orientation));
+
 
   // Start the planner.
   res.path.clear();
@@ -184,8 +516,37 @@ bool Gbplanner::plannerServiceCallback(
     return false;
   }
 
+  t1 = std::chrono::high_resolution_clock::now();
   rrg_->reset();
-  Rrg::GraphStatus status = rrg_->buildGraph();
+
+  if(manhole_traversal_requested_ || rrg_->manholeTraversalOngoing()) {
+    if(manhole_traversal_requested_) {
+      manhole_traversal_requested_ = false;
+    }
+    res.path = rrg_->getManholeTraversalPath();
+    if(rrg_->autoManholePathApproval()) {
+      res.status = planner_msgs::planner_srv::Response::kAutoCustomPath;
+    }
+    else {
+      res.status = planner_msgs::planner_srv::Response::kManualCustomPath;
+    }
+    if(res.path.empty()) {
+      if(rrg_->manholeTraversalOngoing()) {
+        return true;
+      }
+    }
+    else {
+      return true;
+    }
+  }
+
+  Rrg::GraphStatus status;
+  if (planning_params_.graph_building_mode == GraphBuildingModeType::kBasic) {
+    status = rrg_->buildGraph();
+  } else if (planning_params_.graph_building_mode == GraphBuildingModeType::kBatch) {
+    status = rrg_->batchGraph();
+  }
+
   switch (status) {
     case Rrg::GraphStatus::OK:
       break;
@@ -197,7 +558,7 @@ bool Gbplanner::plannerServiceCallback(
       break;
     case Rrg::GraphStatus::NOT_OK:
       ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "[GBPLANNER] Resending global path");
-      res.path = rrg_->reRunGlobalPlanner();
+      res.path = rrg_->reRunGlobalPlanner(res.status);
       break;
     default:
       ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "[PLANNER_ERROR] Error occurred in building graph.");
@@ -215,19 +576,199 @@ bool Gbplanner::plannerServiceCallback(
         break;
       case Rrg::GraphStatus::NOT_OK:
         ROS_WARN_COND(global_verbosity >= Verbosity::PLANNER_STATUS, "[GBPLANNER] Very low local gain. Triggering global planner");
-        res.path = rrg_->runGlobalPlanner(0, false, false);
-        res.status = planner_msgs::planner_srv::Response::kRepositioning;
+        int status;
+        res.path = rrg_->runGlobalPlanner(0, false, false, status);
+        if(status < 0) {
+          if(rrg_->autoManholePathApproval()) {
+            res.status = planner_msgs::planner_srv::Response::kAutoCustomPath;
+          }
+          else {
+            res.status = planner_msgs::planner_srv::Response::kManualCustomPath;
+          }
+          manhole_traversal_ongoing_ = true;
+        }
+        else {
+          res.status = status;
+        }
+        global_planner_trig = true;
         break;
       default:
         ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "[PLANNER_ERROR] Error occurred in gain calculation.");
         break;
     }
   }
+  else 
+  {
+    res.status = status;
+    return false;
+  }
   if (global_planner_trig) return true;
 
   if (status == Rrg::GraphStatus::OK) {
+    if(planning_params_.exploration_only) {
+      ++exploration_counter_;
+    }
     res.path = rrg_->getBestPath(req.header.frame_id, res.status);
+    ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "[GBPLANNER] Regular Planning");
+    ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "[GBPLANNER] Path status: %d", res.status);
   }
+  return true;
+}
+
+bool Gbplanner::getInspectionPath()
+{
+  rrg_->setBoundMode(static_cast<BoundModeType>(in_srv_req_.bound_mode));
+  out_srv_res_.path = rrg_->getInspectionPath();
+  out_srv_res_.status = planner_msgs::planner_srv::Response::kAutoCustomPath;
+
+  if(out_srv_res_.path.size() > 0)
+    return true;
+  else 
+    return false;
+}
+
+bool Gbplanner::getInspectionPath(planner_msgs::planner_srv::Request& req,
+      planner_msgs::planner_srv::Response& res) {
+  //
+  res.path = rrg_->getInspectionPath();
+  if(res.path.size() > 0)
+    return true;
+  else 
+    return false;
+}
+
+void Gbplanner::getManholeTraversalPath(ManholeTraversalMode mode, ManholeTraversalStatus &status)
+{
+  rrg_->setBoundMode(static_cast<BoundModeType>(in_srv_req_.bound_mode));
+  out_srv_res_.path = rrg_->getManholeTraversalPath(mode, status);
+  out_srv_res_.status = planner_msgs::planner_srv::Response::kAutoCustomPath;
+  if(status != ManholeTraversalStatus::OK)
+  {
+    out_srv_res_.path.clear();
+  }
+}
+
+bool Gbplanner::getCompartmentTransitionPath(planner_msgs::planner_srv::Request& req,
+      planner_msgs::planner_srv::Response& res) {
+  //
+  std::vector<geometry_msgs::Pose> empty_path;
+
+  if(planning_params_.enable_manhole_traversal) {
+    rrg_->setNextCompartmentCenter(planning_params_.compartment_centers[compartment_counter_+1]);
+    rrg_->setNextCompartmentIndex(compartment_counter_+1);
+    res.path = rrg_->getManholeTraversalPath();
+    if(rrg_->autoManholePathApproval()) {
+      res.status = planner_msgs::planner_srv::Response::kAutoCustomPath;
+    }
+    else {
+      res.status = planner_msgs::planner_srv::Response::kManualCustomPath;
+    }
+
+    if(!rrg_->manholeTraversalOngoing()) {  // Manhole traversal finished
+      planner_mode_ = PlannerMode::kExploration;
+      ++compartment_counter_;
+      BoundedSpaceParams translated_bound = planning_params_.compartment_dimensions;
+      Eigen::Vector3d max_val = planning_params_.compartment_dimensions.max_val + planning_params_.compartment_centers[compartment_counter_];
+      Eigen::Vector3d max_extension = planning_params_.compartment_dimensions.max_extension + planning_params_.compartment_centers[compartment_counter_];
+      Eigen::Vector3d min_val = planning_params_.compartment_dimensions.min_val + planning_params_.compartment_centers[compartment_counter_];
+      Eigen::Vector3d min_extension = planning_params_.compartment_dimensions.min_extension + planning_params_.compartment_centers[compartment_counter_];
+      translated_bound.setBound(min_val, max_val);
+      ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Compartment counter: %d", compartment_counter_);
+      rrg_->setExplorationAndInspectionBounds(translated_bound, translated_bound);
+    }
+    else {
+      planner_mode_ = PlannerMode::kCompartmentChange;
+    }
+
+    bool success = false;
+    if(res.path.empty()) {
+      if(rrg_->manholeTraversalOngoing()) {
+        success = true;
+      }
+    }
+    else {
+      success = true;
+    }
+
+    return success;
+  }
+  else {
+    ++compartment_counter_;
+    BoundedSpaceParams translated_bound = planning_params_.compartment_dimensions;
+    Eigen::Vector3d max_val = planning_params_.compartment_dimensions.max_val + planning_params_.compartment_centers[compartment_counter_];
+    Eigen::Vector3d max_extension = planning_params_.compartment_dimensions.max_extension + planning_params_.compartment_centers[compartment_counter_];
+    Eigen::Vector3d min_val = planning_params_.compartment_dimensions.min_val + planning_params_.compartment_centers[compartment_counter_];
+    Eigen::Vector3d min_extension = planning_params_.compartment_dimensions.min_extension + planning_params_.compartment_centers[compartment_counter_];
+    translated_bound.setBound(min_val, max_val);
+    BoundedSpaceParams extended_bound = planning_params_.compartment_dimensions;
+    max_val = planning_params_.compartment_dimensions.max_val * 2.0;
+    max_extension = planning_params_.compartment_dimensions.max_extension * 2.0;
+    min_val = planning_params_.compartment_dimensions.min_val * 2.0;
+    min_extension = planning_params_.compartment_dimensions.min_extension * 2.0;
+    max_val += (planning_params_.compartment_centers[compartment_counter_] + planning_params_.compartment_centers[compartment_counter_-1]) / 2.0;
+    max_extension += (planning_params_.compartment_centers[compartment_counter_] + planning_params_.compartment_centers[compartment_counter_-1]) / 2.0;
+    min_val += (planning_params_.compartment_centers[compartment_counter_] + planning_params_.compartment_centers[compartment_counter_-1]) / 2.0;
+    min_extension += (planning_params_.compartment_centers[compartment_counter_] + planning_params_.compartment_centers[compartment_counter_-1]) / 2.0;
+    extended_bound.setBound(min_val, max_val);
+    rrg_->setExplorationAndInspectionBounds(extended_bound, translated_bound);
+    rrg_->reset();
+
+    // ros::Duration(0.5).sleep();
+
+    geometry_msgs::Pose current_pose;
+    tf::Quaternion quat;
+    quat.setEuler(0.0, 0.0, current_state_[3]);
+    tf::Vector3 origin(current_state_[0], current_state_[1], current_state_[2]);
+    tf::Pose poseTF(quat, origin);
+    tf::poseTFToMsg(poseTF, current_pose);
+
+    geometry_msgs::Pose target_pose;
+    quat.setEuler(0.0, 0.0, 0.0);
+    origin = tf::Vector3(planning_params_.compartment_centers[compartment_counter_][0], planning_params_.compartment_centers[compartment_counter_][1], planning_params_.compartment_centers[compartment_counter_][2]);
+    tf::Pose poseTF_target(quat, origin);
+    tf::poseTFToMsg(poseTF_target, target_pose);
+
+    std::vector<geometry_msgs::Pose> connecting_path;
+    bool search_success = rrg_->search(current_pose, target_pose, true, connecting_path);
+    if(search_success) {
+      rrg_->setExplorationAndInspectionBounds(translated_bound, translated_bound);
+      res.path = connecting_path;
+      res.status = planner_msgs::planner_srv::Response::kForward;
+      planner_mode_ = PlannerMode::kExploration;
+      ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Compartment counter: %d", compartment_counter_);
+    }
+    else {
+      res.status = planner_msgs::planner_srv::Response::kForward;
+      res.path = empty_path;
+    }
+    return search_success;
+  }
+}
+
+bool Gbplanner::homingRequired()
+{
+  rrg_->setBoundMode(static_cast<BoundModeType>(in_srv_req_.bound_mode));
+  out_srv_res_.status = planner_msgs::planner_srv::Response::kHoming;
+  return rrg_->homingRequired(out_srv_res_.path);
+}
+
+bool Gbplanner::getHomingPath()
+{
+  if (getPlannerStatus() == Gbplanner::PlannerStatus::NOT_READY) {
+    ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "The planner is not ready.");
+    out_srv_res_.status = planner_msgs::planner_srv::Response::kForward;
+    return false;
+  }
+
+  rrg_->setBoundMode(static_cast<BoundModeType>(in_srv_req_.bound_mode));
+  out_srv_res_.path = rrg_->getHomingPath(in_srv_req_.header.frame_id);
+  if(out_srv_res_.path.empty())
+  {
+    out_srv_res_.status = planner_msgs::planner_srv::Response::kForward;
+    return false;  
+  }
+
+  out_srv_res_.status = planner_msgs::planner_srv::Response::kHoming;
   return true;
 }
 
@@ -251,8 +792,9 @@ bool Gbplanner::globalPlannerServiceCallback(
     ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "The planner is not ready.");
     return false;
   }
+  int status;
   res.path =
-      rrg_->runGlobalPlanner(req.id, req.not_check_frontier, req.ignore_time);
+      rrg_->runGlobalPlanner(req.id, req.not_check_frontier, req.ignore_time, status);
   return true;
 }
 
@@ -334,6 +876,7 @@ void Gbplanner::processPose(const geometry_msgs::Pose& pose) {
   state[2] = pose.position.z;
   state[3] = tf::getYaw(pose.orientation);
   rrg_->setState(state);
+  current_state_ = state;
 }
 
 void Gbplanner::odometryCallback(const nav_msgs::Odometry& odo) {
@@ -343,6 +886,7 @@ void Gbplanner::odometryCallback(const nav_msgs::Odometry& odo) {
   state[2] = odo.pose.pose.position.z;
   state[3] = tf::getYaw(odo.pose.pose.orientation);
   rrg_->setState(state);
+  current_state_ = state;
 }
 
 void Gbplanner::robotStatusCallback(const planner_msgs::RobotStatus& status) {
@@ -350,10 +894,7 @@ void Gbplanner::robotStatusCallback(const planner_msgs::RobotStatus& status) {
 }
 
 Gbplanner::PlannerStatus Gbplanner::getPlannerStatus() {
-  // if (!ros::ok()) {
-  //   ROS_ERROR_COND(global_verbosity >= Verbosity::ERROR, "ROS node failed.");
-  //   return false;
-  // }
+
 
   // Should have a list of checking conditions to set the planner as ready.
   // For examples:
@@ -366,4 +907,4 @@ Gbplanner::PlannerStatus Gbplanner::getPlannerStatus() {
   return Gbplanner::PlannerStatus::READY;
 }
 
-}  // namespace explorer
+// }  // namespace explorer

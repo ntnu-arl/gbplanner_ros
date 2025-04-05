@@ -1,0 +1,87 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="world_name" default=""/>
+    <arg name="ugv_name" default=""/>
+    <arg name="link_name" value="base_link"/>
+    <arg name="sensor_prefix" value="/world/$(arg world_name)/model/$(arg ugv_name)/link/$(arg link_name)/sensor"/>
+
+    
+    <group ns="$(arg ugv_name)">
+        <!-- Tf -->
+        <node 
+            pkg="ros_ign_bridge" 
+            type="parameter_bridge" 
+            name="ros_gz_bridge_tf" 
+            output="screen" 
+            args="/model/$(arg ugv_name)/pose@tf2_msgs/TFMessage@gz.msgs.Pose_V
+                  /model/$(arg ugv_name)/pose_static@tf2_msgs/TFMessage@gz.msgs.Pose_V">
+            <remap from="/model/$(arg ugv_name)/pose" to="/tf"/>
+            <remap from="/model/$(arg ugv_name)/pose_static" to="/tf_static"/>
+        </node>
+        <!-- Position control -->
+        <!-- <node 
+            pkg="ros_ign_bridge" 
+            type="parameter_bridge" 
+            name="ros_gz_bridge_pose" 
+            output="screen" 
+            args="/$(arg ugv_name)/command/pose@geometry_msgs/Pose@gz.msgs.Pose">
+        </node> -->
+        <!-- Velocity control -->
+        <node 
+            pkg="ros_ign_bridge" 
+            type="parameter_bridge" 
+            name="ros_gz_bridge_twist" 
+            output="screen" 
+            args="/$(arg ugv_name)/command/velocity@geometry_msgs/Twist@gz.msgs.Twist">
+        </node>
+        <!-- Odometry -->
+        <node 
+            pkg="ros_ign_bridge" 
+            type="parameter_bridge" 
+            name="ros_gz_bridge_odom" 
+            output="screen" 
+            args="/$(arg ugv_name)/odometry@nav_msgs/Odometry@gz.msgs.Odometry">
+        </node>
+        <!-- IMU -->
+        <node 
+            pkg="ros_ign_bridge" 
+            type="parameter_bridge" 
+            name="ros_gz_bridge_imu" 
+            output="screen" 
+            args="/$(arg ugv_name)/imu@sensor_msgs/Imu@gz.msgs.IMU">
+        </node>
+        <!-- LiDAR -->
+        <node 
+            pkg="ros_ign_bridge" 
+            type="parameter_bridge" 
+            name="ros_gz_bridge_lidar3d" 
+            output="screen" 
+            args="/$(arg ugv_name)/lidar@sensor_msgs/LaserScan@gz.msgs.LaserScan
+                  /$(arg ugv_name)/lidar/point@sensor_msgs/PointCloud2@gz.msgs.PointCloudPacked
+                  /$(arg ugv_name)/lidar/points@sensor_msgs/PointCloud2@gz.msgs.PointCloudPacked">
+        </node>
+        <!--Front RGBD camera -->
+        <node
+            pkg="ros_ign_bridge"
+            type="parameter_bridge"
+            name="ros_gz_bridge_camera"
+            args="$(arg sensor_prefix)/camera_front/camera_info@sensor_msgs/CameraInfo[gz.msgs.CameraInfo
+                  $(arg sensor_prefix)/camera_front/image@sensor_msgs/Image[gz.msgs.Image">
+            <remap from="$(arg sensor_prefix)/camera_front/camera_info" to="front/camera_info"/>
+            <remap from="$(arg sensor_prefix)/camera_front/image" to="front/image_raw"/>
+        </node>
+
+
+        <!-- Joint State -->
+        <!-- <node 
+            pkg="ros_ign_bridge" 
+            type="parameter_bridge" 
+            name="ros_gz_bridge_joint_state" 
+            output="screen" 
+            args="/$(arg ugv_name)/joint_state@sensor_msgs/JointState@gz.msgs.Model">
+        </node> -->
+    </group>
+
+
+   
+</launch>

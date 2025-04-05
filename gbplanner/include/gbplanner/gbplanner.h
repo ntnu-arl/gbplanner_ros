@@ -26,16 +26,31 @@
 #include "planner_msgs/planner_srv.h"
 #include "planner_msgs/planner_string_trigger.h"
 
-namespace explorer {
+// namespace explorer {
 
 class Gbplanner {
  public:
   enum PlannerStatus { NOT_READY = 0, READY };
 
+  enum PlannerMode {
+    kExploration = 0,
+    kExplorationComplete,
+    kInspection,
+    kCompartmentChange
+  };
+
+  struct PlannerBTStates
+  {
+    bool local_exp_exhausted = false;
+    bool homing_triggered = false;
+    bool global_exp_exhausted = false;
+    bool mh_phase1_failed = false;
+  };
+   
+
   Gbplanner(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
   Gbplanner(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private,
-            MapManagerVoxblox<MapManagerVoxbloxServer, MapManagerVoxbloxVoxel>*
-                map_manager);
+            MapManager* map_manager);
 
   void initializeAttributes();
 
@@ -51,7 +66,30 @@ class Gbplanner {
                        const BoundedSpaceParams& global_space_params,
                        const BoundedSpaceParams& local_space_params);
 
+  void setPlannerSrvReq(const planner_msgs::planner_srv::Request& req)
+  {
+    in_srv_req_ = req;
+  }
+  
+  void getPlannerSrvRes(planner_msgs::planner_srv::Response& res)
+  {
+    res = out_srv_res_;
+  }
+
+  Rrg::LocalPlannerStatus getExplorationPath();
+  Rrg::GlobalPlannerStatus getGlobalExplorationPath();
+  bool checkGlobalExplorationStatus();
+  bool getInspectionPath();
+  bool getHomingPath();
+  bool homingRequired();
+  void getManholeTraversalPath(ManholeTraversalMode mode, ManholeTraversalStatus &status);
+  bool transitionCompartment();
+  bool allCompartmentsInspected();
+  
   Rrg* rrg_;
+  PlannerBTStates bt_states_;
+  planner_msgs::planner_srv::Request in_srv_req_;
+  planner_msgs::planner_srv::Response out_srv_res_;
 
  private:
   ros::NodeHandle nh_;
@@ -71,6 +109,9 @@ class Gbplanner {
   ros::ServiceServer planner_goto_wp_service_;
   ros::ServiceServer planner_enable_untraversable_polygon_subscriber_service_;
   ros::ServiceServer planner_set_planning_trigger_mode_service_;
+  ros::ServiceServer planner_stop_service_;
+  ros::ServiceServer inspection_path_service_;
+  ros::ServiceServer force_compartment_transition_service_;
 
   ros::Subscriber pose_subscriber_;
   ros::Subscriber pose_stamped_subscriber_;
@@ -79,7 +120,27 @@ class Gbplanner {
   ros::Subscriber robot_status_subcriber_;
   ros::ServiceClient map_save_service_;
 
+  StateVec current_state_;
+
   PlannerStatus planner_status_;
+
+  PlanningParams planning_params_;
+  PlannerMode planner_mode_;
+  int compartment_counter_ = 0;
+  int exploration_counter_ = 0;
+  int compartment_change_tries_ = 0;
+  int max_compartment_change_tries_ = 3;
+  bool decidePlanningAction();
+  bool getExplorationPath(planner_msgs::planner_srv::Request& req,
+      planner_msgs::planner_srv::Response& res);
+  bool getInspectionPath(planner_msgs::planner_srv::Request& req,
+      planner_msgs::planner_srv::Response& res);
+  bool getCompartmentTransitionPath(planner_msgs::planner_srv::Request& req,
+      planner_msgs::planner_srv::Response& res);
+
+  bool manhole_traversal_ongoing_ = false;
+  bool manhole_traversal_requested_ = false;
+  bool inspection_requested_ = false;  // Temp
 
   bool homingServiceCallback(planner_msgs::planner_homing::Request& req,
                              planner_msgs::planner_homing::Response& res);
@@ -125,6 +186,14 @@ class Gbplanner {
       planner_msgs::planner_set_planning_mode::Request& request,
       planner_msgs::planner_set_planning_mode::Response& response);
 
+  bool forceCompartmentChangeServiceCallback(
+              std_srvs::Trigger::Request& req,
+              std_srvs::Trigger::Response& res);
+
+  bool inspectionServiceCallback(
+    planner_msgs::planner_srv::Request& req,
+    planner_msgs::planner_srv::Response& res);
+
   void untraversablePolygonCallback(
       const geometry_msgs::PolygonStamped& polygon_msgs);
   void poseCallback(const geometry_msgs::PoseWithCovarianceStamped& pose);
@@ -136,5 +205,5 @@ class Gbplanner {
   Gbplanner::PlannerStatus getPlannerStatus();
 };
 
-}  // namespace explorer
+// }  // namespace explorer
 #endif

@@ -34,6 +34,7 @@ class gbplanner_panel : public rviz::Panel {
 
  public Q_SLOTS:
   void on_start_planner_click();
+  void on_start_planner_single_click();
   void on_stop_planner_click();
   void on_homing_click();
   void on_init_motion_click();
@@ -44,6 +45,9 @@ class gbplanner_panel : public rviz::Panel {
  protected:
   QPushButton* button_start_planner;
   ros::ServiceClient planner_client_start_planner;
+
+  QPushButton* button_start_planner_single;
+  ros::ServiceClient planner_client_start_planner_single;
 
   QPushButton* button_stop_planner;
   ros::ServiceClient planner_client_stop_planner;

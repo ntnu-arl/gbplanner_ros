@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root BTCPP_format="4">
+  <include path="./le.xml" />
+  <include path="./manhole_passing.xml" />
+  <BehaviorTree ID="le_insp_mh">
+    <Sequence>
+      <SetNextCompartment/>
+      <SubTree ID="le"/>
+      <SubTree ID="inspection"/>
+      <Fallback>
+        <Inverter>
+          <AllCompartmentsInspectedCheck/>
+        </Inverter>
+        <Idle/>
+      </Fallback>
+      <SubTree ID="mh_passing"/>
+      <LocalExpExhaustedReset/>
+    </Sequence>
+  </BehaviorTree>
+
+  <!-- Description of Node Models (used by Groot) -->
+  <TreeNodesModel/>
+
+</root>

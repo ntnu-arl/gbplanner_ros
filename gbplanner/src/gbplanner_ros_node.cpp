@@ -2,7 +2,7 @@
 #include <glog/logging.h>
 #include <ros/ros.h>
 
-#include "gbplanner/gbplanner.h"
+#include "gbplanner/gbplanner_ros.h"
 
 int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
   ros::NodeHandle nh;
   ros::NodeHandle nh_private("~");
 
-  explorer::Gbplanner planner(nh, nh_private);
+  GbplannerRos planner(nh, nh_private);
 
   ros::spin();
 

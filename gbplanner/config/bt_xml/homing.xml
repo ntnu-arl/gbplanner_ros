@@ -1,0 +1,17 @@
+<!-- When ticked:
+Returns:
+  RUNNING: If needs re-triggering due to failure to calculate the path
+  SUCCESS: Homing path calculated successfully
+-->
+<root BTCPP_format="4">
+  <include path="./lge.xml" />
+  <BehaviorTree ID="homing">
+    <Inverter>
+      <KeepRunningUntilFailure>
+        <Inverter>
+          <Homing/>
+        </Inverter>
+      </KeepRunningUntilFailure>
+    </Inverter>
+  </BehaviorTree>
+</root>
