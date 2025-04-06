@@ -1,4 +1,6 @@
-# GBPlanner3
+# GBPlanner3: State-Of-The_Art Graph-Based Exploration and Inspection Path Planner
+
+![swag](img/cerberus_subt_winners.png)
 
 We present the State-Of-The_Art Graph-Based Exploration and Inspection Path Planner: GBPlanner3. 
 
