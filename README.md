@@ -139,3 +139,6 @@ You can contact us for any question:
 * [Mihir Dharmadhikari](mailto:mihir.dharmadhikari@ntnu.no)
 * [Angelos Zacharia](mailto:angelos.zacharia@ntnu.no)
 * [Kostas Alexis](mailto:konstantinos.alexis@ntnu.no)
+
+
+This code is intended for civilian use only. It is provided under the license found in [LICENSE](https://github.com/ntnu-arl/gbplanner_ros/blob/gbplanner3/LICENSE).
