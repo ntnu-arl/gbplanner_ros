@@ -39,6 +39,8 @@ class gbplanner_panel : public rviz::Panel {
   void on_init_motion_click();
   void on_plan_to_waypoint_click();
   void on_global_planner_click();
+  void on_pause_gazebo_click();
+  void on_unpause_gazebo_click();
  protected Q_SLOTS:
 
  protected:
@@ -60,6 +62,12 @@ class gbplanner_panel : public rviz::Panel {
   QPushButton* button_global_planner;
   QLineEdit* global_id_line_edit;
   ros::ServiceClient planner_client_global_planner;
+
+  QPushButton* button_pause_gazebo;
+  ros::ServiceClient planner_client_pause_gazebo;
+
+  QPushButton* button_unpause_gazebo;
+  ros::ServiceClient planner_client_unpause_gazebo;
 
   ros::NodeHandle nh;
 };

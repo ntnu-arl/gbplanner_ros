@@ -9,10 +9,10 @@
 #include <kdtree/kdtree.h>
 #include <planner_msgs/Edge.h>
 #include <planner_msgs/Graph.h>
-#include <planner_msgs/Vertex.h>
+#include <planner_msgs/GbplannerVertex.h>
 #include <tf/transform_datatypes.h>
 
-#include "planner_common/graph.h"
+#include "graph/graph.hpp"
 #include "planner_common/graph_base.h"
 #include "planner_common/params.h"
 
@@ -29,15 +29,15 @@ class GraphManager {
   int generateVertexID();
 
   // Basic functions on graph including add new vertex and edge.
-  void addVertex(Vertex* v);
-  void addEdge(Vertex* v, Vertex* u, double weight);
-  void removeEdge(Vertex* v, Vertex* u);
+  void addVertex(GbplannerVertex* v);
+  void addEdge(GbplannerVertex* v, GbplannerVertex* u, double weight);
+  void removeEdge(GbplannerVertex* v, GbplannerVertex* u);
 
   int getNumVertices() { return graph_->getNumVertices(); }
   int getNumEdges() { return graph_->getNumEdges(); }
 
-  Vertex* getVertex(int id) { return vertices_map_[id]; }
-  void getLeafVertices(std::vector<Vertex*>& leaf_vertices);
+  GbplannerVertex* getVertex(int id) { return vertices_map_[id]; }
+  void getLeafVertices(std::vector<GbplannerVertex*>& leaf_vertices);
   void findLeafVertices(const ShortestPathsReport& rep);
 
   bool findShortestPaths(ShortestPathsReport& rep);
@@ -46,7 +46,7 @@ class GraphManager {
   void getShortestPath(int target_id, const ShortestPathsReport& rep,
                        bool source_to_target_order, std::vector<int>& path);
   void getShortestPath(int target_id, const ShortestPathsReport& rep,
-                       bool source_to_target_order, std::vector<Vertex*>& path);
+                       bool source_to_target_order, std::vector<GbplannerVertex*>& path);
   void getShortestPath(int target_id, const ShortestPathsReport& rep,
                        bool source_to_target_order,
                        std::vector<Eigen::Vector3d>& path);
@@ -58,11 +58,11 @@ class GraphManager {
                                   const ShortestPathsReport& rep);
 
   // Nearest neigbor lookup.
-  bool getNearestVertex(const StateVec* state, Vertex** v_res);
+  bool getNearestVertex(const StateVec* state, GbplannerVertex** v_res);
   bool getNearestVertexInRange(const StateVec* state, double range,
-                               Vertex** v_res);
+                               GbplannerVertex** v_res);
   bool getNearestVertices(const StateVec* state, double range,
-                          std::vector<Vertex*>* v_res);
+                          std::vector<GbplannerVertex*>* v_res);
   bool existVertexInRange(const StateVec* state, double range);
 
   void updateVertexTypeInRange(StateVec& state, double range);
@@ -75,9 +75,9 @@ class GraphManager {
 
   // A wrapper on top of Boost Graph Lib.
   // Maintain a simple graph with IDs and weights.
-  std::shared_ptr<Graph> graph_;
+  std::shared_ptr<BaseGraph> graph_;
   // Mapping from vertex id to vertex property.
-  std::unordered_map<int, Vertex*> vertices_map_;
+  std::unordered_map<int, GbplannerVertex*> vertices_map_;
   std::map<int, std::vector<std::pair<int, double>>>
       edge_map_;  // id:  <neighbor id, edge cost>
 

@@ -78,8 +78,8 @@ bool SensorParamsBase::loadParams(std::string ns) {
     ROSPARAM_WARN(param_name, "{0,0,0}");
   }
   rotations << param_val[0], param_val[1], param_val[2];
-  std::cout << ns << " " << rotations[0] << ", " << rotations[1] << ", "
-            << rotations[2] << std::endl;
+  // std::cout << ns << " " << rotations[0] << ", " << rotations[1] << ", "
+  //           << rotations[2] << std::endl;
 
   param_val.clear();
   param_name = ns + "/fov";
@@ -806,13 +806,28 @@ bool PlanningParams::loadParams(std::string ns) {
     ROSPARAM_INFO(str_tmp);
   }
 
+  parse_str_list.clear();
+  param_name = ns + "/inspection_sensor_list";
+  ros::param::get(param_name, parse_str_list);
+  if (parse_str_list.size() <= 0) {
+    ROSPARAM_WARN(param_name, "");
+  } else {
+    inspection_sensor_list = parse_str_list;
+    std::string str_tmp = "Sensors for inspection: ";
+    for (int i = 0; i < inspection_sensor_list.size(); ++i) {
+      str_tmp += inspection_sensor_list[i] + ", ";
+    }
+    ROSPARAM_INFO(str_tmp);
+  }
+
   param_name = ns + "/no_gain_zones_list";
+  parse_str_list.clear();
   ros::param::get(param_name, parse_str_list);
   if (parse_str_list.size() <= 0) {
     ROSPARAM_WARN(param_name, "");
   } else {
     no_gain_zones_list = parse_str_list;
-    std::string str_tmp = "Sensors for scanning: ";
+    std::string str_tmp = "No gain zones: ";
     for (int i = 0; i < no_gain_zones_list.size(); ++i) {
       str_tmp += no_gain_zones_list[i] + ", ";
     }
@@ -1015,7 +1030,7 @@ bool PlanningParams::loadParams(std::string ns) {
   if (!ros::param::get(param_name, path_safety_enhance_enable)) {
     path_safety_enhance_enable = false;
     ROSPARAM_WARN(param_name, "False");
-  }
+  }  
 
   param_name = ns + "/global_frame_id";
   if (!ros::param::get(param_name, global_frame_id)) {
@@ -1119,11 +1134,201 @@ bool PlanningParams::loadParams(std::string ns) {
     ROSPARAM_WARN(param_name, auto_landing_enable);
   }
 
-  param_name = ns + "/max_negative_inclination";
-  if (!ros::param::get(param_name, max_negative_inclination)) {
-    max_negative_inclination = 0.37;
-    ROSPARAM_WARN(param_name, max_negative_inclination);
+  param_name = ns + "/use_camera_gain";
+  if (!ros::param::get(param_name, use_camera_gain)) {
+    use_camera_gain = false;
+    ROSPARAM_WARN(param_name, use_camera_gain);
   }
+
+  param_name = ns + "/annotate_map_with_camera";
+  if (!ros::param::get(param_name, annotate_map_with_camera)) {
+    annotate_map_with_camera = false;
+    ROSPARAM_WARN(param_name, annotate_map_with_camera);
+  }
+
+  param_name = ns + "/inspection_planning";
+  if (!ros::param::get(param_name, inspection_planning)) {
+    inspection_planning = false;
+    ROSPARAM_WARN(param_name, inspection_planning);
+  }
+
+  param_name = ns + "/keep_leaf_yaw_only";
+  if (!ros::param::get(param_name, keep_leaf_yaw_only)) {
+    keep_leaf_yaw_only = false;
+    ROSPARAM_WARN(param_name, keep_leaf_yaw_only);
+  }
+
+  param_name = ns + "/enable_manhole_traversal";
+  if (!ros::param::get(param_name, enable_manhole_traversal)) {
+    enable_manhole_traversal = false;
+    ROSPARAM_WARN(param_name, enable_manhole_traversal);
+  }
+
+  param_name = ns + "/manhole_traversal_path_edge_length";
+  if (!ros::param::get(param_name, manhole_traversal_path_edge_length)) {
+    manhole_traversal_path_edge_length = 1.0;
+    ROSPARAM_WARN(param_name, manhole_traversal_path_edge_length);
+  }
+
+  param_name = ns + "/manhole_alignment_z_offset";
+  if (!ros::param::get(param_name, manhole_alignment_z_offset)) {
+    manhole_alignment_z_offset = 0.0;
+    ROSPARAM_WARN(param_name, manhole_alignment_z_offset);
+  }
+
+  param_name = ns + "/only_manhole_traversal";
+  if (!ros::param::get(param_name, only_manhole_traversal)) {
+    only_manhole_traversal = false;
+    ROSPARAM_WARN(param_name, only_manhole_traversal);
+  }
+
+  param_name = ns + "/auto_manhole_path_approval";
+  if (!ros::param::get(param_name, auto_manhole_path_approval)) {
+    auto_manhole_path_approval = false;
+    ROSPARAM_WARN(param_name, auto_manhole_path_approval);
+  }
+
+  param_name = ns + "/min_coverage_percentage";
+  if (!ros::param::get(param_name, min_coverage_percentage)) {
+    min_coverage_percentage = 0.9;
+    ROSPARAM_WARN(param_name, min_coverage_percentage);
+  }
+
+  param_name = ns + "/inspection_graph_vertices";
+  if (!ros::param::get(param_name, inspection_graph_vertices)) {
+    inspection_graph_vertices = num_vertices_max;
+    ROSPARAM_WARN(param_name, inspection_graph_vertices);
+  }
+
+  param_name = ns + "/max_inspection_vertices";
+  if (!ros::param::get(param_name, max_inspection_vertices)) {
+    max_inspection_vertices = inspection_graph_vertices;
+    ROSPARAM_WARN(param_name, max_inspection_vertices);
+  }
+
+  param_name = ns + "/inspection_xy_spacing";
+  if (!ros::param::get(param_name, inspection_xy_spacing)) {
+    inspection_xy_spacing = 1.0;
+    ROSPARAM_WARN(param_name, inspection_xy_spacing);
+  }
+
+  param_name = ns + "/inspection_z_spacing";
+  if (!ros::param::get(param_name, inspection_z_spacing)) {
+    inspection_z_spacing = 2.0;
+    ROSPARAM_WARN(param_name, inspection_z_spacing);
+  }
+
+  param_name = ns + "/inspection_thr_esdf_dist";
+  if (!ros::param::get(param_name, inspection_thr_esdf_dist)) {
+    inspection_thr_esdf_dist = 1.5;
+    ROSPARAM_WARN(param_name, inspection_thr_esdf_dist);
+  }
+
+  param_name = ns + "/inspection_target_viewing_range";
+  if (!ros::param::get(param_name, inspection_target_viewing_range)) {
+    inspection_target_viewing_range = 2.5;
+    ROSPARAM_WARN(param_name, inspection_target_viewing_range);
+  }
+
+  param_name = ns + "/verification_target_viewing_range";
+  if (!ros::param::get(param_name, verification_target_viewing_range)) {
+    verification_target_viewing_range = inspection_target_viewing_range;
+    ROSPARAM_WARN(param_name, verification_target_viewing_range);
+  }
+
+  param_name = ns + "/max_exploration_iterations";
+  if (!ros::param::get(param_name, max_exploration_iterations)) {
+    max_exploration_iterations = 4;
+    ROSPARAM_WARN(param_name, max_exploration_iterations);
+  }
+
+  param_name = ns + "/exploration_only";
+  if (!ros::param::get(param_name, exploration_only)) {
+    exploration_only = true;
+    ROSPARAM_WARN(param_name, exploration_only);
+  }
+
+  param_name = ns + "/box_check_method";
+  if (!ros::param::get(param_name, box_check_method)) {
+    box_check_method = 0;
+    ROSPARAM_WARN(param_name, box_check_method);
+  }
+
+  param_name = ns + "/line_check_method";
+  if (!ros::param::get(param_name, line_check_method)) {
+    line_check_method = 1;
+    ROSPARAM_WARN(param_name, line_check_method);
+  }
+
+  param_name = ns + "/add_only_frontiers_to_global_graph";
+  if (!ros::param::get(param_name, add_only_frontiers_to_global_graph)) {
+    add_only_frontiers_to_global_graph = true;
+    ROSPARAM_WARN(param_name, add_only_frontiers_to_global_graph);
+  }
+
+  param_name = ns + "/use_flipped_yaw";
+  if (!ros::param::get(param_name, use_flipped_yaw)) {
+    use_flipped_yaw = false;
+    ROSPARAM_WARN(param_name, use_flipped_yaw);
+  }
+
+  param_name = ns + "/max_manhole_height";
+  if (!ros::param::get(param_name, max_manhole_height)) {
+    max_manhole_height = 100.0;  // Too high so won't be used
+    ROSPARAM_WARN(param_name, max_manhole_height);
+  }
+
+  param_name = ns + "/use_gvi";
+  if (!ros::param::get(param_name, use_gvi)) {
+    use_gvi = true;  // Too high so won't be used
+    ROSPARAM_WARN(param_name, use_gvi);
+  }
+
+  param_name = ns + "/max_low_gain_iters";
+  if (!ros::param::get(param_name, max_low_gain_iters)) {
+    max_low_gain_iters = 3;  // Too high so won't be used
+    ROSPARAM_WARN(param_name, use_gvi);
+  }
+
+  param_name = ns + "/inspection_pt_dist";
+  if (!ros::param::get(param_name, inspection_pt_dist)) {
+    inspection_pt_dist = inspection_target_viewing_range;  // Too high so won't be used
+    ROSPARAM_WARN(param_name, use_gvi);
+  }
+
+  param_name = ns + "/unknown_as_free";
+  if (!ros::param::get(param_name, unknown_as_free)) {
+    unknown_as_free = false;
+    ROSPARAM_WARN(param_name, unknown_as_free);
+  }
+  
+  std::vector<double> param_val;
+
+  param_val.clear();
+  param_name = ns + "/compartment_centers";
+  if ((!ros::param::get(param_name, param_val)) || (param_val.size() % 3 != 0)) {
+    if(!exploration_only) {
+      param_val.resize(3);
+      param_val[0] = 0.0;
+      param_val[1] = 0.0;
+      param_val[2] = 0.0;
+      ROSPARAM_ERROR(param_name);
+    }
+    else {
+      ROSPARAM_WARN(param_name, 0.0);
+    }
+  }
+  for(int i=0; i<param_val.size(); i+=3) {
+    Eigen::Vector3d center;
+    center << param_val[i], param_val[i+1], param_val[i+2];
+    compartment_centers.push_back(center);
+  }
+
+  param_val.clear();
+  param_name = ns + "/compartment_dimensions";
+  compartment_dimensions.loadParams(param_name);
+
+  
 
   ROSPARAM_INFO("Done.");
   return true;

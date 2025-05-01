@@ -2,7 +2,7 @@
 
 #include <tf/transform_datatypes.h>
 
-namespace explorer {
+// namespace explorer {
 
 Visualization::Visualization(const ros::NodeHandle& nh,
                              const ros::NodeHandle& nh_private) {
@@ -62,6 +62,17 @@ Visualization::Visualization(const ros::NodeHandle& nh,
   pcl_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("vis/occupied_pcl", 10);
   path_pub_ =
       nh_.advertise<visualization_msgs::MarkerArray>("vis/alternate_path", 10);
+  manhole_traversal_path_pub_ =
+      nh_.advertise<visualization_msgs::MarkerArray>("vis/manhole_traversal_path", 10);
+  // graph_vertices_pub_ =
+  //     nh_.advertise<visualization_msgs::MarkerArray>("vis/graph_vertices", 10);
+  graph_vertices_pub_ =
+      nh_.advertise<geometry_msgs::PoseArray>("vis/graph_vertices", 10);
+  // viewpoints_pub_ =
+  //     nh_.advertise<visualization_msgs::MarkerArray>("vis/viewpoints", 10);
+  viewpoints_pub_ =
+      nh_.advertise<geometry_msgs::PoseArray>("vis/viewpoints", 10);
+
   best_path_id_ = 0;
 }
 
@@ -169,7 +180,7 @@ void Visualization::visualizeWorkspace(StateVec& state,
   local_ws_marker.color.r = 255.0 / 255.0;
   local_ws_marker.color.g = 100.0 / 255.0;
   local_ws_marker.color.b = 255.0 / 255.0;
-  local_ws_marker.color.a = 0.25;
+  local_ws_marker.color.a = 0.5;
   local_ws_marker.lifetime = ros::Duration(ws_lifetime);
   local_ws_marker.frame_locked = false;
   marker_array.markers.push_back(local_ws_marker);
@@ -242,10 +253,100 @@ void Visualization::visualizeNoGainZones(
   no_gain_zone_pub_.publish(marker_array);
 }
 
+void Visualization::visualizeGraphVertices(const std::shared_ptr<GraphManager> graph_manager, const std::vector<int> &ids) {
+  visualization_msgs::MarkerArray marker_array;
+  
+  // int marker_id = 0;
+  // for (int id : ids) {
+  //   GbplannerVertex* v = graph_manager->getVertex(id);
+  //   visualization_msgs::Marker marker;
+  //   marker.header.stamp = ros::Time::now();
+  //   marker.header.seq = 0;
+  //   marker.header.frame_id = world_frame_id;
+  //   marker.ns = "heading";
+  //   marker.action = visualization_msgs::Marker::ADD;
+  //   marker.type = visualization_msgs::Marker::ARROW;
+  //   marker.scale.x = 0.3;   // length of the arrow
+  //   marker.scale.y = 0.1;  // arrow width
+  //   marker.scale.z = 0.1;  // arrow height
+  //   marker.color.r = 0.0 / 255.0;
+  //   marker.color.g = 255.0 / 255.0;
+  //   marker.color.b = 0.0;
+  //   marker.color.a = 1.0;
+  //   marker.lifetime = ros::Duration(shortest_paths_lifetime);
+  //   marker.frame_locked = false;
+  //   marker.pose.position.x = v->state[0];
+  //   marker.pose.position.y = v->state[1];
+  //   marker.pose.position.z = v->state[2];
+  //   tf::Quaternion quat;
+  //   quat.setRPY(0.0, 0.0, v->state[3]);
+  //   marker.pose.orientation.x = quat.x();
+  //   marker.pose.orientation.y = quat.y();
+  //   marker.pose.orientation.z = quat.z();
+  //   marker.pose.orientation.w = quat.w();
+  //   marker.id = marker_id++;
+  //   marker_array.markers.push_back(marker);
+  // }
+
+  geometry_msgs::PoseArray pa;
+  pa.header.frame_id = world_frame_id;
+  for (int id : ids) {
+    GbplannerVertex* v = graph_manager->getVertex(id);
+    geometry_msgs::Pose p;
+    p.position.x = v->state.x();
+    p.position.y = v->state.y();
+    p.position.z = v->state.z();
+    tf::Quaternion quat;
+    quat.setRPY(0.0, 0.0, v->state[3]);
+    p.orientation.x = quat.x();
+    p.orientation.y = quat.y();
+    p.orientation.z = quat.z();
+    p.orientation.w = quat.w();
+    pa.poses.push_back(p);
+  }
+
+  graph_vertices_pub_.publish(pa);
+}
+
+void Visualization::visualizeViewpoints(const std::vector<geometry_msgs::Pose>& viewpoints)
+{
+  visualization_msgs::MarkerArray marker_array;
+  
+  int marker_id = 0;
+  // for (geometry_msgs::Pose p : viewpoints) {
+  //   visualization_msgs::Marker marker;
+  //   marker.header.stamp = ros::Time::now();
+  //   marker.header.seq = 0;
+  //   marker.header.frame_id = world_frame_id;
+  //   marker.ns = "heading";
+  //   marker.action = visualization_msgs::Marker::ADD;
+  //   marker.type = visualization_msgs::Marker::ARROW;
+  //   marker.scale.x = 0.3;   // length of the arrow
+  //   marker.scale.y = 0.1;  // arrow width
+  //   marker.scale.z = 0.1;  // arrow height
+  //   marker.color.r = 200.0 / 255.0;
+  //   marker.color.g = 200.0 / 255.0;
+  //   marker.color.b = 0.0;
+  //   marker.color.a = 1.0;
+  //   marker.lifetime = ros::Duration(shortest_paths_lifetime);
+  //   marker.frame_locked = false;
+  //   marker.pose = p;
+  //   marker.id = marker_id++;
+  //   marker_array.markers.push_back(marker);
+  // }
+
+  geometry_msgs::PoseArray pa;
+  pa.header.frame_id = world_frame_id;
+  pa.poses = viewpoints;
+  viewpoints_pub_.publish(pa);
+
+  // viewpoints_pub_.publish(marker_array);
+}
+
 void Visualization::visualizeGraph(
     const std::shared_ptr<GraphManager> graph_manager) {
-  std::shared_ptr<Graph> g = graph_manager->graph_;
-  std::unordered_map<int, Vertex*>& v_map = graph_manager->vertices_map_;
+  std::shared_ptr<BaseGraph> g = graph_manager->graph_;
+  std::unordered_map<int, GbplannerVertex*>& v_map = graph_manager->vertices_map_;
 
   if (graph_manager->getNumVertices() == 0) return;
   if (planning_graph_pub_.getNumSubscribers() < 1) return;
@@ -269,10 +370,10 @@ void Visualization::visualizeGraph(
   edge_marker.lifetime = ros::Duration(graph_lifetime);
   edge_marker.frame_locked = false;
 
-  std::pair<Graph::GraphType::edge_iterator, Graph::GraphType::edge_iterator>
+  std::pair<BaseGraph::GraphType::edge_iterator, BaseGraph::GraphType::edge_iterator>
       ei;
   g->getEdgeIterator(ei);
-  for (Graph::GraphType::edge_iterator it = ei.first; it != ei.second; ++it) {
+  for (BaseGraph::GraphType::edge_iterator it = ei.first; it != ei.second; ++it) {
     int src_id, tgt_id;
     double weight;
     std::tie(src_id, tgt_id, weight) = g->getEdgeProperty(it);
@@ -308,11 +409,11 @@ void Visualization::visualizeGraph(
   vertex_marker.lifetime = ros::Duration(graph_lifetime);
   vertex_marker.frame_locked = false;
 
-  std::pair<Graph::GraphType::vertex_iterator,
-            Graph::GraphType::vertex_iterator>
+  std::pair<BaseGraph::GraphType::vertex_iterator,
+            BaseGraph::GraphType::vertex_iterator>
       vi;
   g->getVertexIterator(vi);
-  for (Graph::GraphType::vertex_iterator it = vi.first; it != vi.second; ++it) {
+  for (BaseGraph::GraphType::vertex_iterator it = vi.first; it != vi.second; ++it) {
     int id = g->getVertexProperty(it);
     geometry_msgs::Point p1;
     p1.x = v_map[id]->state[0];
@@ -341,11 +442,11 @@ void Visualization::visualizeGraph(
   hanging_vertex_marker.lifetime = ros::Duration(graph_lifetime);
   hanging_vertex_marker.frame_locked = false;
 
-  std::pair<Graph::GraphType::vertex_iterator,
-            Graph::GraphType::vertex_iterator>
+  std::pair<BaseGraph::GraphType::vertex_iterator,
+            BaseGraph::GraphType::vertex_iterator>
       vi_h;
   g->getVertexIterator(vi_h);
-  for (Graph::GraphType::vertex_iterator it = vi_h.first; it != vi_h.second;
+  for (BaseGraph::GraphType::vertex_iterator it = vi_h.first; it != vi_h.second;
        ++it) {
     int id = g->getVertexProperty(it);
     if (v_map[id]->is_hanging) {
@@ -360,47 +461,47 @@ void Visualization::visualizeGraph(
   ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "[Vis]: Num hanging verts: %d", (int)hanging_vertex_marker.points.size());
   marker_array.markers.push_back(hanging_vertex_marker);
 
-  // // Plot all headings
-  // int marker_id = 0;
-  // for (Graph::GraphType::vertex_iterator it = vi.first; it != vi.second;
-  // ++it) {
-  //   visualization_msgs::Marker marker;
-  //   marker.header.stamp = ros::Time::now();
-  //   marker.header.seq = 0;
-  //   marker.header.frame_id = world_frame_id;
-  //   marker.ns = "heading";
-  //   marker.action = visualization_msgs::Marker::ADD;
-  //   marker.type = visualization_msgs::Marker::ARROW;
-  //   marker.scale.x = 0.5;   // length of the arrow
-  //   marker.scale.y = 0.15;  // arrow width
-  //   marker.scale.z = 0.15;  // arrow height
-  //   marker.color.r = 200.0 / 255.0;
-  //   marker.color.g = 50.0 / 255.0;
-  //   marker.color.b = 0.0;
-  //   marker.color.a = 0.3;
-  //   marker.lifetime = ros::Duration(graph_lifetime);
-  //   marker.frame_locked = false;
-  //   int id = g->getVertexProperty(it);
-  //   marker.pose.position.x = v_map[id]->state[0];
-  //   marker.pose.position.y = v_map[id]->state[1];
-  //   marker.pose.position.z = v_map[id]->state[2];
-  //   tf::Quaternion quat;
-  //   quat.setRPY(0.0, 0.0, v_map[id]->state[3]);
-  //   marker.pose.orientation.x = quat.x();
-  //   marker.pose.orientation.y = quat.y();
-  //   marker.pose.orientation.z = quat.z();
-  //   marker.pose.orientation.w = quat.w();
-  //   marker.id = marker_id++;
-  //   marker_array.markers.push_back(marker);
-  // }
+  // Plot all headings
+  int marker_id = 0;
+  for (BaseGraph::GraphType::vertex_iterator it = vi.first; it != vi.second;
+  ++it) {
+    visualization_msgs::Marker marker;
+    marker.header.stamp = ros::Time::now();
+    marker.header.seq = 0;
+    marker.header.frame_id = world_frame_id;
+    marker.ns = "heading";
+    marker.action = visualization_msgs::Marker::ADD;
+    marker.type = visualization_msgs::Marker::ARROW;
+    marker.scale.x = 0.5;   // length of the arrow
+    marker.scale.y = 0.15;  // arrow width
+    marker.scale.z = 0.15;  // arrow height
+    marker.color.r = 200.0 / 255.0;
+    marker.color.g = 50.0 / 255.0;
+    marker.color.b = 0.0;
+    marker.color.a = 1.0;
+    marker.lifetime = ros::Duration(graph_lifetime);
+    marker.frame_locked = false;
+    int id = g->getVertexProperty(it);
+    marker.pose.position.x = v_map[id]->state[0];
+    marker.pose.position.y = v_map[id]->state[1];
+    marker.pose.position.z = v_map[id]->state[2];
+    tf::Quaternion quat;
+    quat.setRPY(0.0, 0.0, v_map[id]->state[3]);
+    marker.pose.orientation.x = quat.x();
+    marker.pose.orientation.y = quat.y();
+    marker.pose.orientation.z = quat.z();
+    marker.pose.orientation.w = quat.w();
+    marker.id = marker_id++;
+    marker_array.markers.push_back(marker);
+  }
 
   planning_graph_pub_.publish(marker_array);
 }
 
 void Visualization::visualizeProjectedGraph(
     const std::shared_ptr<GraphManager> graph_manager) {
-  std::shared_ptr<Graph> g = graph_manager->graph_;
-  std::unordered_map<int, Vertex*>& v_map = graph_manager->vertices_map_;
+  std::shared_ptr<BaseGraph> g = graph_manager->graph_;
+  std::unordered_map<int, GbplannerVertex*>& v_map = graph_manager->vertices_map_;
 
   if (graph_manager->getNumVertices() == 0) return;
   if (planning_projected_graph_pub_.getNumSubscribers() < 1) return;
@@ -424,10 +525,10 @@ void Visualization::visualizeProjectedGraph(
   edge_marker.lifetime = ros::Duration(graph_lifetime);
   edge_marker.frame_locked = false;
 
-  std::pair<Graph::GraphType::edge_iterator, Graph::GraphType::edge_iterator>
+  std::pair<BaseGraph::GraphType::edge_iterator, BaseGraph::GraphType::edge_iterator>
       ei;
   g->getEdgeIterator(ei);
-  for (Graph::GraphType::edge_iterator it = ei.first; it != ei.second; ++it) {
+  for (BaseGraph::GraphType::edge_iterator it = ei.first; it != ei.second; ++it) {
     int src_id, tgt_id;
     double weight;
     std::tie(src_id, tgt_id, weight) = g->getEdgeProperty(it);
@@ -463,11 +564,11 @@ void Visualization::visualizeProjectedGraph(
   vertex_marker.lifetime = ros::Duration(graph_lifetime);
   vertex_marker.frame_locked = false;
 
-  std::pair<Graph::GraphType::vertex_iterator,
-            Graph::GraphType::vertex_iterator>
+  std::pair<BaseGraph::GraphType::vertex_iterator,
+            BaseGraph::GraphType::vertex_iterator>
       vi;
   g->getVertexIterator(vi);
-  for (Graph::GraphType::vertex_iterator it = vi.first; it != vi.second; ++it) {
+  for (BaseGraph::GraphType::vertex_iterator it = vi.first; it != vi.second; ++it) {
     int id = g->getVertexProperty(it);
     geometry_msgs::Point p1;
     p1.x = v_map[id]->state[0];
@@ -479,7 +580,7 @@ void Visualization::visualizeProjectedGraph(
 
   // // Plot all headings
   // int marker_id = 0;
-  // for (Graph::GraphType::vertex_iterator it = vi.first; it != vi.second;
+  // for (BaseGraph::GraphType::vertex_iterator it = vi.first; it != vi.second;
   // ++it) {
   //   visualization_msgs::Marker marker;
   //   marker.header.stamp = ros::Time::now();
@@ -516,8 +617,8 @@ void Visualization::visualizeProjectedGraph(
 
 void Visualization::visualizeGlobalGraph(
     const std::shared_ptr<GraphManager> graph_manager) {
-  std::shared_ptr<Graph> g = graph_manager->graph_;
-  std::unordered_map<int, Vertex*>& v_map = graph_manager->vertices_map_;
+  std::shared_ptr<BaseGraph> g = graph_manager->graph_;
+  std::unordered_map<int, GbplannerVertex*>& v_map = graph_manager->vertices_map_;
 
   if (graph_manager->getNumVertices() == 0) return;
   if (planning_global_graph_pub_.getNumSubscribers() < 1) return;
@@ -533,7 +634,7 @@ void Visualization::visualizeGlobalGraph(
   edge_marker.ns = "edges";
   edge_marker.action = visualization_msgs::Marker::ADD;
   edge_marker.type = visualization_msgs::Marker::LINE_LIST;
-  edge_marker.scale.x = 0.1;
+  edge_marker.scale.x = 0.05; // 0.1;
   edge_marker.color.r = 200.0 / 255.0;
   edge_marker.color.g = 100.0 / 255.0;
   edge_marker.color.b = 0.0;
@@ -541,10 +642,10 @@ void Visualization::visualizeGlobalGraph(
   edge_marker.lifetime = ros::Duration(graph_lifetime);
   edge_marker.frame_locked = false;
 
-  std::pair<Graph::GraphType::edge_iterator, Graph::GraphType::edge_iterator>
+  std::pair<BaseGraph::GraphType::edge_iterator, BaseGraph::GraphType::edge_iterator>
       ei;
   g->getEdgeIterator(ei);
-  for (Graph::GraphType::edge_iterator it = ei.first; it != ei.second; ++it) {
+  for (BaseGraph::GraphType::edge_iterator it = ei.first; it != ei.second; ++it) {
     int src_id, tgt_id;
     double weight;
     std::tie(src_id, tgt_id, weight) = g->getEdgeProperty(it);
@@ -563,10 +664,10 @@ void Visualization::visualizeGlobalGraph(
 
   // // Plot all edges using arrows (slow)
   // int marker_idd = 0;
-  // std::pair<Graph::GraphType::edge_iterator, Graph::GraphType::edge_iterator>
+  // std::pair<BaseGraph::GraphType::edge_iterator, BaseGraph::GraphType::edge_iterator>
   //     ei;
   // g->getEdgeIterator(ei);
-  // for (Graph::GraphType::edge_iterator it = ei.first; it != ei.second; ++it)
+  // for (BaseGraph::GraphType::edge_iterator it = ei.first; it != ei.second; ++it)
   // {
   //   visualization_msgs::Marker marker;
   //   marker.header.stamp = ros::Time::now();
@@ -611,9 +712,9 @@ void Visualization::visualizeGlobalGraph(
   vertex_marker.ns = "vertices";
   vertex_marker.action = visualization_msgs::Marker::ADD;
   vertex_marker.type = visualization_msgs::Marker::SPHERE_LIST;
-  vertex_marker.scale.x = 0.3;
-  vertex_marker.scale.y = 0.3;
-  vertex_marker.scale.z = 0.3;
+  vertex_marker.scale.x = 0.15; // 0.3;
+  vertex_marker.scale.y = 0.15; // 0.3;
+  vertex_marker.scale.z = 0.15; // 0.3;
   vertex_marker.color.r = 53.0 / 255.0;
   vertex_marker.color.g = 49.0 / 255.0;
   vertex_marker.color.b = 119.0 / 255.0;
@@ -621,11 +722,11 @@ void Visualization::visualizeGlobalGraph(
   vertex_marker.lifetime = ros::Duration(graph_lifetime);
   vertex_marker.frame_locked = false;
 
-  std::pair<Graph::GraphType::vertex_iterator,
-            Graph::GraphType::vertex_iterator>
+  std::pair<BaseGraph::GraphType::vertex_iterator,
+            BaseGraph::GraphType::vertex_iterator>
       vi;
   g->getVertexIterator(vi);
-  for (Graph::GraphType::vertex_iterator it = vi.first; it != vi.second; ++it) {
+  for (BaseGraph::GraphType::vertex_iterator it = vi.first; it != vi.second; ++it) {
     int id = g->getVertexProperty(it);
     geometry_msgs::Point p1;
     p1.x = v_map[id]->state[0];
@@ -1092,8 +1193,8 @@ void Visualization::visualizeNegativePaths(
     const std::vector<int>& ids,
     const std::shared_ptr<GraphManager> graph_manager,
     const ShortestPathsReport& graph_rep) {
-  std::shared_ptr<Graph> g = graph_manager->graph_;
-  std::unordered_map<int, Vertex*>& v_map = graph_manager->vertices_map_;
+  std::shared_ptr<BaseGraph> g = graph_manager->graph_;
+  std::unordered_map<int, GbplannerVertex*>& v_map = graph_manager->vertices_map_;
 
   if (graph_manager->getNumVertices() == 0) return;
   // if (shortest_paths_pub_.getNumSubscribers() < 1) return;
@@ -1143,7 +1244,7 @@ void Visualization::visualizeNegativePaths(
     const std::vector<Eigen::Vector3d>& edge_vertices,
     const std::shared_ptr<GraphManager> graph_manager,
     const ShortestPathsReport& graph_rep) {
-  std::shared_ptr<Graph> g = graph_manager->graph_;
+  std::shared_ptr<BaseGraph> g = graph_manager->graph_;
 
   if (graph_manager->getNumVertices() == 0) return;
   // if (shortest_paths_pub_.getNumSubscribers() < 1) return;
@@ -1186,8 +1287,8 @@ void Visualization::visualizeNegativePaths(
 void Visualization::visualizeShortestPaths(
     const std::shared_ptr<GraphManager> graph_manager,
     const ShortestPathsReport& graph_rep) {
-  std::shared_ptr<Graph> g = graph_manager->graph_;
-  std::unordered_map<int, Vertex*>& v_map = graph_manager->vertices_map_;
+  std::shared_ptr<BaseGraph> g = graph_manager->graph_;
+  std::unordered_map<int, GbplannerVertex*>& v_map = graph_manager->vertices_map_;
 
   if (graph_manager->getNumVertices() == 0) return;
   if (shortest_paths_pub_.getNumSubscribers() < 1) return;
@@ -1273,7 +1374,7 @@ void Visualization::visualizeShortestPaths(
   leaf_vertex_marker.color.a = 1.0;
   leaf_vertex_marker.lifetime = ros::Duration(shortest_paths_lifetime);
   leaf_vertex_marker.frame_locked = false;
-  std::vector<Vertex*> leaf_vertices;
+  std::vector<GbplannerVertex*> leaf_vertices;
   for (int id = 0; id < num_vertices; ++id) {
     if (v_map[id]->is_leaf_vertex) {
       geometry_msgs::Point p1;
@@ -1355,7 +1456,7 @@ void Visualization::visualizeShortestPaths(
   // Sort the leaf vertices.
   // Then visualize top 10.
   std::sort(leaf_vertices.begin(), leaf_vertices.end(),
-            [](const Vertex* a, const Vertex* b) {
+            [](const GbplannerVertex* a, const GbplannerVertex* b) {
               return a->vol_gain.num_unknown_voxels >
                      b->vol_gain.num_unknown_voxels;
             });
@@ -1422,9 +1523,9 @@ void Visualization::visualizeShortestPaths(
 
 void Visualization::visualizeClusteredPaths(
     const std::shared_ptr<GraphManager> graph_manager,
-    const ShortestPathsReport& graph_rep, const std::vector<Vertex*>& vertices,
+    const ShortestPathsReport& graph_rep, const std::vector<GbplannerVertex*>& vertices,
     const std::vector<int>& cluster_ids) {
-  std::unordered_map<int, Vertex*>& v_map = graph_manager->vertices_map_;
+  std::unordered_map<int, GbplannerVertex*>& v_map = graph_manager->vertices_map_;
 
   if (graph_manager->getNumVertices() == 0) return;
   if (clustered_paths_pub_.getNumSubscribers() < 1) return;
@@ -1531,7 +1632,7 @@ void Visualization::visualizeHomingPath(
     const ShortestPathsReport& graph_rep, int current_id) {
   if (planning_homing_pub_.getNumSubscribers() < 1) return;
 
-  std::unordered_map<int, Vertex*>& v_map = graph_manager->vertices_map_;
+  std::unordered_map<int, GbplannerVertex*>& v_map = graph_manager->vertices_map_;
 
   visualization_msgs::MarkerArray marker_array;
 
@@ -1577,7 +1678,7 @@ void Visualization::visualizeGlobalPaths(
     std::vector<int>& to_frontier_ids, std::vector<int>& to_home_ids) {
   if (planning_global_pub_.getNumSubscribers() < 1) return;
 
-  std::unordered_map<int, Vertex*>& v_map = graph_manager->vertices_map_;
+  std::unordered_map<int, GbplannerVertex*>& v_map = graph_manager->vertices_map_;
 
   visualization_msgs::MarkerArray marker_array;
 
@@ -1649,12 +1750,82 @@ void Visualization::visualizeGlobalPaths(
   planning_global_pub_.publish(marker_array);
 }
 
+void Visualization::visualizeManholeTraversalPath(const std::vector<geometry_msgs::Pose>& path) {
+  if(path.size() <= 0 || manhole_traversal_path_pub_.getNumSubscribers() <= 0) {
+    return;
+  }
+
+  visualization_msgs::MarkerArray marker_array;
+
+  visualization_msgs::Marker edge_marker;
+  edge_marker.header.stamp = ros::Time::now();
+  edge_marker.header.seq = 0;
+  edge_marker.header.frame_id = world_frame_id;
+  edge_marker.id = 0;
+  edge_marker.ns = "best_path";
+  edge_marker.action = visualization_msgs::Marker::ADD;
+  edge_marker.type = visualization_msgs::Marker::LINE_LIST;
+  edge_marker.scale.x = 0.15;
+  edge_marker.color.r = 255.0 / 255.0;
+  edge_marker.color.g = 255.0 / 255.0;
+  edge_marker.color.b = 0.0 / 255.0;
+  edge_marker.color.a = 1.0;
+  edge_marker.lifetime = ros::Duration(shortest_paths_lifetime);
+  edge_marker.frame_locked = false;
+
+  if (path.size() > 1) {
+    for (int i = 0; i < (path.size() - 1); ++i) {
+      geometry_msgs::Point p1;
+      p1.x = path[i].position.x;
+      p1.y = path[i].position.y;
+      p1.z = path[i].position.z;
+      geometry_msgs::Point p2;
+      p2.x = path[i+1].position.x;
+      p2.y = path[i+1].position.y;
+      p2.z = path[i+1].position.z;
+      edge_marker.points.push_back(p1);
+      edge_marker.points.push_back(p2);
+    }
+  }
+  marker_array.markers.push_back(edge_marker);
+
+  // Plot all vertices.
+  visualization_msgs::Marker vertex_marker;
+  vertex_marker.header.stamp = ros::Time::now();
+  vertex_marker.header.seq = 0;
+  vertex_marker.header.frame_id = world_frame_id;
+  vertex_marker.id = 0;
+  vertex_marker.ns = "vertices";
+  vertex_marker.action = visualization_msgs::Marker::ADD;
+  vertex_marker.type = visualization_msgs::Marker::SPHERE_LIST;
+  vertex_marker.scale.x = 0.15;
+  vertex_marker.scale.y = 0.15;
+  vertex_marker.scale.z = 0.15;
+  vertex_marker.color.r = 200.0 / 255.0;
+  vertex_marker.color.g = 100.0 / 255.0;
+  vertex_marker.color.b = 0.0;
+  vertex_marker.color.a = 1.0;
+  vertex_marker.lifetime = ros::Duration(shortest_paths_lifetime);
+  vertex_marker.frame_locked = false;
+
+  for (int i = 0; i < path.size(); ++i) {
+    geometry_msgs::Point p1;
+    p1.x = path[i].position.x;
+    p1.y = path[i].position.y;
+    p1.z = path[i].position.z;
+    vertex_marker.points.push_back(p1);
+  }
+  marker_array.markers.push_back(vertex_marker);
+
+  manhole_traversal_path_pub_.publish(marker_array);
+}
+
 void Visualization::visualizePath(
     const std::shared_ptr<GraphManager> graph_manager,
     const ShortestPathsReport& graph_rep, int vertex_id) {
   if (path_pub_.getNumSubscribers() < 1) return;
 
-  std::unordered_map<int, Vertex*>& v_map = graph_manager->vertices_map_;
+  std::unordered_map<int, GbplannerVertex*>& v_map = graph_manager->vertices_map_;
 
   visualization_msgs::MarkerArray marker_array;
   // Plot the best one first.
@@ -1728,7 +1899,7 @@ void Visualization::visualizeBestPaths(
     const ShortestPathsReport& graph_rep, int n, int best_vertex_id) {
   if (best_planning_path_pub_.getNumSubscribers() < 1) return;
 
-  std::unordered_map<int, Vertex*>& v_map = graph_manager->vertices_map_;
+  std::unordered_map<int, GbplannerVertex*>& v_map = graph_manager->vertices_map_;
 
   visualization_msgs::MarkerArray marker_array;
 
@@ -1831,12 +2002,12 @@ void Visualization::visualizeBestPaths(
   // }
 
   // Plot the set of best paths in terms of accumulative gain.
-  // std::vector<Vertex*> all_leaf_vertices;
+  // std::vector<GbplannerVertex*> all_leaf_vertices;
   // for (auto &vm: v_map) {
   //   if (vm.second->is_leaf_vertex) all_leaf_vertices.push_back(vm.second);
   // }
   // std::sort(all_leaf_vertices.begin(), all_leaf_vertices.end(), [](const
-  // Vertex *a, const Vertex *b) {
+  // GbplannerVertex *a, const GbplannerVertex *b) {
   //   return a->vol_gain.accumulative_gain > b->vol_gain.accumulative_gain;
   // });
 
@@ -1897,7 +2068,7 @@ void Visualization::visualizeRefPath(
   edge_marker.ns = "ref_path";
   edge_marker.action = visualization_msgs::Marker::ADD;
   edge_marker.type = visualization_msgs::Marker::LINE_LIST;
-  edge_marker.scale.x = 0.25;
+  edge_marker.scale.x = 0.1; // 0.25
   edge_marker.color.r = 244.0 / 255.0;
   edge_marker.color.g = 66.0 / 255.0;
   edge_marker.color.b = 226.0 / 255.0;
@@ -1928,9 +2099,9 @@ void Visualization::visualizeRefPath(
   vertex_marker.ns = "vertices";
   vertex_marker.action = visualization_msgs::Marker::ADD;
   vertex_marker.type = visualization_msgs::Marker::SPHERE_LIST;
-  vertex_marker.scale.x = 0.25;
-  vertex_marker.scale.y = 0.25;
-  vertex_marker.scale.z = 0.25;
+  vertex_marker.scale.x = 0.1; // 0.25
+  vertex_marker.scale.y = 0.1; // 0.25
+  vertex_marker.scale.z = 0.1; // 0.25
   vertex_marker.color.r = 200.0 / 255.0;
   vertex_marker.color.g = 100.0 / 255.0;
   vertex_marker.color.b = 0.0;
@@ -2629,4 +2800,4 @@ void Visualization::visualizeBlindModPath(
   blind_mod_path_pub_.publish(marker_array);
 }
 
-}  // namespace explorer
+// }  // namespace explorer

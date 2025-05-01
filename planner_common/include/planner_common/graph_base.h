@@ -6,6 +6,7 @@
 
 #include "planner_common/params.h"
 #include "planner_semantic_msgs/SemanticClass.h"
+// #include "planner_common/map_manager.h"
 
 // namespace explorer {
 
@@ -63,6 +64,7 @@ struct SampleStatistic {
 struct VolumetricGain {
   VolumetricGain()
       : gain(0),
+        normalized_gain(0),
         accumulative_gain(0),
         num_unknown_voxels(0),
         num_free_voxels(0),
@@ -71,6 +73,7 @@ struct VolumetricGain {
 
   void reset() {
     gain = 0;
+    normalized_gain = 0;
     accumulative_gain = 0;
     num_unknown_voxels = 0;
     num_free_voxels = 0;
@@ -81,18 +84,63 @@ struct VolumetricGain {
   }
 
   double gain;
+  double normalized_gain;
   double accumulative_gain;
   int num_unknown_voxels;
   int num_free_voxels;
   int num_occupied_voxels;
   int num_unknown_surf_voxels;
-  std::vector<std::size_t> unseen_voxel_hash_keys;
+  std::set<std::size_t> unseen_voxel_hash_keys;
 
   bool is_frontier;
 
   void printGain() {
     std::cout << "Gains: " << gain << ", " << num_unknown_voxels << ", "
               << num_occupied_voxels << ", " << num_free_voxels << std::endl;
+  }
+};
+
+struct SemanticGain {
+  SemanticGain()
+      : gain(0),
+        normalized_gain(0),
+        accumulative_gain(0),
+        num_sem_voxels(0) {}
+
+  void reset() {
+    gain = 0;
+    normalized_gain = 0;
+    accumulative_gain = 0;
+    num_sem_voxels = 0;
+    voxel_hash_keys.clear();
+  }
+
+  double gain;
+  double normalized_gain;
+  double accumulative_gain;
+  int num_sem_voxels;
+  std::set<std::size_t> voxel_hash_keys;
+
+  void printGain() {
+    std::cout << "Gains: " << gain << ", " << std::endl;
+  }
+};
+
+struct VoxelColor
+{
+  int r;
+  int g;
+  int b;
+};
+
+struct VoxelLog {
+  Eigen::Vector3d voxel_center;
+  std::size_t voxel_hash;
+  VoxelColor voxel_color;
+
+  VoxelLog(Eigen::Vector3d center, std::size_t hash) {
+    voxel_center = center;
+    voxel_hash = hash;
   }
 };
 
@@ -157,8 +205,8 @@ enum struct VertexType {
   kFrontier = 2  // Potential frontier vertex to explore, hasn't visited yet.
 };
 
-struct Vertex {
-  Vertex(int v_id, StateVec v_state) {
+struct GbplannerVertex {
+  GbplannerVertex(int v_id, StateVec v_state) {
     id = v_id;
     state << v_state[0], v_state[1], v_state[2], v_state[3];
     vol_gain.reset();
@@ -178,9 +226,10 @@ struct Vertex {
   StateVec state;
   // Volumetric gain for exploration.
   VolumetricGain vol_gain;
+  double total_gain;
   // NBVP legacy, keeping for now if wants to build a tree to compare.
-  Vertex* parent;
-  std::vector<Vertex*> children;
+  GbplannerVertex* parent;
+  std::vector<GbplannerVertex*> children;
   // Distance to root.
   double distance;
   // Set true if this is a leaf in the simplified tree from the graph.
@@ -239,7 +288,7 @@ struct ExpandGraphReport {
   ExpandGraphStatus status;
   int num_vertices_added;
   int num_edges_added;
-  Vertex* vertex_added;
+  GbplannerVertex* vertex_added;
 };
 
 enum class ConnectStatus {
@@ -300,7 +349,7 @@ struct Serializer<StateVec> {
   ROS_DECLARE_ALLINONE_SERIALIZER
 };
 
-// Serialize Vertex
+// Serialize GbplannerVertex
 template <>
 struct Serializer<SerializeVertex> {
   template <typename Stream, typename T>

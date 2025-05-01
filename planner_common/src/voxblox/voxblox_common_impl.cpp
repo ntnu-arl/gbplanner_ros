@@ -303,6 +303,37 @@ void MapManagerVoxblox<voxblox::EsdfServer, voxblox::EsdfVoxel>::clearIfUnknown(
 }
 
 template <typename SDFServerType, typename SDFVoxelType>
+void MapManagerVoxblox<SDFServerType, SDFVoxelType>::voxelAllocationTest(Eigen::Vector3d point)
+{
+  const float voxel_size = sdf_layer_->voxel_size();
+  const float voxel_size_inv = 1.0 / voxel_size;
+  
+  voxblox::LongIndex global_index =
+          voxblox::getGridIndexFromPoint<voxblox::LongIndex>(
+              point.cast<voxblox::FloatingPoint>(), voxel_size_inv);
+  SDFVoxelType* voxel = sdf_layer_->getVoxelPtrByGlobalIndex(global_index);\
+
+  std::cout << "Checking " << point.transpose() << ": ";
+  std::cout << "Before: ";
+  if(voxel == nullptr) std::cout << " NULLPTR";
+  else std::cout << " valid voxel";
+  if(checkUnknownStatus(voxel)) std::cout << " , Unknown";
+  else std::cout << " , known";
+
+  sdf_layer_->allocateBlockPtrByCoordinates(point.cast<voxblox::FloatingPoint>());
+  voxel = sdf_layer_->getVoxelPtrByGlobalIndex(global_index);
+  
+  std::cout << " | After: ";
+  if(voxel == nullptr) std::cout << " NULLPTR";
+  else std::cout << " valid voxel";
+  if(checkUnknownStatus(voxel)) std::cout << " , Unknown";
+  else std::cout << " , known";
+
+  std::cout << std::endl;
+}
+
+
+template <typename SDFServerType, typename SDFVoxelType>
 bool MapManagerVoxblox<SDFServerType, SDFVoxelType>::augmentFreeBox(
     const Eigen::Vector3d& position, const Eigen::Vector3d& box_size) {
   voxblox::HierarchicalIndexMap block_voxel_list;
@@ -328,6 +359,26 @@ bool MapManagerVoxblox<SDFServerType, SDFVoxelType>::augmentFreeBox(
 }
 
 template <typename SDFServerType, typename SDFVoxelType>
+bool MapManagerVoxblox<SDFServerType, SDFVoxelType>::isPointSeen(
+  const Eigen::Vector3d &point) const
+{
+  const float voxel_size = sdf_layer_->voxel_size();
+  const float voxel_size_inv = 1.0 / voxel_size;
+
+  voxblox::LongIndex voxel_index =
+      voxblox::getGridIndexFromPoint<voxblox::LongIndex>(
+          point.cast<voxblox::FloatingPoint>(), voxel_size_inv);
+
+  SDFVoxelType* voxel =
+      sdf_layer_->getVoxelPtrByGlobalIndex(voxel_index);
+
+  if(checkUnknownStatus(voxel))
+    return false;
+    
+  return (int)(voxel->color.r) > 0;
+}
+
+template <typename SDFServerType, typename SDFVoxelType>
 double MapManagerVoxblox<SDFServerType, SDFVoxelType>::getPointDistance(
     const Eigen::Vector3d& point) const {
   voxblox::FloatingPoint out_dist;
@@ -340,13 +391,46 @@ double MapManagerVoxblox<SDFServerType, SDFVoxelType>::getPointDistance(
     if (!success)
       out_dist = -1.0;  // Unknown
     else {
-      if (out_dist < 0.0) out_dist = 0.001;  // Occupied
+      if (out_dist < 0.0) out_dist = 0.0;  // Occupied
     }
   } else {
-    if (out_dist < 0.0) out_dist = 0.001;  // Occupied
+    if (out_dist < 0.0) out_dist = 0.0;  // Occupied
   }
 
   return out_dist;  // Free
+}
+
+template <typename SDFServerType, typename SDFVoxelType>
+Eigen::Vector3d MapManagerVoxblox<SDFServerType, SDFVoxelType>::getPointGradient(
+  const Eigen::Vector3d& point) const {
+  //
+
+#ifdef use_tsdf
+  return Eigen::Vector3d::Zero();
+#else
+  const float voxel_size = sdf_layer_->voxel_size();
+  const float voxel_size_inv = 1.0 / voxel_size;
+
+  voxblox::LongIndex center_voxel_index =
+      voxblox::getGridIndexFromPoint<voxblox::LongIndex>(
+          point.cast<voxblox::FloatingPoint>(), voxel_size_inv);
+
+  SDFVoxelType* voxel =
+      sdf_layer_->getVoxelPtrByGlobalIndex(center_voxel_index);
+  
+  if(checkUnknownStatus(voxel)) {
+    return Eigen::Vector3d::Zero();
+  }
+
+  Eigen::Vector3i grad_index = voxel->parent;
+  if(grad_index == Eigen::Vector3i::Zero()) {
+    return Eigen::Vector3d::Zero();
+  }
+  else {
+    return voxblox::getCenterPointFromGridIndex(grad_index, voxel_size).cast<double>();
+  }
+#endif
+
 }
 
 // [NEED TO REVIEW]
@@ -504,8 +588,7 @@ void MapManagerVoxblox<SDFServerType, SDFVoxelType>::getLocalPointcloud(
   const double angular_res = 5.0 * M_PI / 180.0;
   // ((2 * range * range - voxel_size * voxel_size) / (2 * range * range)) *
   // M_PI / 180;
-
-  // std::cout << "Angular range is: " << angular_res << std::endl;
+  
 
   const voxblox::Point start_scaled =
       center.cast<voxblox::FloatingPoint>() * voxel_size_inv;
@@ -569,8 +652,7 @@ void MapManagerVoxblox<SDFServerType, SDFVoxelType>::getLocalPointcloud(
   const double angular_res = 2.0 * M_PI / 180.0;
   // ((2 * range * range - voxel_size * voxel_size) / (2 * range * range)) *
   // M_PI / 180;
-
-  // std::cout << "Angular range is: " << angular_res << std::endl;
+  
 
   const voxblox::Point start_scaled =
       center.cast<voxblox::FloatingPoint>() * voxel_size_inv;
@@ -631,4 +713,433 @@ MapManagerVoxblox<SDFServerType, SDFVoxelType>::eigenVec3dToPCLPoint(
   point.y = vec.y();
   point.z = vec.z();
   return point;
+}
+
+template<typename SDFServerType, typename SDFVoxelType>
+void MapManagerVoxblox<SDFServerType, SDFVoxelType>::annotateCameraVoxels(Eigen::Vector3d& pos, std::vector<Eigen::Vector3d>& multiray_endpoints)
+{
+  const float voxel_size = sdf_layer_->voxel_size();
+  const float voxel_size_inv = 1.0 / voxel_size;
+
+  const voxblox::Point start_scaled =
+      pos.cast<voxblox::FloatingPoint>() * voxel_size_inv;
+
+  const float distance_thres = occupancy_distance_voxelsize_factor_ * sdf_layer_->voxel_size() + 1e-6;
+
+  int num_voxels_annotated = 0;
+  for (size_t i=0; i<multiray_endpoints.size(); ++i) {
+    const voxblox::Point end_scaled =
+      multiray_endpoints[i].cast<voxblox::FloatingPoint>() * voxel_size_inv;
+
+    voxblox::LongIndexVector global_voxel_indices;
+    voxblox::castRay(start_scaled, end_scaled, &global_voxel_indices);
+    // Iterate over the ray.
+    for (size_t k=0; k<global_voxel_indices.size(); ++k) {
+      const voxblox::GlobalIndex& global_index = global_voxel_indices[k];
+      SDFVoxelType* voxel =
+          sdf_layer_->getVoxelPtrByGlobalIndex(global_index);
+      // Unknown
+      if (checkUnknownStatus(voxel)) {
+        continue;
+      }
+      // if (voxel->distance < 2 * (sdf_layer_->voxel_size() + 1e-6)) {
+      //   voxel->color.r = 255;  // Setting the color of the voxel
+      // }
+      // // Occupied
+      // if (voxel->distance < distance_thres) {
+      //   break;
+      // }
+      voxel->color.r = 255;  // Setting the color of the voxel
+      // voxel->color.r = 189;  // Setting the color of the voxel
+      // voxel->color.g = 189;  // Setting the color of the voxel
+      // voxel->color.b = 189;  // Setting the color of the voxel
+      ++num_voxels_annotated;
+    }
+  }
+  // std::cout << "Num voxels annotated: " << num_voxels_annotated << std::endl;
+}
+
+template<typename SDFServerType, typename SDFVoxelType>
+void MapManagerVoxblox<SDFServerType, SDFVoxelType>::annotateCameraVoxels(Eigen::Vector3d& pos, std::vector<Eigen::Vector3d>& multiray_endpoints, int field)
+{
+  const float voxel_size = sdf_layer_->voxel_size();
+  const float voxel_size_inv = 1.0 / voxel_size;
+
+  const voxblox::Point start_scaled =
+      pos.cast<voxblox::FloatingPoint>() * voxel_size_inv;
+
+  const float distance_thres = occupancy_distance_voxelsize_factor_ * sdf_layer_->voxel_size() + 1e-6;
+
+  int num_voxels_annotated = 0;
+  for (size_t i=0; i<multiray_endpoints.size(); ++i) {
+    const voxblox::Point end_scaled =
+      multiray_endpoints[i].cast<voxblox::FloatingPoint>() * voxel_size_inv;
+
+    voxblox::LongIndexVector global_voxel_indices;
+    voxblox::castRay(start_scaled, end_scaled, &global_voxel_indices);
+    // Iterate over the ray.
+    for (size_t k=0; k<global_voxel_indices.size(); ++k) {
+      const voxblox::GlobalIndex& global_index = global_voxel_indices[k];
+      SDFVoxelType* voxel =
+          sdf_layer_->getVoxelPtrByGlobalIndex(global_index);
+      // Unknown
+      if (checkUnknownStatus(voxel)) {
+        continue;
+      }
+      // if (voxel->distance < 2 * (sdf_layer_->voxel_size() + 1e-6)) {
+      //   voxel->color.r = 255;  // Setting the color of the voxel
+      // }
+      // Occupied
+      if(field == 1)
+      {
+        voxel->color.g = 255;  
+      }
+      else if(field == 2)
+      {
+        voxel->color.b = 255;  
+      }
+      else
+      {
+        voxel->color.r = 255;  // field == 0 or default => red
+      }
+
+      if (voxel->distance < distance_thres) {
+        break;
+      }
+      ++num_voxels_annotated;
+    }
+  }
+  // std::cout << "Num voxels annotated: " << num_voxels_annotated << std::endl;
+}
+
+template <typename SDFServerType, typename SDFVoxelType>
+void MapManagerVoxblox<SDFServerType, SDFVoxelType>::annotateVoxel(Eigen::Vector3d& pos, int field)
+{
+  const float voxel_size = sdf_layer_->voxel_size();
+  const float voxel_size_inv = 1.0 / voxel_size;
+
+  voxblox::LongIndex global_index =
+          voxblox::getGridIndexFromPoint<voxblox::LongIndex>(
+              pos.cast<voxblox::FloatingPoint>(), voxel_size_inv);
+  SDFVoxelType* voxel = sdf_layer_->getVoxelPtrByGlobalIndex(global_index);
+  if(checkUnknownStatus(voxel)) 
+  {
+    sdf_layer_->allocateBlockPtrByCoordinates(pos.cast<voxblox::FloatingPoint>());
+  }
+  voxel = sdf_layer_->getVoxelPtrByGlobalIndex(global_index);
+
+  if(field == 1)
+  {
+    voxel->color = voxblox::Color(0,255,0);  
+  }
+  else if(field == 2)
+  {
+    voxel->color = voxblox::Color(0,0,255);  
+  }
+  else
+  {
+    voxel->color = voxblox::Color(255,0,0);  // field == 0 or default => red
+  }
+}
+
+template <typename SDFServerType, typename SDFVoxelType>
+void MapManagerVoxblox<SDFServerType, SDFVoxelType>::annotateVoxel(Eigen::Vector3d& pos, int field, int val)
+{
+  const float voxel_size = sdf_layer_->voxel_size();
+  const float voxel_size_inv = 1.0 / voxel_size;
+
+  voxblox::LongIndex global_index =
+          voxblox::getGridIndexFromPoint<voxblox::LongIndex>(
+              pos.cast<voxblox::FloatingPoint>(), voxel_size_inv);
+  SDFVoxelType* voxel = sdf_layer_->getVoxelPtrByGlobalIndex(global_index);
+  if(checkUnknownStatus(voxel)) 
+  {
+    sdf_layer_->allocateBlockPtrByCoordinates(pos.cast<voxblox::FloatingPoint>());
+  }
+  voxel = sdf_layer_->getVoxelPtrByGlobalIndex(global_index);
+
+  if(field == 1)
+  {
+    voxel->color.g = (uint8_t)val;  
+  }
+  else if(field == 2)
+  {
+    voxel->color.b = (uint8_t)val;  
+  }
+  else
+  {
+    voxel->color.r = (uint8_t)val;  // field == 0 or default => red
+  }
+}
+
+template <typename SDFServerType, typename SDFVoxelType>
+void MapManagerVoxblox<SDFServerType, SDFVoxelType>::getCameraScanStatus(StateVec& state, SensorParamsBase& sensor_params, std::vector<VoxelLog> &out_logs)
+{
+  Eigen::Vector3d pos = state.head(3);
+
+  const float voxel_size = sdf_layer_->voxel_size();
+  const float voxel_size_inv = 1.0 / voxel_size;
+  const float distance_thres =
+      occupancy_distance_voxelsize_factor_ * sdf_layer_->voxel_size() + 1e-6;
+
+  const voxblox::Point start_scaled =
+      pos.cast<voxblox::FloatingPoint>() * voxel_size_inv;
+
+  std::vector<Eigen::Vector3d> multiray_endpoints;
+    sensor_params.getFrustumEndpoints(state, multiray_endpoints);  
+
+  for (size_t i = 0; i < multiray_endpoints.size(); ++i) {
+    float step_size = voxel_size;
+
+    Eigen::Vector3d ray_normalized =
+        (multiray_endpoints[i] - pos);  // Not yet noramlized
+    double ray_norm = ray_normalized.norm();
+    ray_normalized = ray_normalized / ray_norm;  // Normalized here
+
+    // Iterate over the ray.
+    for (double step = 0.0; step <= ray_norm; step += step_size) {
+      Eigen::Vector3d voxel_coordi = (pos + ray_normalized * step);
+
+      voxblox::LongIndex global_index =
+          voxblox::getGridIndexFromPoint<voxblox::LongIndex>(
+              voxel_coordi.cast<voxblox::FloatingPoint>(), voxel_size_inv);
+
+      SDFVoxelType* voxel = sdf_layer_->getVoxelPtrByGlobalIndex(global_index);
+      // Unknown
+      // if (checkUnknownStatus(voxel)) {
+      if (voxel == nullptr) {
+        continue;
+      }
+      // Free
+      if (voxel->distance > distance_thres) {
+        /*raycast_free_vec_.push_back(std::hash<voxblox::GlobalIndex>()(global_index));*/
+        if(voxel->distance < 2 * (sdf_layer_->voxel_size() + 1e-6)) {
+          if(voxel->color.r < 255) {
+            if(step >= sensor_params.min_range) {
+              out_logs.push_back(VoxelLog(voxel_coordi, std::hash<voxblox::GlobalIndex>()(global_index)));
+            }
+          }
+        }
+        continue;
+      }
+      // Occupied
+      else {
+        /*raycast_occupied_vec_.push_back(std::hash<voxblox::GlobalIndex>()(global_index));*/
+        if(voxel->color.r < 255) {
+          if(step >= sensor_params.min_range) {
+            out_logs.push_back(VoxelLog(voxel_coordi, std::hash<voxblox::GlobalIndex>()(global_index)));
+          }
+        }
+        break;
+      }
+    }
+  }
+
+}
+
+template <typename SDFServerType, typename SDFVoxelType>
+void MapManagerVoxblox<SDFServerType, SDFVoxelType>::getSemanticScanStatus(StateVec& state, SensorParamsBase& sensor_params, std::vector<VoxelLog> &out_logs)
+{
+  Eigen::Vector3d pos = state.head(3);
+
+  const float voxel_size = sdf_layer_->voxel_size();
+  const float voxel_size_inv = 1.0 / voxel_size;
+  const float distance_thres =
+      occupancy_distance_voxelsize_factor_ * sdf_layer_->voxel_size() + 1e-6;
+
+  const voxblox::Point start_scaled =
+      pos.cast<voxblox::FloatingPoint>() * voxel_size_inv;
+
+  std::vector<Eigen::Vector3d> multiray_endpoints;
+    sensor_params.getFrustumEndpoints(state, multiray_endpoints);  
+
+  for (size_t i = 0; i < multiray_endpoints.size(); ++i) {
+    float step_size = voxel_size;
+
+    Eigen::Vector3d ray_normalized =
+        (multiray_endpoints[i] - pos);  // Not yet noramlized
+    double ray_norm = ray_normalized.norm();
+    ray_normalized = ray_normalized / ray_norm;  // Normalized here
+
+    // Iterate over the ray.
+    for (double step = 0.0; step <= ray_norm; step += step_size) {
+      Eigen::Vector3d voxel_coordi = (pos + ray_normalized * step);
+
+      voxblox::LongIndex global_index =
+          voxblox::getGridIndexFromPoint<voxblox::LongIndex>(
+              voxel_coordi.cast<voxblox::FloatingPoint>(), voxel_size_inv);
+
+      SDFVoxelType* voxel = sdf_layer_->getVoxelPtrByGlobalIndex(global_index);
+      // Unknown
+      // if (checkUnknownStatus(voxel)) {
+      if (voxel == nullptr) {
+        continue;
+      }
+      // Free
+      if (voxel->distance > distance_thres) {
+        /*raycast_free_vec_.push_back(std::hash<voxblox::GlobalIndex>()(global_index));*/
+        if(voxel->color.g > 0 && voxel->color.r < 255 && voxel->weight < 1e-6) {
+          if(step >= sensor_params.min_range) {
+            out_logs.push_back(VoxelLog(voxel_coordi, std::hash<voxblox::GlobalIndex>()(global_index)));
+
+          }
+        }
+        continue;
+      }
+      // Occupied
+      else {
+        /*raycast_occupied_vec_.push_back(std::hash<voxblox::GlobalIndex>()(global_index));*/
+        if(voxel->color.g > 0 && voxel->color.r < 255) {
+          if(step >= sensor_params.min_range) {
+            out_logs.push_back(VoxelLog(voxel_coordi, std::hash<voxblox::GlobalIndex>()(global_index)));
+          }
+        }
+        break;
+      }
+    }
+  }
+
+}
+
+template <typename SDFServerType, typename SDFVoxelType>
+void MapManagerVoxblox<SDFServerType, SDFVoxelType>::getCameraScanStatus(
+    Eigen::Vector3d& pos, std::vector<Eigen::Vector3d>& multiray_endpoints,
+    std::tuple<int, int, int>& gain_log,
+    std::vector<std::pair<Eigen::Vector3d, VoxelStatus>>& voxel_log,
+    SensorParamsBase& sensor_params)
+{
+  unsigned int num_unknown_voxels = 0, num_free_voxels = 0,
+               num_occupied_voxels = 0;  // Unknown includes unseen by camera as well
+
+  const float voxel_size = sdf_layer_->voxel_size();
+  const float voxel_size_inv = 1.0 / voxel_size;
+  const float step_size_change_dist =
+      4.0;  // After every these many meters increase the ray interpolation
+            // distance
+  const float step_size_change_dist_end =
+      12.0;  // After this much distance stick to the last interpolation
+             // distance
+
+  const voxblox::Point start_scaled =
+      pos.cast<voxblox::FloatingPoint>() * voxel_size_inv;
+
+  const float distance_thres =
+      occupancy_distance_voxelsize_factor_ * sdf_layer_->voxel_size() + 1e-6;
+
+  // NOTES: no optimization / no twice-counting considerations possible without
+  // refactoring planning strategy here
+
+  // Iterate for every endpoint, insert unknown voxels found over every ray into
+  // a set to avoid double-counting Important: do not use <VoxelIndex> type
+  // directly, will break voxblox's implementations
+  // Move away from std::unordered_set and work with std::vector + std::unique
+  // count at the end (works best for now)
+  /*std::vector<std::size_t> raycast_unknown_vec_, raycast_occupied_vec_,
+  raycast_free_vec_; raycast_unknown_vec_.reserve(multiray_endpoints.size() *
+  tsdf_integrator_config_.max_ray_length_m * voxel_size_inv); //optimize for
+  number of rays raycast_free_vec_.reserve(multiray_endpoints.size() *
+  tsdf_integrator_config_.max_ray_length_m * voxel_size_inv); //optimize for
+  number of rays raycast_occupied_vec_.reserve(multiray_endpoints.size());
+  //optimize for number of rays*/
+  // voxel_log.reserve(multiray_endpoints.size() *
+  // tsdf_integrator_config_.max_ray_length_m * voxel_size_inv); //optimize for
+  // number of rays
+  for (size_t i = 0; i < multiray_endpoints.size(); ++i) {
+    float step_size = voxel_size * ray_cast_step_size_multiplier_;
+    float step_size_inv = 1.0 / step_size;
+    float og_step_size = step_size;
+
+    Eigen::Vector3d ray_normalized =
+        (multiray_endpoints[i] - pos);  // Not yet noramlized
+    double ray_norm = ray_normalized.norm();
+    ray_normalized = ray_normalized / ray_norm;  // Normalized here
+
+    // Iterate over the ray.
+    double prev_step_dist = 0.0;
+    for (double step = 0.0; step <= ray_norm; step += step_size) {
+      if (nonuniform_ray_cast_) {
+        if (std::abs(prev_step_dist - step) > step_size_change_dist &&
+            step <= step_size_change_dist_end) {
+          prev_step_dist = step;
+          step_size += og_step_size;
+        }
+      }
+      Eigen::Vector3d voxel_coordi = (pos + ray_normalized * step);
+
+      voxblox::LongIndex global_index =
+          voxblox::getGridIndexFromPoint<voxblox::LongIndex>(
+              voxel_coordi.cast<voxblox::FloatingPoint>(), voxel_size_inv);
+
+      SDFVoxelType* voxel = sdf_layer_->getVoxelPtrByGlobalIndex(global_index);
+      // Unknown
+      if (checkUnknownStatus(voxel)) {
+        /*raycast_unknown_vec_.push_back(std::hash<voxblox::GlobalIndex>()(global_index));*/
+        // ++num_unknown_voxels;
+        // voxel_log.push_back(std::make_pair(
+        //     voxblox::getCenterPointFromGridIndex(global_index, voxel_size)
+        //         .cast<double>(),
+        //     VoxelStatus::kUnknown));
+        // continue;
+        break;
+      }
+      // Free
+      if (voxel->distance > distance_thres) {
+        /*raycast_free_vec_.push_back(std::hash<voxblox::GlobalIndex>()(global_index));*/
+        if(voxel->distance < 2 * (sdf_layer_->voxel_size() + 1e-6)) {
+          if(voxel->color.r < 255) {
+            ++num_unknown_voxels;
+            voxel_log.push_back(std::make_pair(
+                voxblox::getCenterPointFromGridIndex(global_index, voxel_size)
+                    .cast<double>(),
+                VoxelStatus::kUnknown));
+          }
+          else {
+            ++num_free_voxels;
+            voxel_log.push_back(std::make_pair(
+                voxblox::getCenterPointFromGridIndex(global_index, voxel_size)
+                    .cast<double>(),
+                VoxelStatus::kFree));
+          }
+        }
+        else {
+          ++num_free_voxels;
+          voxel_log.push_back(std::make_pair(
+              voxblox::getCenterPointFromGridIndex(global_index, voxel_size)
+                  .cast<double>(),
+              VoxelStatus::kFree));
+        }
+        continue;
+      }
+      // Occupied
+      /*raycast_occupied_vec_.push_back(std::hash<voxblox::GlobalIndex>()(global_index));*/
+      else {
+        if(voxel->color.r < 255) {
+          ++num_unknown_voxels;
+          voxel_log.push_back(std::make_pair(
+              voxblox::getCenterPointFromGridIndex(global_index, voxel_size)
+                  .cast<double>(),
+              VoxelStatus::kUnknown));
+        }
+        else {
+          ++num_occupied_voxels;
+          voxel_log.push_back(std::make_pair(
+              voxblox::getCenterPointFromGridIndex(global_index, voxel_size)
+                  .cast<double>(),
+              VoxelStatus::kOccupied));
+        }
+        break;
+      }
+    }
+  }
+  /*std::sort(raycast_unknown_vec_.begin(), raycast_unknown_vec_.end());
+  std::sort(raycast_occupied_vec_.begin(), raycast_occupied_vec_.end());
+  std::sort(raycast_free_vec_.begin(), raycast_free_vec_.end());
+  num_unknown_voxels = std::unique(raycast_unknown_vec_.begin(),
+  raycast_unknown_vec_.end()) - raycast_unknown_vec_.begin();
+  num_occupied_voxels = std::unique(raycast_occupied_vec_.begin(),
+  raycast_occupied_vec_.end()) - raycast_occupied_vec_.begin();
+  num_free_voxels = std::unique(raycast_free_vec_.begin(),
+  raycast_free_vec_.end()) - raycast_free_vec_.begin();*/
+  gain_log =
+      std::make_tuple(num_unknown_voxels, num_free_voxels, num_occupied_voxels);
 }

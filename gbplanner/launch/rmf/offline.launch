@@ -1,0 +1,56 @@
+<launch>
+  <!-- All settings -->
+  <arg name="robot_name" default="rmf_obelix"/>
+  <arg name="controller_robot_name" default="rmf_owl"/>
+  <arg name="gazebo_gui_en" default="false"/>
+  <arg name="use_sim_time" default="true"/>
+  <arg name="rviz_en" default="true" />
+  <arg name="launch_prefix" default=""/> <!-- gdb -ex run //args -->
+  <param name="use_sim_time" value="$(arg use_sim_time)"/>
+
+  <!-- Config files -->
+  <arg name="gbplanner_config_file" default="$(find gbplanner)/config/$(arg robot_name)/gbplanner_config.yaml"/>
+  <arg name="pci_file" default="$(find gbplanner)/config/$(arg robot_name)/planner_control_interface_sim_config.yaml"/>
+  <arg name="voxblox_config_file" default="$(find gbplanner)/config/$(arg robot_name)/voxblox_offline.yaml"/>
+  <arg name="map_config_file" default="$(arg voxblox_config_file)"/>
+  <arg name="manhole_config_file" default="$(find manhole_detector)/config/manhole_detector_eagle.yaml"/>
+
+  <node pkg="tf2_ros" type="static_transform_publisher" name="empty_world_world" args="0 0 0 0 0 0 empty_world world"/>
+
+  <arg name="odometry_topic" default="/msf_core/odometry"/>
+  <!-- <arg name="odometry_topic" default="/aft_mapped_to_init_CORRECTED"/> -->
+  <node name="pose_throttler" type="throttle" pkg="topic_tools" args="messages $(arg robot_name)/ground_truth/pose_with_covariance 10 /msf_core/pose" />
+  <!-- Graph based planning -->
+  <node pkg="gbplanner" type="gbplanner_node" name="gbplanner_node" output="screen" launch-prefix="$(arg launch_prefix)">
+    <remap from="odometry" to="$(arg odometry_topic)" />
+    <!-- <remap from="/pointcloud" to="/os_cloud_node/points/filtered" /> -->
+    <remap from="/pointcloud" to="/os_cloud_node/points" />
+    <remap from="manhole_detections" to="/stable_detections" />
+    <remap from="pcl_in" to="/os_cloud_node/points" />
+		<remap from="depth_img_in" to="/img_node/range_image" />
+    <remap from="contour_pcl" to="contour_pcl_offline" />
+    <remap from="/contour_img" to="/contour_img_offline" />
+    <remap from="gbplanner_node/surface_pointcloud" to="gbplanner_node/surface_pointcloud_offline" />
+    <remap from="vis/ref_path" to="vis/ref_path_offline" />
+    <remap from="vis/planning_graph" to="vis/planning_graph_offline" />
+    <remap from="vis/sampler" to="vis/sampler_offline" />
+    <remap from="gbplanner_node/occupied_nodes" to="gbplanner_node/occupied_nodes_offline" />
+    <rosparam command="load" file="$(arg gbplanner_config_file)" />
+    <rosparam command="load" file="$(arg map_config_file)" />
+    <rosparam command="load" file="$(arg manhole_config_file)" />
+  </node>
+
+  <!-- Planner and Control Interface -->
+  <node pkg="pci_general" type="pci_general_ros_node" name="pci_general_ros_node" output="screen">
+    <remap from="command/trajectory" to="$(arg controller_robot_name)/trajectory" />
+    <remap from="planner_server" to="gbplanner" />
+    <remap from="planner_homing_server" to="gbplanner/homing" />
+    <remap from="odometry" to="$(arg odometry_topic)"/>
+    <rosparam command="load" file="$(arg pci_file)" />
+  </node>
+
+  <node pkg="rviz" type="rviz" name="gbplanner_ui" output="screen" args="-d $(find gbplanner)/config/rviz/predictive_planning_offline.rviz"/>
+  
+  
+
+</launch>

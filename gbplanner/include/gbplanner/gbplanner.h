@@ -7,7 +7,7 @@
 #include "gbplanner/gbplanner_rviz.h"
 #include "gbplanner/rrg.h"
 #include "planner_common/geofence_manager.h"
-#include "planner_common/graph.h"
+#include "graph/graph.hpp"
 #include "planner_common/graph_base.h"
 #include "planner_common/graph_manager.h"
 #include "planner_common/params.h"
@@ -26,21 +26,38 @@
 #include "planner_msgs/planner_srv.h"
 #include "planner_msgs/planner_string_trigger.h"
 
-namespace explorer {
+#include "common/communicator.hpp"
+#include "bwt_ssg_builder/bwt_ssg_manager.hpp"
+
 
 class Gbplanner {
  public:
   enum PlannerStatus { NOT_READY = 0, READY };
 
-  Gbplanner(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
+  enum PlannerMode {
+    kExploration = 0,
+    kExplorationComplete,
+    kInspection,
+    kCompartmentChange
+  };
+
+  Gbplanner(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private, std::shared_ptr<Communicator> comm);
   Gbplanner(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private,
             MapManagerVoxblox<MapManagerVoxbloxServer, MapManagerVoxbloxVoxel>*
-                map_manager);
+                map_manager, std::shared_ptr<Communicator> comm);
 
   void initializeAttributes();
 
+  void setBoundMode(BoundModeType bmode);
+  void setRobotBoundingBox(Eigen::Vector3d robot_box)
+  {
+    rrg_->setRobotBoundingBox(robot_box);
+  }
+  void setRootState(geometry_msgs::Pose root_pose);
+
   bool plannerServiceCallback(planner_msgs::planner_srv::Request& req,
                               planner_msgs::planner_srv::Response& res);
+  void convertLongs(const geometry_msgs::PoseArray &longs_array, std::vector<Longitudinal> &longs_vec);
 
   void setGeofenceManager(std::shared_ptr<GeofenceManager> geofence_manager);
   void setUntraversablePolygon(
@@ -50,6 +67,45 @@ class Gbplanner {
   void setSharedParams(const RobotParams& robot_params,
                        const BoundedSpaceParams& global_space_params,
                        const BoundedSpaceParams& local_space_params);
+
+  bool getLocalExplorationPath(planner_msgs::planner_srv::Request& req,
+      planner_msgs::planner_srv::Response& res);
+  bool getAssistedExplorationPath(planner_msgs::planner_srv::Request& req,
+      planner_msgs::planner_srv::Response& res);
+//   bool getInspectionPath(planner_msgs::planner_srv::Request& req,
+//       planner_msgs::planner_srv::Response& res);
+  std::vector<StateVec> getBlindTSPOrder(std::vector<StateVec> viewpoints) { return rrg_->getBlindTSPOrder(viewpoints); }
+  std::vector<StateVec> getLongsInspectionViewpointsOnly(std::vector<Longitudinal> longs, bool all) { return rrg_->getLongsInspectionViewpointsOnly(longs, all); }
+  bool getInspectionPath(std::vector<geometry_msgs::Pose> &inspection_path, InspectionStatus &status);
+  std::vector<geometry_msgs::Pose> getInspectionPath(std::vector<Longitudinal> longs, InspectionStatus &status);
+  bool getCompartmentTransitionPath(planner_msgs::planner_srv::Request& req,
+      planner_msgs::planner_srv::Response& res);
+  std::vector<geometry_msgs::Pose> getManholeTraversalPath(ManholeTraversalMode mode, ManholeTraversalStatus &status);
+  std::vector<geometry_msgs::Pose> getManholeTraversalPath(ManholeTraversalMode mode, ManholeTraversalStatus &status, int mh_id);
+  std::vector<int> getTraversedManholesInOrder();
+  bool updateCompartmentCounter();
+  bool updateCompartmentBoundingBox();
+  bool lastCompartment();
+  std::vector<StateVec> getVerificationViewpoints(std::vector<Longitudinal> longs);
+  int getCompartmentCounter() { return compartment_counter_; }
+  void annotateSemanticPredictions(std::vector<Eigen::Vector3d> points) { rrg_->annotateSemanticPredictions(points); }
+  void annotateSemanticPredictions(std::shared_ptr<SSGManager> predicted_graph) { rrg_->annotateSemanticPredictions(predicted_graph); }
+  bool planTo(geometry_msgs::Pose source_pose,
+              geometry_msgs::Pose target_pose, bool use_current_state,
+              std::vector<geometry_msgs::Pose>& path_ret);
+  bool planTo(StateVec& source, StateVec& target, RandomSamplingParams& params, std::vector<geometry_msgs::Pose>& path_ret);
+  bool isSeen(StateVec viewpoint, Longitudinal l) { return rrg_->isSeen(viewpoint, l); }
+  void setConfig(std::shared_ptr<Config> config)
+  { 
+    config_ = config; 
+    rrg_->setConfig(config);
+  }
+
+  void setRobotBoxSize(Eigen::Vector3d box) { rrg_->setRobotBoxSize(box);}
+
+  void doAnnotation(bool trig);
+
+  StateVec robotState() {return current_state_;}
 
   Rrg* rrg_;
 
@@ -71,6 +127,9 @@ class Gbplanner {
   ros::ServiceServer planner_goto_wp_service_;
   ros::ServiceServer planner_enable_untraversable_polygon_subscriber_service_;
   ros::ServiceServer planner_set_planning_trigger_mode_service_;
+  ros::ServiceServer planner_stop_service_;
+  ros::ServiceServer inspection_path_service_;
+  ros::ServiceServer force_compartment_transition_service_;
 
   ros::Subscriber pose_subscriber_;
   ros::Subscriber pose_stamped_subscriber_;
@@ -79,7 +138,33 @@ class Gbplanner {
   ros::Subscriber robot_status_subcriber_;
   ros::ServiceClient map_save_service_;
 
+  ros::Publisher current_compartment_center_pub_;
+
+  std::shared_ptr<Communicator> comm_;
+  std::shared_ptr<Config> config_;
+
+  StateVec current_state_;
+
   PlannerStatus planner_status_;
+
+  PlanningParams planning_params_;
+  PlannerMode planner_mode_;
+  // std::vector<Eigen::Vector3d> compartment_centers_;
+  // BoundedSpaceParams compartment_dimensions_;
+  int compartment_counter_ = 0;
+  int exploration_counter_ = 0;
+  int compartment_change_tries_ = 0;
+  int max_compartment_change_tries_ = 3;
+  // int max_exploration_iterations_ = 2;
+  // bool exploration_only_ = false;
+  bool decidePlanningAction();
+  bool getExplorationPath(planner_msgs::planner_srv::Request& req,
+      planner_msgs::planner_srv::Response& res);
+  
+
+  bool manhole_traversal_ongoing_ = false;
+  bool manhole_traversal_requested_ = false;
+  bool inspection_requested_ = false;  // Temp
 
   bool homingServiceCallback(planner_msgs::planner_homing::Request& req,
                              planner_msgs::planner_homing::Response& res);
@@ -125,6 +210,17 @@ class Gbplanner {
       planner_msgs::planner_set_planning_mode::Request& request,
       planner_msgs::planner_set_planning_mode::Response& response);
 
+  bool stopServiceCallback(
+              std_srvs::Trigger::Request& req,
+              std_srvs::Trigger::Response& res);
+  bool forceCompartmentChangeServiceCallback(
+              std_srvs::Trigger::Request& req,
+              std_srvs::Trigger::Response& res);
+
+  bool inspectionServiceCallback(
+    planner_msgs::planner_srv::Request& req,
+    planner_msgs::planner_srv::Response& res);
+
   void untraversablePolygonCallback(
       const geometry_msgs::PolygonStamped& polygon_msgs);
   void poseCallback(const geometry_msgs::PoseWithCovarianceStamped& pose);
@@ -135,6 +231,4 @@ class Gbplanner {
 
   Gbplanner::PlannerStatus getPlannerStatus();
 };
-
-}  // namespace explorer
 #endif

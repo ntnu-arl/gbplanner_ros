@@ -14,6 +14,7 @@
 #include <pcl/common/transforms.h>
 #include <pcl_ros/point_cloud.h>
 #include <ros/ros.h>
+#include "common/config_utils.hpp"
 
 typedef ros::Time TIMER;
 #define START_TIMER(x) (x = ros::Time::now())
@@ -21,8 +22,8 @@ typedef ros::Time TIMER;
 
 enum Verbosity { SILENT = 0, PLANNER_STATUS = 1, ERROR = 2, WARN = 3, INFO = 4, DEBUG = 5 };
 
-#define global_verbosity Verbosity::ERROR
-#define param_verbosity Verbosity::SILENT
+#define global_verbosity Verbosity::INFO
+#define param_verbosity Verbosity::ERROR
 
 #define ROSPARAM_ERROR(param_name)                                         \
   ({                                                                       \
@@ -146,6 +147,8 @@ struct SensorParamsBase {
   // Convert points from body frame of robot to frame of this sensor
   void convertBodyToSensor(pcl::PointCloud<pcl::PointXYZ>::Ptr ep,
                            pcl::PointCloud<pcl::PointXYZ>::Ptr ep_s);
+
+  double getMaxGain() {return num_voxels_full_fov; }
 
  private:
   // Rotation matrix
@@ -290,6 +293,7 @@ struct PlanningParams {
   bool free_frustum_before_planning;
   // Exploration gain calculation
   std::vector<std::string> exp_sensor_list;
+  std::vector<std::string> inspection_sensor_list;
   std::vector<std::string> no_gain_zones_list;
   double exp_gain_voxel_size;
   bool use_ray_model_for_volumetric_gain;
@@ -319,11 +323,41 @@ struct PlanningParams {
   double time_budget_limit;
   bool auto_landing_enable;
   double time_budget_before_landing;
-  double max_negative_inclination;
+  bool use_camera_gain;
+  bool annotate_map_with_camera;
+  bool inspection_planning;
+  bool keep_leaf_yaw_only;
+  bool enable_manhole_traversal;
+  double manhole_traversal_path_edge_length;
+  double manhole_alignment_z_offset;
+  bool only_manhole_traversal;
+  bool auto_manhole_path_approval;
+  double min_coverage_percentage;
+  int max_inspection_vertices;
+  double inspection_xy_spacing;
+  double inspection_z_spacing;
+  double inspection_thr_esdf_dist;
+  double inspection_target_viewing_range;
+  double inspection_pt_dist;
+  double verification_target_viewing_range;
+  int inspection_graph_vertices;
+  int max_exploration_iterations;
+  bool exploration_only;
+  BoundedSpaceParams compartment_dimensions;
+  std::vector<Eigen::Vector3d> compartment_centers;
+  int box_check_method;
+  int line_check_method;
+  bool add_only_frontiers_to_global_graph;
+  bool use_flipped_yaw;
+  double max_manhole_height;
+  bool use_gvi;
+  int max_low_gain_iters;
+  bool unknown_as_free;
 
   bool loadParams(std::string ns);
   void setPlanningMode(PlanningModeType pmode);
 };
+
 
 struct RobotDynamicsParams {
   double v_max;

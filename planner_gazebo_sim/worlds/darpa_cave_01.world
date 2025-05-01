@@ -7,7 +7,7 @@
   <world name="simple_cave_01">
 
     <physics name="1ms" type="ode">
-      <max_step_size>0.004</max_step_size>
+      <max_step_size>0.001</max_step_size>
       <real_time_factor>1.0</real_time_factor>
     </physics>
 

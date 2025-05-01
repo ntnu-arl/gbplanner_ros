@@ -1,0 +1,73 @@
+<launch>
+  <!-- All settings -->
+  <arg name="robot_name" default="rmf_obelix"/>
+  <arg name="config_folder" default="rmf_obelix"/>
+  <arg name="gazebo_gui_en" default="false"/>
+  <arg name="use_sim_time" default="true"/>
+  <arg name="rviz_en" default="true" />
+  <arg name="launch_prefix" default=""/> <!-- gdb -ex run //args -->
+  <param name="use_sim_time" value="$(arg use_sim_time)"/>
+  <arg name="gazebo_model_path" default="/home/mihir/.gazebo_backup/models"/>
+
+  <!-- Config files -->
+  <arg name="gbplanner_config_file" default="$(find gbplanner)/config/$(arg config_folder)/gbplanner_config_ign.yaml"/>
+  <arg name="pci_file" default="$(find gbplanner)/config/$(arg config_folder)/planner_control_interface_sim_config_ign.yaml"/>
+  <arg name="voxblox_config_file" default="$(find gbplanner)/config/$(arg config_folder)/voxblox_sim_config.yaml"/>
+  <arg name="map_config_file" default="$(arg voxblox_config_file)"/>
+  <arg name="manhole_config_file" default="$(find manhole_detector)/config/manhole_detector.yaml"/>
+  <!-- <arg name="world_file" default="$(find planner_gazebo_sim)/worlds/darpa_cave_01.world"/> -->
+  <!-- <arg name="world_file" default="$(find planner_gazebo_sim)/worlds/JC_Cargo_Tank.world"/> -->
+  <!-- <arg name="world_file" default="$(find planner_gazebo_sim)/worlds/niosh_osrf.world"/> -->
+  <!-- <arg name="world_file" default="$(find aerial_sim_launcher)/worlds/center_tank.world"/> -->
+  <!-- <arg name="world_file" default="$(find aerial_sim_launcher)/worlds/center_tank_sloped.world"/> -->
+  <arg name="world_file" default="$(find planner_gazebo_sim)/worlds/mock_horiz_bwt.world"/>
+  <!-- <arg name="world_file" default="$(find planner_gazebo_sim)/worlds/mock_horiz_bwt_obstacles.world"/> -->
+  <!-- <arg name="world_file" default="$(find planner_gazebo_sim)/worlds/mock_JC_bwt_simple_4_comp.world"/> -->
+  <!-- <arg name="world_file" default="$(find planner_gazebo_sim)/worlds/mock_JC_bwt_simple_4_comp_ladder.world"/> -->
+  <!-- <arg name="world_file" default="$(find planner_gazebo_sim)/worlds/mock_JC_bwt_simple_4_comp_obstacles.world"/> -->
+  <!-- <arg name="world_file" default="$(find planner_gazebo_sim)/worlds/darpa_subt_final_circuit.world"/> -->
+  <!-- <arg name="world_file" default="$(find planner_gazebo_sim)/worlds/vessel_with_tanks.world"/> -->
+
+  <!-- Static TF -->
+  <node pkg="tf" type="static_transform_publisher" name="tf_53" args="0 0 0 0 0 0 world empty_world 100" />
+  <!-- <node pkg="tf" type="static_transform_publisher" name="tf_51" args="0.15 0 0.0 0.0 0.261 0.0 $(arg robot_name)/base_link $(arg robot_name)/vi_sensor/base_link 10" />
+  <node pkg="tf" type="static_transform_publisher" name="tf_1" args="0 0 0 0 0 0 $(arg robot_name)/vi_sensor/base_link fcu 1" />
+  <node pkg="tf" type="static_transform_publisher" name="tf_2" args="0.015 0.055 0.0065 -1.57 0.1 -1.57 fcu $(arg robot_name)/vi_sensor/camera_depth_optical_center_link 1" />
+  <node pkg="tf" type="static_transform_publisher" name="tf_3" args="0.015 0.055 0.0065 -1.57 0.1 -1.57 fcu $(arg robot_name)/vi_sensor/camera_left_link 1" />
+  <node pkg="tf" type="static_transform_publisher" name="tf_4" args="0.015 -0.055 0.0065 -1.57 0.1 -1.57 fcu $(arg robot_name)/vi_sensor/camera_right_link 1" />
+  <node pkg="tf" type="static_transform_publisher" name="tf_5" args="0 0 0.05 0.0 0.0 0.0 $(arg robot_name)/base_link $(arg robot_name)/$(arg robot_name)/velodyne 10" /> -->
+
+  <arg name="odometry_topic" default="/rmf_owl/odom"/>
+  <node name="pose_throttler" type="throttle" pkg="topic_tools" args="messages $(arg robot_name)/ground_truth/pose_with_covariance 10 /msf_core/pose" />
+  <!-- Graph based planning -->
+  <node pkg="gbplanner" type="gbplanner_node" name="gbplanner_node" output="screen" launch-prefix="$(arg launch_prefix)">
+    <remap from="odometry" to="$(arg odometry_topic)" />
+    <remap from="/pointcloud" to="/rmf_owl/points" />
+    <!-- <remap from="manhole_detections" to="/stable_detections" /> -->
+    <remap from="pcl_in" to="/rmf_owl/points" />
+    <remap from="depth_img_in" to="/img_node/range_image" />
+    <rosparam command="load" file="$(arg gbplanner_config_file)" />
+    <rosparam command="load" file="$(arg map_config_file)" />
+    <rosparam command="load" file="$(arg manhole_config_file)" />
+  </node>
+
+  <node name="joy_node" pkg="joy" type="joy_node" />
+  <node name="rotors_joy_interface" pkg="rotors_joy_interface" type="rotors_joy_pose_interface" >
+    <remap from="odom" to="$(arg odometry_topic)" />
+  </node>
+
+  <node pkg="gbplanner_pci_rmf" type="gbplanner_pci_rmf_ros_node" name="gbplanner_pci_rmf_ros_node" output="screen">
+    <remap from="command/trajectory" to="/rmf_owl/trajectory" />
+    <remap from="planner_server" to="gbplanner" />
+    <remap from="planner_homing_server" to="gbplanner/homing" />
+    <remap from="odometry" to="$(arg odometry_topic)"/>
+    <rosparam command="load" file="$(arg pci_file)" />
+  </node>
+
+  <include file="$(find manhole_detector)/launch/depth_image_publisher.launch">
+    <arg name="point_cloud_topic_name" 	default="/rmf_owl/points"/>
+  </include>
+
+  <node pkg="rviz" type="rviz" name="gbplanner_ui" output="screen" args="-d $(find gbplanner)/config/rviz/rmf_owl_ign.rviz"/>
+
+</launch>

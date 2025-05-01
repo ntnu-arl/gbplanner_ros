@@ -9,7 +9,7 @@ namespace explorer {
 
 enum Verbosity { SILENT = 0, PLANNER_STATUS = 1, ERROR = 2, WARN = 3, INFO = 4, DEBUG = 5 };
 
-#define global_verbosity Verbosity::ERROR
+#define global_verbosity Verbosity::DEBUG
 #define param_verbosity Verbosity::SILENT
 class PCIManager {
  public:
@@ -35,7 +35,8 @@ class PCIManager {
     kGlobalPath = 2,
     kNarrowEnvPath =
         3,           // For special case, to slow down the copter in narrow env.
-    kManualPath = 4  // Manually set path.
+    kManualPath = 4,  // Manually set path.
+    kAutoCustomPath = 5
   };
 
   enum struct RobotType { kAerial = 0, kGround };
@@ -45,6 +46,9 @@ class PCIManager {
   virtual bool initMotion() = 0;
 
   virtual bool goToWaypoint(geometry_msgs::Pose& pose) = 0;
+
+  // virtual void allocateTime(std::vector<geometry_msgs::Pose> &path,
+  //                  std::vector<geometry_msgs::Pose> &modified_path, bool smooth_yaw) = 0;
 
   // Send a path to be executed by the robot, return a new path if the
   // PCI modified the original path based on robot's dynamics.
@@ -59,6 +63,8 @@ class PCIManager {
 
   // Set max linear velocity allowed.
   virtual void setVelocity(double v) = 0;
+
+  virtual void setCurrentVelocity(const geometry_msgs::Vector3 &vel) = 0;
 
   // Check if we should trigger planner in advance.
   virtual bool planAhead() = 0;
@@ -90,6 +96,7 @@ class PCIManager {
 
   PCIStatus pci_status_;
   geometry_msgs::Pose current_pose_;
+  Eigen::Vector3d current_vel_;
 
   bool force_stop_;
 };

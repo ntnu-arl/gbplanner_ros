@@ -1,90 +1,110 @@
-# Graph-based Exploration Planner 2.0
+# GBPlanner3: State-Of-The_Art Graph-Based Exploration and Inspection Path Planner
+
 ![swag](img/cerberus_subt_winners.png)
 
-## Tutorial:
-Please refer to the [wiki](https://github.com/ntnu-arl/gbplanner_ros/wiki) page for detailed instructions to install and run the demo simulations as well as documentation of the planner interface and parameters.
-More results and video explaination of our method can be found on our website: [Link](https://www.autonomousrobotslab.com/exploration-planning.html)
+We present the State-Of-The_Art Graph-Based Exploration and Inspection Path Planner: GBPlanner3. 
+
+For an extensive documentation, installation instructions, and demos please visit the documentation page of the repository here: [**Documetation**](https://github.com/ntnu-arl/gbplanner3_wiki/wiki).
 
 ## Installation
-These instructions assume that ROS desktop-full of the appropriate ROS distro is installed.
 
-Install necessary libraries:
-
-For Ubuntu 18.04 and ROS Melodic:
+### Create workspace for GBPlanner3
 ```bash
-sudo apt install python-catkin-tools \
-libgoogle-glog-dev \
-ros-melodic-joy \
-ros-melodic-twist-mux \
-ros-melodic-interactive-marker-twist-server \
-ros-melodic-octomap-ros
+mkdir ~/gbplanner3_dev_env
 ```
-For Ubuntu 20.04 and ROS Noetic:
-```bash
 
+### GazeboSim: Garden
+If you intend to use the [Gazebo](https://gazebosim.org/home) simulator, you will need to install the Gazebo Garden from source on Ubuntu 20.04 using the following instructions. The instructions have been taken from the original documentation [here](https://gazebosim.org/docs/garden/install_ubuntu_src).
+
+#### Install tools:
+```bash
+sudo apt install python3-pip lsb-release gnupg curl git
+pip3 install vcstool
+pip3 install -U colcon-common-extensions
+```
+
+#### Create a workspace for gazebo:
+```bash
+cd ~/gbplanner3_dev_env
+mkdir -p gazebo_garden_ws/src
+cd gazebo_garden_ws/src
+```
+
+#### Get source files:
+```bash
+curl -O https://raw.githubusercontent.com/ntnu-arl/gz-sim/refs/heads/fix/position_control/collection-garden.yaml
+vcs import < collection-garden.yaml
+```
+
+#### Install dependancies:
+```bash
+sudo curl https://packages.osrfoundation.org/gazebo.gpg --output /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
+sudo apt-get update
+
+cd ~/gbplanner3_dev_env/gazebo_garden_ws/src
+sudo apt -y install \
+  $(sort -u $(find . -iname 'packages-'`lsb_release -cs`'.apt' -o -iname 'packages.apt' | grep -v '/\.git/') | sed '/gz\|sdf/d' | tr '\n' ' ')
+```
+
+#### Build:
+```bash
+cd ~/gbplanner3_dev_env/gazebo_garden_ws
+colcon graph
+colcon build --cmake-args -DBUILD_TESTING=OFF --merge-install
+```
+
+#### Source the workspace:
+```bash
+. ~/workspace/install/setup.bash
+```
+
+## Installing GBPlanner3
+
+#### Install dependancies:
+```bash
 sudo apt install python3-catkin-tools \
 libgoogle-glog-dev \
 ros-noetic-joy \
 ros-noetic-twist-mux \
 ros-noetic-interactive-marker-twist-server \
-ros-noetic-octomap-ros
+ros-noetic-octomap-msgs \
+ros-noetic-octomap-ros \
+git-lfs
 ```
 
-
-Create the workspace:
+#### Create the workspace:
 ```bash
-mkdir -p gbplanner2_ws/src/exploration
-cd gbplanner2_ws/src/exploration
+mkdir -p ~/gbplanner3_dev_env/gbplanner3_ws/src/exploration
+cd ~/gbplanner3_dev_env/gbplanner3_ws/src/exploration
 ```
-Clone the planner
+#### Clone the planner
 ```bash
-git clone git@github.com:ntnu-arl/gbplanner_ros.git -b gbplanner2
-```
-
-Clone and update the required packages:
-```bash
-cd <path/to/gbplanner2_ws>
-wstool init
-wstool merge ./src/exploration/gbplanner_ros/packages_ssh.rosinstall
-wstool update
+git clone git@github.com:ntnu-arl/gbplanner_ros.git -b gbplanner3
 ```
 
-`Note: ./src/exploration/gbplanner_ros/packages_https.rosinstall can be used for https based urls.`
-
-Build:
+#### Clone and update the required packages
 ```bash
-catkin config -DCMAKE_BUILD_TYPE=Release
+cd ~/gbplanner3_dev_env/gbplanner3_ws/
+vcs import < ./src/exploration/gbplanner_ros/vcstool/packages.repos
+cd src/sim/subt_cave_sim
+git lfs pull
+```
+
+#### Build
+```bash
+catkin config -DCMAKE_BUILD_TYPE=Release --extend ~/gbplanner3_dev_env/gazebo_garden_ws/install:/opt/ros/noetic
 catkin build
 ```
-
-## Running Planner Demo 
-### Aerial Robot Demo
-Download the gazebo model from [here](https://ntnu.box.com/s/45c4kb9ywr1kckhkxnzyd0vrcbn1w176) and extract in the `~/.gazebo/models` folder.
-```bash
-roslaunch gbplanner rmf_sim.launch
 ```
-It will take few moments to load the world. A message saying the spawn_rmf_obelix process has died may pop up, but as long as the pointcloud map is visible in rviz and the UI controls work this message can be safely ignored.
-
-### Ground Robot Demo
-the following command:
+#### Source
 ```bash
-roslaunch gbplanner smb_sim.launch
+source ~/gbplanner3_dev_env/gbplanner3_ws/devel/setup.sh
 ```
-In Ubuntu 18.04 with ROS Melodic, the gazebo node might crash when running the ground robot simulation. In this case set the `gpu` parameter to false [here](https://github.com/ntnu-arl/smb_simulator/blob/6ed9d738ffd045d666311a8ba266570f58dca438/smb_description/urdf/sensor_head.urdf.xacro#L20).
 
-## Results
+## Robots using GBPlanner, GBPlanner2, GBPlanner3:
+![robots](img/gbplanner3_robots.png)
 
-Robot's of Team Cerberus running GBPlanner and GBPlanner2  
-![gbplanner_robots](img/gbplanner_robots.png)
-
-Autonomous exploration mission in the Prize Round of the DARPA Subterranean Challenge Final Event using four ANYmal C legged robots (Chimera, Cerberus, Camel, Caiman), all running GBPlanner2 independantly.
-
-![final_circuit_all_robots](img/cerberus_final_run_compiled_hd.png)
-
-## References
-
-### Explanation Video
-[![gbplanner_video](img/gbp2_vid.png)](https://www.youtube.com/watch?v=bTqFp1aODqU&list=PLu70ME0whad9Z4epZQ9VBYagKpyMyhZZ1&index=4)
 
 If you use this work in your research, please cite the following publications:
 
@@ -117,4 +137,8 @@ If you use this work in your research, please cite the following publications:
 You can contact us for any question:
 * [Tung Dang](mailto:tung.dang@nevada.unr.edu)
 * [Mihir Dharmadhikari](mailto:mihir.dharmadhikari@ntnu.no)
+* [Angelos Zacharia](mailto:angelos.zacharia@ntnu.no)
 * [Kostas Alexis](mailto:konstantinos.alexis@ntnu.no)
+
+
+This code is intended for civilian use only. It is provided under the license found in [LICENSE](https://github.com/ntnu-arl/gbplanner_ros/blob/gbplanner3/LICENSE).

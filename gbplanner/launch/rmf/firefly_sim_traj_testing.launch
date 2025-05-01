@@ -1,0 +1,154 @@
+<launch>
+  <!-- All settings -->
+  <arg name="robot_name" default="firefly"/>
+  <arg name="config_folder" default="rmf_obelix"/>
+  <arg name="gazebo_gui_en" default="false"/>
+  <arg name="use_sim_time" default="true"/>
+  <arg name="rviz_en" default="true" />
+  <arg name="launch_prefix" default=""/> <!-- gdb -ex run //args -->
+  <param name="use_sim_time" value="$(arg use_sim_time)"/>
+
+  <!-- Config files -->
+  <arg name="gbplanner_config_file" default="$(find gbplanner)/config/$(arg config_folder)/gbplanner_config.yaml"/>
+  <arg name="pci_file" default="$(find gbplanner)/config/$(arg config_folder)/planner_control_interface_sim_config.yaml"/>
+  <arg name="voxblox_config_file" default="$(find gbplanner)/config/$(arg config_folder)/voxblox_sim_config.yaml"/>
+  <arg name="map_config_file" default="$(arg voxblox_config_file)"/>
+  <arg name="manhole_config_file" default="$(find manhole_detector)/config/manhole_detector.yaml"/>
+  <arg name="world_file" default="$(find planner_gazebo_sim)/worlds/darpa_cave_01.world"/>
+  <!-- <arg name="world_file" default="$(find planner_gazebo_sim)/worlds/JC_Cargo_Tank.world"/> -->
+  <!-- <arg name="world_file" default="$(find planner_gazebo_sim)/worlds/niosh_osrf.world"/> -->
+  <!-- <arg name="world_file" default="$(find aerial_sim_launcher)/worlds/center_tank.world"/> -->
+  <!-- <arg name="world_file" default="$(find aerial_sim_launcher)/worlds/center_tank_sloped.world"/> -->
+  <!-- <arg name="world_file" default="$(find planner_gazebo_sim)/worlds/mock_horiz_bwt.world"/> -->
+  <!-- <arg name="world_file" default="$(find planner_gazebo_sim)/worlds/darpa_subt_final_circuit.world"/> -->
+  <!-- <arg name="world_file" default="$(find planner_gazebo_sim)/worlds/vessel_with_tanks.world"/> -->
+
+  <!-- Static TF -->
+  <node pkg="tf" type="static_transform_publisher" name="tf_53" args="0 0 0 0 0 0 world navigation 100" />
+  <node pkg="tf" type="static_transform_publisher" name="tf_51" args="0.15 0 0.0 0.0 0.261 0.0 $(arg robot_name)/base_link $(arg robot_name)/vi_sensor/base_link 10" />
+  <node pkg="tf" type="static_transform_publisher" name="tf_1" args="0 0 0 0 0 0 $(arg robot_name)/vi_sensor/base_link fcu 1" />
+  <node pkg="tf" type="static_transform_publisher" name="tf_2" args="0.015 0.055 0.0065 -1.57 0.1 -1.57 fcu $(arg robot_name)/vi_sensor/camera_depth_optical_center_link 1" />
+  <node pkg="tf" type="static_transform_publisher" name="tf_3" args="0.015 0.055 0.0065 -1.57 0.1 -1.57 fcu $(arg robot_name)/vi_sensor/camera_left_link 1" />
+  <node pkg="tf" type="static_transform_publisher" name="tf_4" args="0.015 -0.055 0.0065 -1.57 0.1 -1.57 fcu $(arg robot_name)/vi_sensor/camera_right_link 1" />
+  <node pkg="tf" type="static_transform_publisher" name="tf_5" args="0 0 0.05 0.0 0.0 0.0 $(arg robot_name)/base_link $(arg robot_name)/$(arg robot_name)/velodyne 10" />
+
+  <!-- ROS Gazebo  -->
+  <env name="GAZEBO_MODEL_PATH" value="${GAZEBO_MODEL_PATH}:$(find planner_gazebo_sim)/models:$(find subt_cave_sim)/models"/>
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(arg world_file)" />
+    <arg name="gui" value="$(arg gazebo_gui_en)" />
+    <arg name="use_sim_time" value="$(arg use_sim_time)"/>
+    <arg name="paused" value="false" />
+    <arg name="verbose" value="false"/>
+  </include>
+
+  <group ns="$(arg robot_name)">
+    <node name="img_throttler" type="throttle" pkg="topic_tools" args="messages vi_sensor/camera_depth/depth/points 5 vi_sensor/camera_depth/depth/points_throttled" />
+    <!-- <node name="odo_throttler" type="throttle" pkg="topic_tools" args="messages ground_truth/odometry 100 ground_truth/odometry_throttled" /> -->
+    <node name="odo_throttler" type="drop" pkg="topic_tools" args="ground_truth/odometry 18 19 ground_truth/odometry_throttled" />
+    <node name="odo_throttler_100" type="drop" pkg="topic_tools" args="ground_truth/odometry 8 9 ground_truth/odometry_throttled_100" />
+    <!-- <node name="odo_throttler_50" type="drop" pkg="topic_tools" args="ground_truth/odometry 8 9 ground_truth/odometry_throttled_50" /> -->
+
+    <!-- MAV launch -->
+    <include file="$(find rotors_gazebo)/launch/spawn_mav.launch">
+      <arg name="mav_name" value="$(arg robot_name)" />
+      <arg name="model" value="$(find rotors_description)/urdf/rmf_obelix.gazebo" />
+      <arg name="enable_ground_truth" value="true" />
+      <!-- <arg name="x" value="-2.0"/>
+      <arg name="y" value="0.0"/>
+      <arg name="z" value="0.5"/> -->
+      <!-- <arg name="x" value="40.0"/>
+      <arg name="y" value="5.0"/>
+      <arg name="z" value="1.5"/> -->
+      <arg name="x" value="0.0"/>
+      <arg name="y" value="0.0"/>
+      <arg name="z" value="0.5"/>
+			<!-- <arg name="x" value="98.40"/>
+      <arg name="y" value="-7.1"/>
+      <arg name="z" value="8.1"/> -->
+      <!-- <arg name="x" value="-17.15"/>
+      <arg name="y" value="34.87"/>
+      <arg name="z" value="0.5"/> -->
+      <!-- Good -->
+      <!-- <arg name="x" value="51.9"/>
+      <arg name="y" value="0.54"/>
+      <arg name="z" value="3.12"/> -->
+      <!-- Hole on the wall -->
+      <!-- <arg name="x" value="67.0"/>
+      <arg name="y" value="6.54"/>
+      <arg name="z" value="3.12"/> -->
+      <!-- Giant tank, multi storey, no manhole -->
+      <!-- <arg name="x" value="65.0"/>
+      <arg name="y" value="10.54"/>
+      <arg name="z" value="3.12"/> -->
+      <!-- Giant tank, multi storey, manhole 2-->
+      <!-- <arg name="x" value="67.5"/>
+      <arg name="y" value="10.54"/>
+      <arg name="z" value="3.12"/> -->
+      <!-- bottom tanks -->
+      <!-- <arg name="x" value="94.0"/>
+      <arg name="y" value="-1.6"/>
+      <arg name="z" value="0.12"/> -->
+      <!-- Side ballast tanks -->
+      <!-- <arg name="x" value="63.5"/>
+      <arg name="y" value="-4.54"/>
+      <arg name="z" value="18.0"/> -->
+    </include>
+
+    <!-- Position controller  -->
+    <!-- <node name="lee_position_controller_node" pkg="rotors_control" type="lee_position_controller_node" output="screen">
+      <rosparam command="load" file="$(find rotors_gazebo)/resource/lee_controller_$(arg robot_name).yaml" />
+      <rosparam command="load" file="$(find rotors_gazebo)/resource/$(arg robot_name).yaml" />
+      <remap from="odometry" to="odometry_sensor1/odometry" />
+    </node> -->
+    <node name="mav_linear_mpc" pkg="mav_linear_mpc" type="mav_linear_mpc_node" respawn="true" clear_params="true" output="screen">
+      <remap from="odometry" to="ground_truth/odometry_throttled" />
+      <rosparam file="$(find mav_linear_mpc)/resources/linear_mpc_$(arg robot_name).yaml" />
+      <rosparam file="$(find mav_disturbance_observer)/resources/disturbance_observer_$(arg robot_name).yaml"/>
+      <param name="verbose" value="true" />
+      <param name="use_rc_teleop" value="false" />
+      <param name="reference_frame" value="world" />
+    </node>
+
+    <node name="PID_attitude_controller" pkg="mav_lowlevel_attitude_controller" type="mav_pid_attitude_controller_node" respawn="true" clear_params="true" output="screen">
+      <remap from="odometry" to="ground_truth/odometry_throttled" />
+      <rosparam file="$(find mav_lowlevel_attitude_controller)/resources/PID_attitude_$(arg robot_name).yaml" />
+    </node>
+  </group>
+
+  <arg name="odometry_topic" default="$(arg robot_name)/ground_truth/odometry_throttled"/>
+  <node name="pose_throttler" type="throttle" pkg="topic_tools" args="messages $(arg robot_name)/ground_truth/pose_with_covariance 10 /msf_core/pose" />
+
+  
+
+  <!-- Graph based planning -->
+  <!-- <node pkg="gbplanner" type="gbplanner_node" name="gbplanner_node" output="screen" launch-prefix="$(arg launch_prefix)">
+    <remap from="odometry" to="$(arg odometry_topic)" />
+    <remap from="/pointcloud" to="/$(arg robot_name)/velodyne_points" />
+    <remap from="manhole_detections" to="/stable_detections" />
+    <remap from="pcl_in" to="/rmf_obelix/velodyne_points" />
+		<remap from="depth_img_in" to="/img_node/range_image" />
+    <rosparam command="load" file="$(arg gbplanner_config_file)" />
+    <rosparam command="load" file="$(arg map_config_file)" />
+    <rosparam command="load" file="$(arg manhole_config_file)" />
+  </node> -->
+
+  <!-- Planner and Control Interface -->
+  <!-- <node pkg="pci_general" type="pci_general_ros_node" name="pci_general_ros_node" output="screen">
+    <remap from="command/trajectory" to="$(arg robot_name)/command/trajectory" />
+    <remap from="planner_server" to="gbplanner" />
+    <remap from="planner_homing_server" to="gbplanner/homing" />
+    <remap from="odometry" to="$(arg odometry_topic)"/>
+    <rosparam command="load" file="$(arg pci_file)" />
+  </node> -->
+  <!-- <node pkg="gbplanner_pci_rmf" type="gbplanner_pci_rmf_ros_node" name="gbplanner_pci_rmf_ros_node" output="screen">
+    <remap from="command/trajectory" to="$(arg robot_name)/command/trajectory" />
+    <remap from="planner_server" to="gbplanner" />
+    <remap from="planner_homing_server" to="gbplanner/homing" />
+    <remap from="odometry" to="$(arg odometry_topic)"/>
+    <rosparam command="load" file="$(arg pci_file)" />
+  </node> -->
+
+  <node pkg="rviz" type="rviz" name="gbplanner_ui" output="screen" args="-d $(find gbplanner)/config/rviz/firefly.rviz"/>
+
+</launch>

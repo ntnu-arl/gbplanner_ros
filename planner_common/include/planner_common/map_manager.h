@@ -4,6 +4,7 @@
 #include <eigen3/Eigen/Dense>
 
 #include "planner_common/params.h"
+#include "planner_common/graph_base.h"
 
 // namespace explorer {
 

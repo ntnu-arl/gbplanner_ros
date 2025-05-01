@@ -74,6 +74,7 @@ class PlannerControlInterface {
   ros::Subscriber pose_goal_sub_;
   ros::ServiceClient planner_client_;
   ros::ServiceClient planner_homing_client_;
+  ros::ServiceClient planner_mh_homing_client_;
   ros::ServiceClient planner_set_homing_pos_client_;
   ros::ServiceClient planner_search_client_;
   ros::ServiceClient planner_global_client_;
@@ -82,6 +83,8 @@ class PlannerControlInterface {
   ros::ServiceClient planner_set_exp_mode_client_;
   ros::ServiceClient nav_goal_client_;
   ros::ServiceClient planner_set_trigger_mode_client_;
+  ros::ServiceClient planner_stop_client_;
+  ros::ServiceClient planner_inspection_srv_client_;
 
   ros::ServiceServer pci_server_;
   ros::ServiceServer pci_std_automatic_planning_server_;
@@ -89,6 +92,7 @@ class PlannerControlInterface {
   ros::ServiceServer pci_homing_server_;
   ros::ServiceServer pci_std_set_homing_pos_server_;
   ros::ServiceServer pci_std_homing_server_;
+  ros::ServiceServer pci_std_mh_homing_server_;
   ros::ServiceServer pci_set_homing_pos_server_;
   ros::ServiceServer pci_initialization_server_;
   ros::ServiceServer pci_search_server_;
@@ -101,6 +105,7 @@ class PlannerControlInterface {
   ros::ServiceServer pci_passing_gate_server_;
   ros::ServiceServer rotate_180_deg_server_;
   ros::ServiceServer pci_std_global_last_specified_frontier_server_;
+  ros::ServiceServer pci_inspection_srv_server_;
 
   tf::TransformListener tf_listener_;
 
@@ -112,10 +117,12 @@ class PlannerControlInterface {
   bool exe_path_en_;
   bool force_forward_;
   bool homing_request_;
+  bool mh_homing_request_;
   bool pose_is_ready_;
   bool init_request_;
   bool global_request_;
   bool stop_planner_request_;
+  bool inspection_srv_request_ = false;
 
   bool passing_gate_success_;
   bool passing_gate_request_;
@@ -181,6 +188,8 @@ class PlannerControlInterface {
                       planner_msgs::pci_homing_trigger::Response& res);
   bool stdSrvHomingCallback(std_srvs::Trigger::Request& req,
                             std_srvs::Trigger::Response& res);
+  bool stdSrvMHHomingCallback(std_srvs::Trigger::Request& req,
+                            std_srvs::Trigger::Response& res);
   bool triggerCallback(planner_msgs::pci_trigger::Request& req,
                        planner_msgs::pci_trigger::Response& res);
   bool stdSrvsAutomaticPlanningCallback(std_srvs::Trigger::Request& req,
@@ -216,6 +225,9 @@ class PlannerControlInterface {
   bool rotate180DegCallback(std_srvs::Trigger::Request& req,
                             std_srvs::Trigger::Response& res);
 
+  bool inspectionSrvCallback(std_srvs::Trigger::Request& req,
+                           std_srvs::Trigger::Response& res);
+
   bool stdSrvReplanLastSpecifiedFrontierCallback(
       std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
   void resetPlanner();
@@ -226,11 +238,13 @@ class PlannerControlInterface {
   void runPlanner(bool exe_path);
   void runGlobalPlanner(bool exe_path);
   void runHoming(bool exe_path);
+  void runMHHoming();
   void runInitialization();
   void runSearch(bool exe_path);
   void runPassingGate();
   void runGlobalRepositioning();
   geometry_msgs::Pose getPoseToStart();
+  void runInspection();
 
   bool search_request_;
   bool use_current_state_;

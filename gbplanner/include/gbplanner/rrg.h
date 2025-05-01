@@ -12,6 +12,7 @@
 #include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/Polygon.h>
 #include <geometry_msgs/PolygonStamped.h>
+#include <geometry_msgs/PoseArray.h>
 #include <kdtree/kdtree.h>
 #include <pcl/common/distances.h>
 #include <pcl/filters/crop_box.h>
@@ -27,13 +28,14 @@
 #include <std_msgs/Bool.h>
 #include <std_msgs/Float32MultiArray.h>
 #include <std_srvs/Trigger.h>
+#include <std_srvs/SetBool.h>
 #include <tf/transform_datatypes.h>
 #include <tf/transform_listener.h>
 
 #include "adaptive_obb/adaptive_obb.h"
 #include "gbplanner/gbplanner_rviz.h"
 #include "planner_common/geofence_manager.h"
-#include "planner_common/graph.h"
+#include "graph/graph.hpp"
 #include "planner_common/graph_base.h"
 #include "planner_common/graph_manager.h"
 #include "planner_common/map_manager.h"
@@ -41,18 +43,28 @@
 #include "planner_common/params.h"
 #include "planner_common/random_sampler.h"
 #include "planner_common/trajectory.h"
+#include "planner_common/utils.h"
 #include "planner_msgs/PlanningBound.h"
 #include "planner_msgs/PlanningMode.h"
 #include "planner_msgs/planner_dynamic_global_bound.h"
 #include "planner_msgs/planner_srv.h"
 #include "planner_semantic_msgs/SemanticPoint.h"
+#include "planner_msgs/OpeningDetection.h"
+#include "planner_msgs/MultipleOpeningDetections.h"
+#include "planner_msgs/planner_manhole_approval.h"
+
+#include "manhole_detector/manhole_detector.hpp"
+
+#include "common/config_utils.hpp"
+#include "graph/ssg_manager.hpp"
+#include "common/utils.hpp"
 
 // Publish all gbplanner rviz topics or not.
 #define FULL_PLANNER_VIZ 1
 
 static const double max_difference_waypoint_to_graph = 15.0;
 
-namespace explorer {
+// namespace explorer {
 
 // Keep tracking state of the robot every T seconds.
 class RobotStateHistory {
@@ -70,6 +82,54 @@ class RobotStateHistory {
  private:
   // Kd-tree for nearest neigbor lookup.
   kdtree* kd_tree_;
+};
+
+struct Manhole {
+  int id;
+  geometry_msgs::Pose pose;
+  bool active = true;
+  std::vector<geometry_msgs::Pose> through_path;
+};
+
+struct Longitudinal {
+  int sem_id;
+  Eigen::Vector3d center;
+  Eigen::Vector3d direction;
+  Eigen::Vector3d end_point1, end_point2;
+};
+
+struct Viewpoint
+{
+  StateVec state;
+  // int 
+};
+
+enum ManholeTraversalMode {
+  kNone = 0,
+  kGoingTo,
+  kPathCheck,
+  kPassingThrough
+};
+
+enum ManholeTraversalStatus
+{
+  OK = 0,
+  CANT_CONNECT,
+  MANHOLE_DOUBLE_CHECK_FAILED,
+  NO_MANHOLES
+};
+
+enum ManholeApproval {
+  kWaiting = 0,
+  kApproved,
+  kRejected,
+  kReEvaluate
+};
+
+enum InspectionStatus {
+  kOk = 0,
+  kNothingToInspect,
+  kCantConnect
 };
 
 class Rrg {
@@ -105,22 +165,21 @@ class Rrg {
                    StateVec& new_state, ExpandGraphReport& rep,
                    bool allow_short_edge = false);
   void expandGraph(std::shared_ptr<GraphManager> graph_manager,
-                   Vertex& new_vertex, ExpandGraphReport& rep,
-                   bool allow_short_edge = false);
-
+                   GbplannerVertex& new_vertex, ExpandGraphReport& rep,
+                   bool allow_short_edge = false, bool allow_long_edge = false);
   // Add edges only from this vertex.
   void expandGraphEdges(std::shared_ptr<GraphManager> graph_manager,
-                        Vertex* new_vertex, ExpandGraphReport& rep);
+                        GbplannerVertex* new_vertex, ExpandGraphReport& rep);
 
   // Add egdes without collision checking
   void expandGraphEdgesBlindly(std::shared_ptr<GraphManager> graph_manager,
-                               Vertex* new_vertex, double radius,
+                               GbplannerVertex* new_vertex, double radius,
                                ExpandGraphReport& rep);
 
   // Compute exploration gain for each vertex.
-  void computeExplorationGain(bool only_leaf_vertices = false);
-  void computeExplorationGain(bool only_leaf_vertices = false,
-                              bool clustering = false);
+  void computeExplorationGain(bool only_leaf_vertices);
+  void computeExplorationGain();
+  void computeSemAssistedExplorationGain();
 
   MapManagerVoxblox<MapManagerVoxbloxServer, MapManagerVoxbloxVoxel>*
   getMapManager() {
@@ -128,7 +187,7 @@ class Rrg {
   }
 
   // Evaluate gains of all vertices and find the best path.
-  GraphStatus evaluateGraph();
+  GraphStatus evaluateGraph(bool assisted=false);
 
   // Search a path to connect two arbitrary states in the whole map.
   // Build a graph and find Dijkstra shortest path.
@@ -143,10 +202,11 @@ class Rrg {
 
   std::vector<geometry_msgs::Pose> runGlobalPlanner(int vertex_id,
                                                     bool not_check_frontier,
-                                                    bool ignore_time);
+                                                    bool ignore_time,
+                                                    int &status);
   // In case the global planner was to be retrigered while executing the global
   // path
-  std::vector<geometry_msgs::Pose> reRunGlobalPlanner();
+  std::vector<geometry_msgs::Pose> reRunGlobalPlanner(int &status);
   // Remove edges violating geofences
   void cleanViolatedEdgesInGraph(std::shared_ptr<GraphManager> graph_manager);
 
@@ -155,6 +215,10 @@ class Rrg {
   void clearUntraversableZones();
   void setState(StateVec& state);
   void setBoundMode(BoundModeType bmode);
+  void setRobotBoundingBox(Eigen::Vector3d robot_box)
+  {
+    robot_box_size_ = robot_box;
+  }
   void setRootMode(bool plan_ahead);
   void setGlobalFrame(std::string frame_id);
   bool loadParams(bool);
@@ -163,6 +227,20 @@ class Rrg {
   void resetMissionTimer() {
     if (!landing_engaged_) rostime_start_ = ros::Time::now();
   }
+  void setConfig(std::shared_ptr<Config> config) { config_ = config; }
+  void setUnknownAsFree(bool val) { unknown_as_free_ = val; }
+
+  void setExplorationAndInspectionBounds(BoundedSpaceParams exp_bounds, BoundedSpaceParams insp_bounds) {
+    global_space_params_.min_val = exp_bounds.min_val;
+    global_space_params_.max_val = exp_bounds.max_val;
+    inspection_bound_.min_val = insp_bounds.min_val;
+    inspection_bound_.max_val = insp_bounds.max_val;
+    // global_space_params_ = exp_bounds;
+    // inspection_bound_ = insp_bounds;
+    ROS_WARN_COND(global_verbosity >= Verbosity::INFO, "Exploration and inspection bounds changed");
+  }
+
+  void stopPlanner();
 
   bool modifyPath(pcl::PointCloud<pcl::PointXYZ>* obstacle_pcl,
                   Eigen::Vector3d& p0, Eigen::Vector3d& p1,
@@ -180,6 +258,13 @@ class Rrg {
   std::vector<geometry_msgs::Pose> getHomingPath(std::string tgt_frame);
   std::vector<geometry_msgs::Pose> getGlobalPath(
       geometry_msgs::PoseStamped& waypoint);
+
+  std::vector<geometry_msgs::Pose> getManholeTraversalPath();
+  std::vector<geometry_msgs::Pose> getManholeTraversalPath(ManholeTraversalMode mode, ManholeTraversalStatus &status);
+  std::vector<geometry_msgs::Pose> getManholeTraversalPath(ManholeTraversalMode mode, ManholeTraversalStatus &status, int mh_id);
+  std::vector<int> getTraversedManholesInOrder() { return manholes_traversed_; }
+  void setNextCompartmentCenter(Eigen::Vector3d &center);
+  void setNextCompartmentIndex(int ind) {next_compartment_index_ = ind;}
 
   // Set current position as homing.
   bool setHomingPos();
@@ -203,6 +288,9 @@ class Rrg {
   bool setGlobalBound(
       planner_msgs::planner_dynamic_global_bound::Request bound);
   void getGlobalBound(planner_msgs::PlanningBound& bound);
+  void getGlobalBoundParams(BoundedSpaceParams& global_space) {
+    global_space = global_space_params_;
+  }
 
   void setGeofenceManager(std::shared_ptr<GeofenceManager> geofence_manager);
 
@@ -211,6 +299,32 @@ class Rrg {
   void setSharedParams(const RobotParams& robot_params,
                        const BoundedSpaceParams& global_space_params,
                        const BoundedSpaceParams& local_space_params);
+
+  // std::vector<geometry_msgs::Pose> getInspectionPath();
+  std::vector<geometry_msgs::Pose> getInspectionPath(InspectionStatus &status);
+  std::vector<geometry_msgs::Pose> getInspectionPath(std::vector<Longitudinal> longs, InspectionStatus &status);
+  std::vector<StateVec> getBlindInspectionOrder(std::vector<Longitudinal> longs);
+  std::vector<StateVec> getBlindTSPOrder(std::vector<StateVec> viewpoints);
+  std::vector<int> getLongsInspectionViewpoints();
+  std::vector<int> getLongsInspectionViewpoints(std::vector<Longitudinal> longs, bool all = false);
+  std::vector<StateVec> getLongsInspectionViewpointsOnly(std::vector<Longitudinal> longs, bool all);
+  void insertLongsInspectionViewpoints(std::vector<Longitudinal> longs);
+  std::vector<StateVec> getVerificationViewpoints(std::vector<Longitudinal> longs);
+  void doAnnotation(bool trig);
+  void annotateSemanticPredictions(std::vector<Eigen::Vector3d> points);
+  void annotateSemanticPredictions(std::shared_ptr<SSGManager> predicted_graph);
+
+  void generateCostMatrix(std::vector<int> nodes, std::vector<std::vector<int>> &cost_matrix, std::map<int, ShortestPathsReport> &path_rep_map);
+  double calculateTourCost(const std::vector<int>& tour, const std::vector<std::vector<double>>& costMatrix);
+  void twoOptSwap(std::vector<int>& tour, int i, int k);
+  std::vector<int> solveTSP(const std::vector<std::vector<double>>& costMatrix);
+  std::vector<int> doTSP(std::vector<int> &nodes, std::vector<std::vector<int>> &cost_matrix);
+  std::vector<geometry_msgs::Pose> connectTSPOrder(std::vector<int> &tsp_nodes, std::map<int, ShortestPathsReport> &path_rep_map, std::shared_ptr<GraphManager> graph);
+
+  bool isSeen(StateVec viewpoint, Longitudinal l);
+
+  void generateGridSamples(std::vector<int> &viewpoint_ids);
+  
 
   bool loadGraph(const std::string& path) {
     global_graph_->loadGraph(path);
@@ -233,11 +347,26 @@ class Rrg {
     }
   }
 
+  bool manholeTraversalOngoing() {
+    if(manhole_traversal_status_ == ManholeTraversalMode::kNone) {
+      return false;
+    }
+    else {
+      return true;
+    }
+  }
+
+  bool autoManholePathApproval() {
+    return planning_params_.auto_manhole_path_approval;
+  }
+
+  void setRobotBoxSize(Eigen::Vector3d box) {robot_box_size_ = box;}
+
  private:
   bool sampleRandomState(StateVec& state);
-  bool sampleVertex(Vertex& vertex);
+  bool sampleVertex(GbplannerVertex& vertex);
   bool sampleVertex(RandomSampler& random_sampler, StateVec& root_state,
-                    Vertex& vertex);
+                    GbplannerVertex& vertex);
   double projectSample(Eigen::Vector3d& sample,
                        MapManager::VoxelStatus& voxel_status);
   ProjectedEdgeStatus getProjectedEdgeStatus(
@@ -257,6 +386,9 @@ class Rrg {
 
   void computeVolumetricGainRayModelNoBound(StateVec& state,
                                             VolumetricGain& vgain);
+
+  void computeInspectionGainRayModel(GbplannerVertex* vert);
+  void computeSemanticGainRayModel(GbplannerVertex* vert, SemanticGain &gain);
 
   void evaluateShortestPaths();
 
@@ -278,11 +410,23 @@ class Rrg {
 
   ros::Subscriber semantics_subscriber_;
   ros::Subscriber stop_srv_subscriber_;
+  ros::Subscriber current_compartment_longs_sub_;
 
   ros::ServiceClient pci_homing_;
   ros::ServiceClient landing_srv_client_;
+  ros::ServiceServer reset_timer_srv_;
+  ros::ServiceServer pass_manhole_srv_;
+  ros::ServiceServer approve_passing_srv_;
+  ros::ServiceServer reset_map_srv_;
+
+  bool resetTimerCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
+  bool getManholePathCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
+  bool approvePassingCallback(planner_msgs::planner_manhole_approval::Request &req, planner_msgs::planner_manhole_approval::Response &res);
+  bool resetMapCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
 
   void stopMsgCallback(const std_msgs::Bool& msg);
+
+  void currentCompartmentLongsCallback(const geometry_msgs::PoseArray &longs);
 
   // Graphs.
   std::shared_ptr<GraphManager> local_graph_;
@@ -294,11 +438,11 @@ class Rrg {
 
   // Add a collision-free path to the graph.
   bool addRefPathToGraph(const std::shared_ptr<GraphManager> graph_manager,
-                         const std::vector<Vertex*>& vertices);
+                         const std::vector<GbplannerVertex*>& vertices);
   bool addRefPathToGraph(const std::shared_ptr<GraphManager> graph_manager,
                          const std::vector<geometry_msgs::Pose>& path);
   bool connectStateToGraph(std::shared_ptr<GraphManager> graph,
-                           StateVec& cur_state, Vertex*& v_added,
+                           StateVec& cur_state, GbplannerVertex*& v_added,
                            double dist_ignore_collision_check);
   double getTimeElapsed();
   double getTimeRemained();
@@ -326,10 +470,17 @@ class Rrg {
   ros::Timer global_graph_frontier_addition_timer_;
   void expandGlobalGraphFrontierAdditionTimerCallback(
       const ros::TimerEvent& event);
+  ros::Timer camera_annotation_timer_;
+  void cameraAnnotationTimerCallback(const ros::TimerEvent& event);
 
   const int backtracking_queue_max_size = 500;
   std::queue<StateVec> robot_backtracking_queue_;
-  Vertex* robot_backtracking_prev_;
+  GbplannerVertex* robot_backtracking_prev_;
+
+  // Manholes detected so far
+  std::map<int, std::shared_ptr<Manhole>> detected_manholes_;
+
+  std::vector<Longitudinal> current_compartment_longs_;
 
   // Compare 2 angles within a threshold (positive).
   bool compareAngles(double dir_angle_a, double dir_angle_b, double thres);
@@ -341,7 +492,7 @@ class Rrg {
 
   std::vector<int> performShortestPathsClustering(
       const std::shared_ptr<GraphManager> graph_manager,
-      const ShortestPathsReport& graph_rep, std::vector<Vertex*>& vertices,
+      const ShortestPathsReport& graph_rep, std::vector<GbplannerVertex*>& vertices,
       double dist_threshold = 1.0, double principle_path_min_length = 1.0,
       bool refinement_enable = true);
 
@@ -361,6 +512,17 @@ class Rrg {
       else
         state[2] += random_sampler_.getZOffset();
     }
+  }
+
+  inline double getDistance(const geometry_msgs::Pose &p1, const geometry_msgs::Pose &p2) {
+    Eigen::Vector3d v1(p1.position.x, p1.position.y, p1.position.z);
+    Eigen::Vector3d v2(p2.position.x, p2.position.y, p2.position.z);
+    return (v2 - v1).norm();
+  }
+
+  inline double getDistance(const Eigen::Vector4d &v1, const geometry_msgs::Pose &p2) {
+    Eigen::Vector3d v2(p2.position.x, p2.position.y, p2.position.z);
+    return (v2 - v1.head(3)).norm();
   }
 
   void convertStateToPoseMsg(const StateVec& state, geometry_msgs::Pose& pose) {
@@ -403,6 +565,7 @@ class Rrg {
   // Params required for planning.
   SensorParams sensor_params_;
   SensorParams free_frustum_params_;
+  SensorParams camera_annotation_params_;
   RobotParams robot_params_;
   BoundedSpaceParams local_space_params_;
   BoundedSpaceParams global_space_params_;
@@ -423,6 +586,13 @@ class Rrg {
   // config file
   BoundingBoxType global_bound_;
 
+  // double semantic_annotation_half_width_ = 0.75;
+  double semantic_annotation_half_width_ = 2.25;
+
+  BoundedSpaceParams inspection_bound_;
+
+  std::shared_ptr<Config> config_;
+
 #ifdef USE_OCTOMAP
   MapManagerOctomap* map_manager_;
 #else
@@ -434,12 +604,22 @@ class Rrg {
 
   AdaptiveObb* adaptive_obb_;
 
+  std::shared_ptr<ManholeDetector> manhole_detector_;
+  ManholeTraversalMode manhole_traversal_status_;
+  int manhole_under_execution_ = -1;
+  std::vector<int> manholes_traversed_;
+  ManholeApproval manhole_passing_approved_ = ManholeApproval::kWaiting;
+  Eigen::Vector3d next_compartment_;
+  int next_compartment_index_ = -1;
+
+  bool unknown_as_free_ = false;
+
   // Mission time tracking
   ros::Time rostime_start_;
   double current_battery_time_remaining_;
 
-  Vertex* root_vertex_;
-  Vertex* best_vertex_;
+  GbplannerVertex* root_vertex_;
+  GbplannerVertex* best_vertex_;
 
   // Current state of the robot, updated from odometry.
   StateVec current_state_;
@@ -488,6 +668,6 @@ class Rrg {
   std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> feasible_corridor_pcl_;
 };
 
-}  // namespace explorer
+// }  // namespace explorer
 
 #endif

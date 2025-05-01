@@ -1,0 +1,1 @@
+planner_msgs/OpeningDetection[] multiple_detections

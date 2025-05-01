@@ -21,5 +21,8 @@
   <depend>planner_semantic_msgs</depend>
   <depend>adaptive_obb</depend>
   <depend>pcl_ros</depend>
+  <depend>manhole_detector</depend>
+  <depend>predictive_planner_common</depend>
+  <depend>bwt_ssg_builder</depend>
   
 </package>

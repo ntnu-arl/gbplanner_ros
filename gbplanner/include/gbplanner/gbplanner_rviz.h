@@ -9,9 +9,10 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
+#include <geometry_msgs/PoseArray.h>
 
 #include "planner_common/geofence_manager.h"
-#include "planner_common/graph.h"
+#include "graph/graph.hpp"
 #include "planner_common/graph_base.h"
 #include "planner_common/graph_manager.h"
 #include "planner_common/map_manager.h"
@@ -19,7 +20,7 @@
 #include "planner_common/random_sampler.h"
 #include "planner_common/trajectory.h"
 
-namespace explorer {
+// namespace explorer {
 
 class Visualization {
  public:
@@ -31,6 +32,10 @@ class Visualization {
   void visualizeNoGainZones(std::vector<BoundedSpaceParams>& no_gain_zones);
   // Visualize a graph including its vertices, egdes, and heading angles.
   void visualizeGraph(const std::shared_ptr<GraphManager> graph_manager);
+  // Visualize subset of graph vertices
+  void visualizeGraphVertices(const std::shared_ptr<GraphManager> graph_manager, const std::vector<int> &ids);
+  // Visualize a list of viewpoints
+  void visualizeViewpoints(const std::vector<geometry_msgs::Pose>& viewpoints);
   // Visualize a graph including its vertices, egdes, and heading angles.
   // Used to visualize the graph projected on ground for ground robots
   void visualizeProjectedGraph(
@@ -83,7 +88,7 @@ class Visualization {
   void visualizeClusteredPaths(
       const std::shared_ptr<GraphManager> graph_manager,
       const ShortestPathsReport& graph_rep,
-      const std::vector<Vertex*>& vertices,
+      const std::vector<GbplannerVertex*>& vertices,
       const std::vector<int>& cluster_ids);
 
   void visualizeRobotStateHistory(const std::vector<StateVec*> state_hist);
@@ -108,6 +113,8 @@ class Visualization {
                             std::vector<Eigen::Vector3d>& tangent_point_list);
   void visualizeModPath(const std::vector<geometry_msgs::Pose>& path);
   void visualizeBlindModPath(const std::vector<geometry_msgs::Pose>& path);
+
+  void visualizeManholeTraversalPath(const std::vector<geometry_msgs::Pose>& path);
 
   // Set the fixed frame of the mission for visualization
   void setGlobalFrame(std::string frame_id) { world_frame_id = frame_id; }
@@ -142,6 +149,9 @@ class Visualization {
   ros::Publisher state_history_pub_;
   ros::Publisher pcl_pub_;
   ros::Publisher path_pub_;
+  ros::Publisher manhole_traversal_path_pub_;
+  ros::Publisher graph_vertices_pub_;
+  ros::Publisher viewpoints_pub_;
 
   std::string world_frame_id = "world";
   // 0 = infinite
@@ -156,6 +166,6 @@ class Visualization {
   bool getHeatMapColor(float value, float& red, float& green, float& blue);
 };
 
-}  // namespace explorer
+// }  // namespace explorer
 
 #endif

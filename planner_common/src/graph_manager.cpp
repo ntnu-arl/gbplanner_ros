@@ -16,9 +16,9 @@ void GraphManager::reset() {
   kd_tree_ = kd_create(3);
 
   // Reset graph.
-  graph_.reset(new Graph());
+  graph_.reset(new BaseGraph());
 
-  // Vertex mapping.
+  // GbplannerVertex mapping.
   // Clear memory for all vertex pointers
   if (vertices_map_.size() > 0) {
     for (int i = 0; i < vertices_map_.size(); ++i) {
@@ -33,7 +33,7 @@ void GraphManager::reset() {
   id_count_ = -1;
 }
 
-void GraphManager::addVertex(Vertex* v) {
+void GraphManager::addVertex(GbplannerVertex* v) {
   kd_insert3(kd_tree_, v->state.x(), v->state.y(), v->state.z(), v);
   if (v->id == 0)
     graph_->addSourceVertex(0);
@@ -42,37 +42,37 @@ void GraphManager::addVertex(Vertex* v) {
   vertices_map_[v->id] = v;
 }
 
-void GraphManager::addEdge(Vertex* v, Vertex* u, double weight) {
+void GraphManager::addEdge(GbplannerVertex* v, GbplannerVertex* u, double weight) {
   graph_->addEdge(v->id, u->id, weight);
   edge_map_[v->id].push_back(std::make_pair(u->id, weight));
   edge_map_[u->id].push_back(std::make_pair(v->id, weight));
 }
 
-void GraphManager::removeEdge(Vertex* v, Vertex* u) {
+void GraphManager::removeEdge(GbplannerVertex* v, GbplannerVertex* u) {
   graph_->removeEdge(v->id, u->id);
 }
 
-bool GraphManager::getNearestVertex(const StateVec* state, Vertex** v_res) {
+bool GraphManager::getNearestVertex(const StateVec* state, GbplannerVertex** v_res) {
   if (getNumVertices() <= 0) return false;
   kdres* nearest = kd_nearest3(kd_tree_, state->x(), state->y(), state->z());
   if (kd_res_size(nearest) <= 0) {
     kd_res_free(nearest);
     return false;
   }
-  *v_res = (Vertex*)kd_res_item_data(nearest);
+  *v_res = (GbplannerVertex*)kd_res_item_data(nearest);
   kd_res_free(nearest);
   return true;
 }
 
 bool GraphManager::getNearestVertexInRange(const StateVec* state, double range,
-                                           Vertex** v_res) {
+                                           GbplannerVertex** v_res) {
   if (getNumVertices() <= 0) return false;
   kdres* nearest = kd_nearest3(kd_tree_, state->x(), state->y(), state->z());
   if (kd_res_size(nearest) <= 0) {
     kd_res_free(nearest);
     return false;
   }
-  *v_res = (Vertex*)kd_res_item_data(nearest);
+  *v_res = (GbplannerVertex*)kd_res_item_data(nearest);
   Eigen::Vector3d dist;
   dist << state->x() - (*v_res)->state.x(), state->y() - (*v_res)->state.y(),
       state->z() - (*v_res)->state.z();
@@ -82,7 +82,7 @@ bool GraphManager::getNearestVertexInRange(const StateVec* state, double range,
 }
 
 bool GraphManager::getNearestVertices(const StateVec* state, double range,
-                                      std::vector<Vertex*>* v_res) {
+                                      std::vector<GbplannerVertex*>* v_res) {
   // Notice that this might include the same vertex in the result.
   // if that vertex is added to the tree before.
   // Use the distance 0 or small threshold to filter out.
@@ -92,7 +92,7 @@ bool GraphManager::getNearestVertices(const StateVec* state, double range,
   if (neighbors_size <= 0) return false;
   v_res->clear();
   for (int i = 0; i < neighbors_size; ++i) {
-    Vertex* new_neighbor = (Vertex*)kd_res_item_data(neighbors);
+    GbplannerVertex* new_neighbor = (GbplannerVertex*)kd_res_item_data(neighbors);
     v_res->push_back(new_neighbor);
     if (kd_res_next(neighbors) <= 0) break;
   }
@@ -111,7 +111,7 @@ bool GraphManager::findShortestPaths(int source_id, ShortestPathsReport& rep) {
 void GraphManager::getShortestPath(int target_id,
                                    const ShortestPathsReport& rep,
                                    bool source_to_target_order,
-                                   std::vector<Vertex*>& path) {
+                                   std::vector<GbplannerVertex*>& path) {
   std::vector<int> path_id;
   getShortestPath(target_id, rep, source_to_target_order, path_id);
   for (auto p = path_id.begin(); p != path_id.end(); ++p) {
@@ -165,7 +165,7 @@ void GraphManager::getShortestPath(int target_id,
 
   int parent_id = rep.parent_id_map.at(target_id);
   if (parent_id == target_id) {
-    ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "Vertex with ID [%d] is isolated from the graph", target_id);
+    ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "GbplannerVertex with ID [%d] is isolated from the graph", target_id);
     return;
   }
 
@@ -192,7 +192,7 @@ double GraphManager::getShortestDistance(int target_id,
     return dist;
   }
   if (rep.parent_id_map.size() <= target_id) {
-    ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "Vertex with ID [%d] doesn't exist in the graph", target_id);
+    ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "GbplannerVertex with ID [%d] doesn't exist in the graph", target_id);
     return dist;
   }
   dist = rep.distance_map.at(target_id);
@@ -207,17 +207,17 @@ int GraphManager::getParentIDFromShortestPath(int target_id,
   }
 
   if (rep.parent_id_map.size() <= target_id) {
-    ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "Vertex with ID [%d] doesn't exist in the graph", target_id);
+    ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "GbplannerVertex with ID [%d] doesn't exist in the graph", target_id);
     return target_id;
   }
 
   return rep.parent_id_map.at(target_id);
 }
 
-void GraphManager::getLeafVertices(std::vector<Vertex*>& leaf_vertices) {
+void GraphManager::getLeafVertices(std::vector<GbplannerVertex*>& leaf_vertices) {
   leaf_vertices.clear();
   for (int id = 0; id < getNumVertices(); ++id) {
-    Vertex* v = getVertex(id);
+    GbplannerVertex* v = getVertex(id);
     if (v->is_leaf_vertex) leaf_vertices.push_back(v);
   }
 }
@@ -235,7 +235,7 @@ int GraphManager::generateSubgraphIndex() { return ++subgraph_ind_; }
 int GraphManager::generateVertexID() { return ++id_count_; }
 
 void GraphManager::updateVertexTypeInRange(StateVec& state, double range) {
-  std::vector<Vertex*> nearest_vertices;
+  std::vector<GbplannerVertex*> nearest_vertices;
   getNearestVertices(&state, range, &nearest_vertices);
   for (auto& v : nearest_vertices) {
     v->type = VertexType::kVisited;
@@ -245,7 +245,7 @@ void GraphManager::updateVertexTypeInRange(StateVec& state, double range) {
 void GraphManager::convertGraphToMsg(planner_msgs::Graph& graph_msg) {
   // Get all the vertices
   for (auto& v : vertices_map_) {
-    planner_msgs::Vertex vertex;
+    planner_msgs::GbplannerVertex vertex;
     vertex.id = v.second->id;
 
     // convertStateToPoseMsg
@@ -266,10 +266,10 @@ void GraphManager::convertGraphToMsg(planner_msgs::Graph& graph_msg) {
   }
 
   // Get all the edges through iterator of the boost graph lib.
-  std::pair<Graph::GraphType::edge_iterator, Graph::GraphType::edge_iterator>
+  std::pair<BaseGraph::GraphType::edge_iterator, BaseGraph::GraphType::edge_iterator>
       ei;
   graph_->getEdgeIterator(ei);
-  for (Graph::GraphType::edge_iterator it = ei.first; it != ei.second; ++it) {
+  for (BaseGraph::GraphType::edge_iterator it = ei.first; it != ei.second; ++it) {
     planner_msgs::Edge edge;
     std::tie(edge.source_id, edge.target_id, edge.weight) =
         graph_->getEdgeProperty(it);
@@ -286,7 +286,7 @@ void GraphManager::convertMsgToGraph(const planner_msgs::Graph& graph_msg) {
     state[1] = v.pose.position.y;
     state[2] = v.pose.position.z;
     state[3] = tf::getYaw(v.pose.orientation);
-    Vertex* vertex = new Vertex(v.id, state);
+    GbplannerVertex* vertex = new GbplannerVertex(v.id, state);
     // Copy other info
     vertex->vol_gain.num_unknown_voxels = v.num_unknown_voxels;
     vertex->vol_gain.num_occupied_voxels = v.num_occupied_voxels;

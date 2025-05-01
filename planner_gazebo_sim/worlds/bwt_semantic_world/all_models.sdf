@@ -1,0 +1,2448 @@
+<model name="tank">
+  <pose>0 0 0.15 0 0 0</pose>
+  <static>true</static>
+  <link name="body">
+      <visual name="visual">
+        <geometry>
+            <mesh>
+              <uri>/media/mihir/windows/Users/mihir/Documents/Research/Publications/ICAR2023/Results/Equinor/3_comp/segmented_clouds/separated/5_tanks_double_mh_structure_tfed.dae</uri>
+            </mesh>
+        </geometry>
+      </visual>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+  </link>
+  </model>
+
+  <model name="sem_0">
+    <pose>0.05 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>3</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/bts/bt1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/bts/bt1_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>0.05 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_1">
+    <pose>0.05 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>3</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/bts/bt2.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/bts/bt2_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>0.1 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_2">
+    <pose>0.05 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>3</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/bts/bt3.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/bts/bt3_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>0.15000000000000002 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_3">
+    <pose>0.05 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>3</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/bts/bt4.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/bts/bt4_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>0.2 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_4">
+    <pose>0.05 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>3</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/bts/bt5.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/bts/bt5_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>0.25 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+  <!-- <model name="sem_5">
+    <pose>0.05 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>4</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/longs/long1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/longs/long1_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>0.30000000000000004 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model> -->
+  <model name="sem_6">
+    <pose>0.05 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>4</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/longs/long2.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/longs/long2_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>0.35000000000000003 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_7">
+    <pose>0.05 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>4</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/longs/long3.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/longs/long3_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>0.4 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_8">
+    <pose>0.05 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>4</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/longs/long4.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/longs/long4_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>0.45 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_9">
+    <pose>0.05 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>4</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/longs/long5.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/longs/long5_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>0.5 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+  <!-- <model name="sem_10">
+    <pose>0.05 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>2</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall2/stiffeners/stiff1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall2/stiffeners/stiff1_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>0.55 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model> -->
+  <!-- <model name="sem_11">
+    <pose>0.05 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>2</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall2/stiffeners/stiff2.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall2/stiffeners/stiff2_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>0.6000000000000001 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model> -->
+  <!-- <model name="sem_12">
+    <pose>0.05 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>2</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall2/stiffeners/stiff3.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall2/stiffeners/stiff3_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>0.65 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model> -->
+  <!-- <model name="sem_13">
+    <pose>0.05 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>2</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall2/stiffeners/stiff4.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall2/stiffeners/stiff4_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>0.7000000000000001 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model> -->
+  <!-- <model name="sem_14">
+    <pose>0.05 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>2</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall2/stiffeners/stiff5.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall2/stiffeners/stiff5_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>0.75 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model> -->
+  <model name="sem_15">
+    <pose>0.05 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>3</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/bts/bt1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/bts/bt1_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>0.8 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_16">
+    <pose>0.05 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>3</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/bts/bt2.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/bts/bt2_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>0.8500000000000001 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_17">
+    <pose>0.05 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>3</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/bts/bt3.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/bts/bt3_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>0.9 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_18">
+    <pose>0.05 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>3</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/bts/bt4.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/bts/bt4_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>0.9500000000000001 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_19">
+    <pose>0.05 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>3</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/bts/bt5.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/bts/bt5_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>1.0 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_20">
+    <pose>0.05 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>4</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/longs/long1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/longs/long1_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>1.05 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_21">
+    <pose>0.05 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>4</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/longs/long2.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/longs/long2_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>1.1 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_22">
+    <pose>0.05 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>4</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/longs/long3.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/longs/long3_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>1.1500000000000001 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_23">
+    <pose>0.05 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>4</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/longs/long4.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/longs/long4_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>1.2000000000000002 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_24">
+    <pose>0.05 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>4</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/longs/long5.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/longs/long5_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>1.25 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+  <model name="sem_25">
+    <pose>-4.25 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>3</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/bts/bt1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/bts/bt1_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>1.3 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+  <model name="sem_26">
+    <pose>-4.25 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>3</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/bts/bt2.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/bts/bt2_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>1.35 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+  <model name="sem_27">
+    <pose>-4.25 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>3</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/bts/bt3.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/bts/bt3_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>1.4000000000000001 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_28">
+    <pose>-4.25 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>3</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/bts/bt4.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/bts/bt4_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>1.4500000000000002 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_29">
+    <pose>-4.25 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>3</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/bts/bt5.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/bts/bt5_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>1.5 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_30">
+    <pose>-4.25 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>4</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/longs/long1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/longs/long1_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>1.55 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+  <model name="sem_31">
+    <pose>-4.25 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>4</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/longs/long2.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/longs/long2_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>1.6 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+  <model name="sem_32">
+    <pose>-4.25 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>4</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/longs/long3.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/longs/long3_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>1.6500000000000001 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_33">
+    <pose>-4.25 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>4</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/longs/long4.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/longs/long4_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>1.7000000000000002 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_34">
+    <pose>-4.25 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>4</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/longs/long5.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/longs/long5_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>1.75 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+  <!-- <model name="sem_35">
+    <pose>-4.25 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>2</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall2/stiffeners/stiff1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall2/stiffeners/stiff1_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>1.8 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model> -->
+  <!-- <model name="sem_36">
+    <pose>-4.25 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>2</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall2/stiffeners/stiff2.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall2/stiffeners/stiff2_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>1.85 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model> -->
+  <!-- <model name="sem_37">
+    <pose>-4.25 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>2</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall2/stiffeners/stiff3.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall2/stiffeners/stiff3_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>1.9000000000000001 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model> -->
+  <!-- <model name="sem_38">
+    <pose>-4.25 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>2</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall2/stiffeners/stiff4.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall2/stiffeners/stiff4_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>1.9500000000000002 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model> -->
+  <!-- <model name="sem_39">
+    <pose>-4.25 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>2</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall2/stiffeners/stiff5.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall2/stiffeners/stiff5_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>2.0 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model> -->
+  <model name="sem_40">
+    <pose>-4.25 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>3</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/bts/bt1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/bts/bt1_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>2.0500000000000003 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_41">
+    <pose>-4.25 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>3</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/bts/bt2.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/bts/bt2_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>2.1 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_42">
+    <pose>-4.25 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>3</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/bts/bt3.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/bts/bt3_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>2.15 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_43">
+    <pose>-4.25 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>3</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/bts/bt4.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/bts/bt4_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>2.2 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_44">
+    <pose>-4.25 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>3</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/bts/bt5.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/bts/bt5_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>2.25 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_45">
+    <pose>-4.25 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>4</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/longs/long1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/longs/long1_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>2.3000000000000003 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_46">
+    <pose>-4.25 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>4</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/longs/long2.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/longs/long2_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>2.35 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_47">
+    <pose>-4.25 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>4</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/longs/long3.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/longs/long3_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>2.4000000000000004 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_48">
+    <pose>-4.25 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>4</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/longs/long4.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/longs/long4_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>2.45 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_49">
+    <pose>-4.25 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>4</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/longs/long5.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/longs/long5_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>2.5 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+  <model name="sem_50">
+    <pose>-8.549999999999999 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>3</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/bts/bt1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/bts/bt1_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>2.5500000000000003 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_51">
+    <pose>-8.549999999999999 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>3</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/bts/bt2.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/bts/bt2_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>2.6 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_52">
+    <pose>-8.549999999999999 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>3</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/bts/bt3.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/bts/bt3_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>2.6500000000000004 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_53">
+    <pose>-8.549999999999999 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>3</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/bts/bt4.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/bts/bt4_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>2.7 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_54">
+    <pose>-8.549999999999999 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>3</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/bts/bt5.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/bts/bt5_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>2.75 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_55">
+    <pose>-8.549999999999999 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>4</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/longs/long1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/longs/long1_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>2.8000000000000003 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_56">
+    <pose>-8.549999999999999 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>4</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/longs/long2.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/longs/long2_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>2.85 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_57">
+    <pose>-8.549999999999999 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>4</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/longs/long3.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/longs/long3_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>2.9000000000000004 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_58">
+    <pose>-8.549999999999999 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>4</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/longs/long4.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/longs/long4_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>2.95 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_59">
+    <pose>-8.549999999999999 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>4</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/longs/long5.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall1/longs/long5_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>3.0 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+  <!-- <model name="sem_60">
+    <pose>-8.549999999999999 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>2</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall2/stiffeners/stiff1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall2/stiffeners/stiff1_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>3.0500000000000003 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model> -->
+  <!-- <model name="sem_61">
+    <pose>-8.549999999999999 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>2</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall2/stiffeners/stiff2.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall2/stiffeners/stiff2_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>3.1 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model> -->
+  <!-- <model name="sem_62">
+    <pose>-8.549999999999999 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>2</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall2/stiffeners/stiff3.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall2/stiffeners/stiff3_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>3.1500000000000004 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model> -->
+  <!-- <model name="sem_63">
+    <pose>-8.549999999999999 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>2</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall2/stiffeners/stiff4.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall2/stiffeners/stiff4_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>3.2 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model> -->
+  <!-- <model name="sem_64">
+    <pose>-8.549999999999999 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>2</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall2/stiffeners/stiff5.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall2/stiffeners/stiff5_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>3.25 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model> -->
+  <model name="sem_65">
+    <pose>-8.549999999999999 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>3</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/bts/bt1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/bts/bt1_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>3.3000000000000003 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_66">
+    <pose>-8.549999999999999 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>3</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/bts/bt2.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/bts/bt2_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>3.35 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_67">
+    <pose>-8.549999999999999 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>3</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/bts/bt3.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/bts/bt3_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>3.4000000000000004 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_68">
+    <pose>-8.549999999999999 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>3</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/bts/bt4.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/bts/bt4_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>3.45 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_69">
+    <pose>-8.549999999999999 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>3</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/bts/bt5.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/bts/bt5_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>3.5 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_70">
+    <pose>-8.549999999999999 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>4</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/longs/long1.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/longs/long1_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>3.5500000000000003 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_71">
+    <pose>-8.549999999999999 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>4</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/longs/long2.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/longs/long2_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>3.6 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_72">
+    <pose>-8.549999999999999 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>4</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/longs/long3.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/longs/long3_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>3.6500000000000004 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_73">
+    <pose>-8.549999999999999 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>4</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/longs/long4.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/longs/long4_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>3.7 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model><model name="sem_74">
+    <pose>-8.549999999999999 -0.2 0 0 0 0</pose>
+    <static>true</static>
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>4</label>
+    </plugin>
+    <link name="body">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/longs/long5.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="visual_inv">
+        <geometry>
+          <mesh>
+            <uri>meshes/ballast_tank/wall3/longs/long5_inv.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <link name="body_col">
+      <pose>3.75 0 0 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>

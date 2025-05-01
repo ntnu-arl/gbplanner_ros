@@ -7,7 +7,7 @@
 
 #define SQ(x) (x * x)
 
-namespace explorer {
+// namespace explorer {
 
 Rrg::Rrg(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private)
     : nh_(nh), nh_private_(nh_private) {
@@ -33,6 +33,8 @@ void Rrg::initializeAttributes() {
   visualization_ = new Visualization(nh_, nh_private_);
 
   geofence_manager_.reset(new GeofenceManager());
+
+  manhole_detector_.reset(new ManholeDetector(nh_, nh_private_));
 
   // Initialize graphs.
   global_graph_.reset(new GraphManager());
@@ -66,6 +68,10 @@ void Rrg::initializeAttributes() {
   global_exploration_ongoing_ = false;
   local_exploration_ongoing_ = false;
 
+  Eigen::Vector3d zero_vec = Eigen::Vector3d::Zero();
+  inspection_bound_.setCenter(zero_vec, true);
+  inspection_bound_.setRotation(zero_vec);
+
   free_cloud_pub_ =
       nh_.advertise<sensor_msgs::PointCloud2>("freespace_pointcloud", 10);
 
@@ -73,24 +79,27 @@ void Rrg::initializeAttributes() {
       nh_.advertise<std_msgs::Bool>("planner_control_interface/msg/reset", 10);
 
   //
-  global_graph_update_timer_ =
-      nh_.createTimer(ros::Duration(kGlobalGraphUpdateTimerPeriod),
-                      &Rrg::expandGlobalGraphTimerCallback, this);
+  // global_graph_update_timer_ =
+  //     nh_.createTimer(ros::Duration(kGlobalGraphUpdateTimerPeriod),
+  //                     &Rrg::expandGlobalGraphTimerCallback, this);
 
   global_graph_frontier_addition_timer_ = nh_.createTimer(
       ros::Duration(kGlobalGraphFrontierAdditionTimerPeriod),
       &Rrg::expandGlobalGraphFrontierAdditionTimerCallback, this);
 
-  free_pointcloud_update_timer_ =
-      nh_.createTimer(ros::Duration(kFreePointCloudUpdatePeriod),
-                      &Rrg::freePointCloudtimerCallback, this);
+  // free_pointcloud_update_timer_ =
+  //     nh_.createTimer(ros::Duration(kFreePointCloudUpdatePeriod),
+  //                     &Rrg::freePointCloudtimerCallback, this);
+  
+  camera_annotation_timer_ = nh_.createTimer(ros::Duration(0.5), &Rrg::cameraAnnotationTimerCallback, this);
 
-  // FIX-ME
   semantics_subscriber_ =
       nh_.subscribe("semantic_location", 100, &Rrg::semanticsCallback, this);
 
   stop_srv_subscriber_ = nh_.subscribe("planner_control_interface/stop_request",
                                        100, &Rrg::stopMsgCallback, this);
+  current_compartment_longs_sub_ = nh_.subscribe("current_compartment_longs",
+                                       1, &Rrg::currentCompartmentLongsCallback, this);                              
 
   time_log_pub_ =
       nh_.advertise<std_msgs::Float32MultiArray>("gbp_time_log", 10);
@@ -100,13 +109,22 @@ void Rrg::initializeAttributes() {
   landing_srv_client_ = nh_.serviceClient<std_srvs::Empty>(
       "land_srv");  // The service name should be remapped in the launch file
 
+  reset_timer_srv_ = nh_.advertiseService("gbplanner/reset_timer",
+      &Rrg::resetTimerCallback, this);
+
+	pass_manhole_srv_ = nh_.advertiseService("get_manhole_traversal_path", &Rrg::getManholePathCallback, this);
+  approve_passing_srv_ = nh_.advertiseService("approve_manhole_traversal", &Rrg::approvePassingCallback, this);
+  reset_map_srv_ = nh_.advertiseService("reset_map", &Rrg::resetMapCallback, this);
+
   listener_ = new tf::TransformListener();
+
+  next_compartment_ << std::numeric_limits<double>::max(), std::numeric_limits<double>::max(), std::numeric_limits<double>::max();
 }
 
 void Rrg::reset() {
   // Check if the local graph frontiers have been added to the global graph
   if (add_frontiers_to_global_graph_) {
-    ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "Reset: Adding frontiers to global graph");
+    ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Reset: Adding frontiers to global graph");
     add_frontiers_to_global_graph_ = false;
     addFrontiers(0);  // id given as 0 because it is not used
   }
@@ -122,6 +140,7 @@ void Rrg::reset() {
 
   // Re-initialize data structs.
   stat_.reset(new SampleStatistic());
+
 
   // Set state for root/source vertex.
   StateVec root_state;
@@ -140,14 +159,17 @@ void Rrg::reset() {
 
   // Create a root vertex and add to the graph.
   // Root vertex should be assigned id 0.
-  root_vertex_ = new Vertex(local_graph_->generateVertexID(), root_state);
+  root_vertex_ = new GbplannerVertex(local_graph_->generateVertexID(), root_state);
   local_graph_->addVertex(root_vertex_);
+
+  // std::cout << "Current state: " << current_state_(0) << " " << current_state_(1) << " " << current_state_(2) << ", " << current_state_(3) << std::endl;
+  // std::cout << "Root state:    " << local_graph_->getVertex(0)->state(0) << " " << local_graph_->getVertex(0)->state(1) << " " << local_graph_->getVertex(0)->state(2) << ", " << local_graph_->getVertex(0)->state(3) << std::endl;
 
   if ((planner_trigger_count_ == 0) && (global_graph_->getNumVertices() == 0)) {
     // First time trigger the planner. Initialize the root for global graph as
     // well.
-    Vertex* g_root_vertex =
-        new Vertex(global_graph_->generateVertexID(), root_state);
+    GbplannerVertex* g_root_vertex =
+        new GbplannerVertex(global_graph_->generateVertexID(), root_state);
     global_graph_->addVertex(g_root_vertex);
   }
 
@@ -177,7 +199,9 @@ void Rrg::reset() {
   }
 
   // Set robot radius when single point collision checking is used
-  map_manager_->setRobotRadius(robot_box_size_.norm() / 2.0);
+  map_manager_->setRobotRadius(robot_box_size_.maxCoeff() / 2.0);
+  map_manager_->setBoxCheckMethod(planning_params_.box_check_method);
+  map_manager_->setLineCheckMethod(planning_params_.line_check_method);
 
   // Clear free space before planning.
   if (planning_params_.free_frustum_before_planning) {
@@ -205,14 +229,74 @@ void Rrg::reset() {
   }
 }
 
+bool Rrg::resetMapCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res) {
+  map_manager_->resetMap();
+  res.success = true;
+  return true;
+}
+
 void Rrg::clear() {}
+
+void Rrg::currentCompartmentLongsCallback(const geometry_msgs::PoseArray &longs)
+{
+  current_compartment_longs_.clear();
+
+  for(auto p : longs.poses)
+  {
+    Longitudinal l;
+    l.center.x() = p.position.x;
+    l.center.y() = p.position.y;
+    l.center.z() = p.position.z;
+    l.direction.x() = std::cos(p.orientation.w);
+    l.direction.y() = std::sin(p.orientation.w);
+    l.direction.z() = 0.0;
+    l.direction.normalize();
+    l.end_point1 = l.center + l.direction * p.orientation.x;  // min_dist
+    l.end_point2 = l.center + l.direction * p.orientation.y;  // max_dist
+    current_compartment_longs_.push_back(l);
+
+    // voxblox::Mesh mesh;
+    // voxblox::VertexIndex v_ind;
+    // Eigen::Matrix<voxblox::FloatingPoint, 3, 8> vertex_coords;
+    // Eigen::Matrix<voxblox::FloatingPoint, 8, 1> vertex_sdf;
+    // double voxel_size_inv = 1.0 / map_manager_->getResolution();
+    // voxblox::LongIndex center_ind = voxblox::getGridIndexFromPoint<voxblox::LongIndex>(l.center.cast<voxblox::FloatingPoint>(), voxel_size_inv);
+    // voxblox::Point center_voxel_point = voxblox::getCenterPointFromGridIndex(center_ind, map_manager_->getResolution());
+    // Eigen::Matrix<voxblox::FloatingPoint, 3, 8> neighbor_table;
+    // neighbor_table << 0, 1, 1, 0, 0, 1, 1, 0,
+    //                   0, 0, 1, 1, 0, 0, 1, 1,
+    //                   0, 0, 0, 0, 1, 1, 1, 1;
+    // neighbor_table *= map_manager_->getResolution();
+    // for(int i=0; i<8; ++i)
+    // {
+    //   vertex_coords.col(i) = center_voxel_point + neighbor_table.col(i);
+    //   vertex_sdf[i] = map_manager_->getPointDistance(vertex_coords.col(i).cast<double>());
+    // }
+    // voxblox::MarchingCubes::meshCube(vertex_coords, vertex_sdf, &v_ind, &mesh);
+    // std::cout << "Vertices:" << std::endl;
+    // for(auto v : mesh.vertices) std::cout << v.transpose() << std::endl;
+    // std::cout << "Normals:" << std::endl;
+    // for(auto v : mesh.normals) std::cout << v.transpose() << std::endl;
+  }
+
+
+
+  // getLongsInspectionViewpoints();
+}
 
 void Rrg::stopMsgCallback(const std_msgs::Bool& msg) {
   global_exploration_ongoing_ = false;
   auto_global_planner_trig_ = false;
+  manhole_traversal_status_ = ManholeTraversalMode::kNone;
 }
 
-bool Rrg::sampleVertex(Vertex& vertex) {
+void Rrg::stopPlanner() {
+  global_exploration_ongoing_ = false;
+  auto_global_planner_trig_ = false;
+  manhole_traversal_status_ = ManholeTraversalMode::kNone;
+}
+
+bool Rrg::sampleVertex(GbplannerVertex& vertex) {
   StateVec state;
   bool hanging = false;
   bool found = false;
@@ -274,7 +358,7 @@ bool Rrg::sampleVertex(Vertex& vertex) {
 }
 
 bool Rrg::sampleVertex(RandomSampler& random_sampler, StateVec& root_state,
-                       Vertex& vertex) {
+                       GbplannerVertex& vertex) {
   StateVec state;
   bool hanging = false;
   bool found = false;
@@ -505,7 +589,7 @@ void Rrg::expandGraph(std::shared_ptr<GraphManager> graph_manager,
                       bool allow_short_edge) {
   // Find nearest neighbour
   // StateVec &new_state = new_vertex->state;
-  Vertex* nearest_vertex = NULL;
+  GbplannerVertex* nearest_vertex = NULL;
   if (!graph_manager->getNearestVertex(&new_state, &nearest_vertex)) {
     rep.status = ExpandGraphStatus::kErrorKdTree;
     return;
@@ -572,10 +656,21 @@ void Rrg::expandGraph(std::shared_ptr<GraphManager> graph_manager,
   bool admissible_edge = false;
   int steep_edges = 0;
   if (robot_params_.type == RobotType::kAerialRobot) {
-    MapManager::VoxelStatus vs =
-        map_manager_->getPathStatus(start_pos, end_pos, robot_box_size_, true);
-    if (MapManager::VoxelStatus::kFree == vs) {
-      admissible_edge = true;
+    if(unknown_as_free_)
+    {
+      MapManager::VoxelStatus vs =
+          map_manager_->getPathStatus(start_pos, end_pos, robot_box_size_, false);
+      if (MapManager::VoxelStatus::kOccupied != vs) {
+        admissible_edge = true;
+      }
+    }
+    else
+    {
+      MapManager::VoxelStatus vs =
+          map_manager_->getPathStatus(start_pos, end_pos, robot_box_size_, true);
+      if (MapManager::VoxelStatus::kFree == vs) {
+        admissible_edge = true;
+      }
     }
   } else if (robot_params_.type == RobotType::kGroundRobot) {
     std::vector<Eigen::Vector3d> projected_edge;
@@ -585,15 +680,15 @@ void Rrg::expandGraph(std::shared_ptr<GraphManager> graph_manager,
       admissible_edge = true;
       StateVec strt_st(projected_edge[0](0), projected_edge[0](1),
                        projected_edge[0](2), 0.0);
-      Vertex* strt_vert =
-          new Vertex(projected_graph_->generateVertexID(), strt_st);
+      GbplannerVertex* strt_vert =
+          new GbplannerVertex(projected_graph_->generateVertexID(), strt_st);
       projected_graph_->addVertex(strt_vert);
-      Vertex* prev_vert = strt_vert;
+      GbplannerVertex* prev_vert = strt_vert;
       for (int i = 1; i < projected_edge.size(); ++i) {
         StateVec proj_st(projected_edge[i](0), projected_edge[i](1),
                          projected_edge[i](2), 0.0);
-        Vertex* proj_vert =
-            new Vertex(projected_graph_->generateVertexID(), proj_st);
+        GbplannerVertex* proj_vert =
+            new GbplannerVertex(projected_graph_->generateVertexID(), proj_st);
         projected_graph_->addVertex(proj_vert);
         double edge_len = (proj_vert->state - prev_vert->state).norm();
         projected_graph_->addEdge(proj_vert, prev_vert, edge_len);
@@ -603,8 +698,8 @@ void Rrg::expandGraph(std::shared_ptr<GraphManager> graph_manager,
       ++steep_edges;
   }
   if (admissible_edge) {
-    Vertex* new_vertex =
-        new Vertex(graph_manager->generateVertexID(), new_state);
+    GbplannerVertex* new_vertex =
+        new GbplannerVertex(graph_manager->generateVertexID(), new_state);
     // Form a tree as the first step.
     new_vertex->parent = nearest_vertex;
     new_vertex->distance = nearest_vertex->distance + direction_norm;
@@ -616,7 +711,7 @@ void Rrg::expandGraph(std::shared_ptr<GraphManager> graph_manager,
     ++rep.num_edges_added;
     // Form more edges from neighbors if set RRG mode.
     if (planning_params_.rr_mode == RRModeType::kGraph) {
-      std::vector<Vertex*> nearest_vertices;
+      std::vector<GbplannerVertex*> nearest_vertices;
       if (!graph_manager->getNearestVertices(
               &new_state, planning_params_.nearest_range, &nearest_vertices)) {
         rep.status = ExpandGraphStatus::kErrorKdTree;
@@ -666,15 +761,15 @@ void Rrg::expandGraph(std::shared_ptr<GraphManager> graph_manager,
                 admissible_edge = true;
                 StateVec strt_st(projected_edge[0](0), projected_edge[0](1),
                                  projected_edge[0](2), 0.0);
-                Vertex* strt_vert =
-                    new Vertex(projected_graph_->generateVertexID(), strt_st);
+                GbplannerVertex* strt_vert =
+                    new GbplannerVertex(projected_graph_->generateVertexID(), strt_st);
                 projected_graph_->addVertex(strt_vert);
-                Vertex* prev_vert = strt_vert;
+                GbplannerVertex* prev_vert = strt_vert;
                 for (int i = 1; i < projected_edge.size(); ++i) {
                   StateVec proj_st(projected_edge[i](0), projected_edge[i](1),
                                    projected_edge[i](2), 0.0);
-                  Vertex* proj_vert =
-                      new Vertex(projected_graph_->generateVertexID(), proj_st);
+                  GbplannerVertex* proj_vert =
+                      new GbplannerVertex(projected_graph_->generateVertexID(), proj_st);
                   projected_graph_->addVertex(proj_vert);
                   double edge_len =
                       (proj_vert->state - prev_vert->state).norm();
@@ -707,8 +802,8 @@ void Rrg::expandGraph(std::shared_ptr<GraphManager> graph_manager,
 }
 
 void Rrg::expandGraphEdges(std::shared_ptr<GraphManager> graph_manager,
-                           Vertex* new_vertex, ExpandGraphReport& rep) {
-  std::vector<Vertex*> nearest_vertices;
+                           GbplannerVertex* new_vertex, ExpandGraphReport& rep) {
+  std::vector<GbplannerVertex*> nearest_vertices;
   if (!graph_manager->getNearestVertices(&(new_vertex->state),
                                          planning_params_.nearest_range,
                                          &nearest_vertices)) {
@@ -723,8 +818,10 @@ void Rrg::expandGraphEdges(std::shared_ptr<GraphManager> graph_manager,
         nearest_vertices[i]->state[1] - origin[1],
         nearest_vertices[i]->state[2] - origin[2];
     double d_norm = direction.norm();
+    // ROS_WARN("Expand edges: d_norm: %f", d_norm);
     if ((d_norm > planning_params_.edge_length_min) &&
         (d_norm < planning_params_.edge_length_max)) {
+      // ROS_WARN("Expand edges: d_norm: %f: Within limits", d_norm);
       Eigen::Vector3d p_overshoot =
           direction / d_norm * planning_params_.edge_overshoot;
       Eigen::Vector3d p_start =
@@ -736,7 +833,7 @@ void Rrg::expandGraphEdges(std::shared_ptr<GraphManager> graph_manager,
       std::vector<Eigen::Vector3d> projected_edge;
       if (robot_params_.type == RobotType::kAerialRobot) {
         MapManager::VoxelStatus vs =
-            map_manager_->getPathStatus(p_start, p_end, robot_box_size_, true);
+            map_manager_->getPathStatus(p_start, p_end, robot_box_size_, false);
         if (MapManager::VoxelStatus::kFree == vs) {
           admissible_edge = true;
         }
@@ -748,22 +845,26 @@ void Rrg::expandGraphEdges(std::shared_ptr<GraphManager> graph_manager,
         }
       }
       if (admissible_edge) {
+        // ROS_WARN("     Admissible edge: len=%f", d_norm);
         graph_manager->addEdge(new_vertex, nearest_vertices[i], d_norm);
         ++rep.num_edges_added;
       }
     }
+    // else {
+    //   ROS_WARN("Expand edges: d_norm: %f: OUTSIDE limits", d_norm);
+    // }
   }
   rep.status = ExpandGraphStatus::kSuccess;
 }
 
 void Rrg::expandGraph(std::shared_ptr<GraphManager> graph_manager,
-                      Vertex& new_vertex, ExpandGraphReport& rep,
-                      bool allow_short_edge) {
+                      GbplannerVertex& new_vertex, ExpandGraphReport& rep,
+                      bool allow_short_edge, bool allow_long_edge) {
   // Find nearest neighbour
   StateVec new_state;
   new_state = new_vertex.state;
 
-  Vertex* nearest_vertex = NULL;
+  GbplannerVertex* nearest_vertex = NULL;
   if (!graph_manager->getNearestVertex(&new_state, &nearest_vertex)) {
     rep.status = ExpandGraphStatus::kErrorKdTree;
     return;
@@ -781,7 +882,7 @@ void Rrg::expandGraph(std::shared_ptr<GraphManager> graph_manager,
   double direction_norm = direction.norm();
 
   if (direction_norm > planning_params_.edge_length_max) {
-    direction = planning_params_.edge_length_max * direction.normalized();
+    if(!allow_long_edge) direction = planning_params_.edge_length_max * direction.normalized();
   } else if ((!allow_short_edge) &&
              (direction_norm <= planning_params_.edge_length_min)) {
     // Should not add short edge.
@@ -833,10 +934,21 @@ void Rrg::expandGraph(std::shared_ptr<GraphManager> graph_manager,
   int steep_edges = 0;
   std::vector<Eigen::Vector3d> projected_edge;
   if (robot_params_.type == RobotType::kAerialRobot) {
-    MapManager::VoxelStatus vs =
-        map_manager_->getPathStatus(start_pos, end_pos, robot_box_size_, true);
-    if (MapManager::VoxelStatus::kFree == vs) {
-      admissible_edge = true;
+    if(unknown_as_free_)
+    {
+      MapManager::VoxelStatus vs =
+          map_manager_->getPathStatus(start_pos, end_pos, robot_box_size_, false);
+      if (MapManager::VoxelStatus::kOccupied != vs) {
+        admissible_edge = true;
+      }
+    }
+    else
+    {
+      MapManager::VoxelStatus vs =
+          map_manager_->getPathStatus(start_pos, end_pos, robot_box_size_, true);
+      if (MapManager::VoxelStatus::kFree == vs) {
+        admissible_edge = true;
+      }
     }
   } else if (robot_params_.type == RobotType::kGroundRobot) {
     bool is_hanging = nearest_vertex->is_hanging || new_vertex.is_hanging;
@@ -847,15 +959,15 @@ void Rrg::expandGraph(std::shared_ptr<GraphManager> graph_manager,
 
       StateVec strt_st(projected_edge[0](0), projected_edge[0](1),
                        projected_edge[0](2), 0.0);
-      Vertex* strt_vert =
-          new Vertex(projected_graph_->generateVertexID(), strt_st);
+      GbplannerVertex* strt_vert =
+          new GbplannerVertex(projected_graph_->generateVertexID(), strt_st);
       projected_graph_->addVertex(strt_vert);
-      Vertex* prev_vert = strt_vert;
+      GbplannerVertex* prev_vert = strt_vert;
       for (int i = 1; i < projected_edge.size(); ++i) {
         StateVec proj_st(projected_edge[i](0), projected_edge[i](1),
                          projected_edge[i](2), 0.0);
-        Vertex* proj_vert =
-            new Vertex(projected_graph_->generateVertexID(), proj_st);
+        GbplannerVertex* proj_vert =
+            new GbplannerVertex(projected_graph_->generateVertexID(), proj_st);
         projected_graph_->addVertex(proj_vert);
         double edge_len = (proj_vert->state - prev_vert->state).norm();
         projected_graph_->addEdge(proj_vert, prev_vert, edge_len);
@@ -866,8 +978,8 @@ void Rrg::expandGraph(std::shared_ptr<GraphManager> graph_manager,
   }
 
   if (admissible_edge) {
-    Vertex* new_vertex_ptr =
-        new Vertex(graph_manager->generateVertexID(), new_state);
+    GbplannerVertex* new_vertex_ptr =
+        new GbplannerVertex(graph_manager->generateVertexID(), new_state);
     // new_vertex_ptr->id = graph_manager->generateVertexID();
     new_vertex_ptr->state = new_state;
     // Form a tree as the first step.
@@ -903,7 +1015,7 @@ void Rrg::expandGraph(std::shared_ptr<GraphManager> graph_manager,
 
     // Form more edges from neighbors if set RRG mode.
     if (planning_params_.rr_mode == RRModeType::kGraph) {
-      std::vector<Vertex*> nearest_vertices;
+      std::vector<GbplannerVertex*> nearest_vertices;
       if (!graph_manager->getNearestVertices(
               &new_state, planning_params_.nearest_range, &nearest_vertices)) {
         rep.status = ExpandGraphStatus::kErrorKdTree;
@@ -956,15 +1068,15 @@ void Rrg::expandGraph(std::shared_ptr<GraphManager> graph_manager,
                 admissible_edge = true;
                 StateVec strt_st(projected_edge[0](0), projected_edge[0](1),
                                  projected_edge[0](2), 0.0);
-                Vertex* strt_vert =
-                    new Vertex(projected_graph_->generateVertexID(), strt_st);
+                GbplannerVertex* strt_vert =
+                    new GbplannerVertex(projected_graph_->generateVertexID(), strt_st);
                 projected_graph_->addVertex(strt_vert);
-                Vertex* prev_vert = strt_vert;
+                GbplannerVertex* prev_vert = strt_vert;
                 for (int i = 1; i < projected_edge.size(); ++i) {
                   StateVec proj_st(projected_edge[i](0), projected_edge[i](1),
                                    projected_edge[i](2), 0.0);
-                  Vertex* proj_vert =
-                      new Vertex(projected_graph_->generateVertexID(), proj_st);
+                  GbplannerVertex* proj_vert =
+                      new GbplannerVertex(projected_graph_->generateVertexID(), proj_st);
                   projected_graph_->addVertex(proj_vert);
                   double edge_len =
                       (proj_vert->state - prev_vert->state).norm();
@@ -1017,9 +1129,9 @@ void Rrg::expandGraph(std::shared_ptr<GraphManager> graph_manager,
 }
 
 void Rrg::expandGraphEdgesBlindly(std::shared_ptr<GraphManager> graph_manager,
-                                  Vertex* new_vertex, double radius,
+                                  GbplannerVertex* new_vertex, double radius,
                                   ExpandGraphReport& rep) {
-  std::vector<Vertex*> nearest_vertices;
+  std::vector<GbplannerVertex*> nearest_vertices;
   if (!graph_manager->getNearestVertices(&(new_vertex->state), radius,
                                          &nearest_vertices)) {
     rep.status = ExpandGraphStatus::kNull;
@@ -1047,7 +1159,7 @@ Rrg::GraphStatus Rrg::buildGraph() {
   local_exploration_ongoing_ = true;
 
   if (global_exploration_ongoing_) {
-    Vertex* global_vertex = global_graph_->getVertex(current_global_vertex_id_);
+    GbplannerVertex* global_vertex = global_graph_->getVertex(current_global_vertex_id_);
     // Global repositioning stopped in between
     if ((current_state_.head(3) - global_vertex->state.head(3)).norm() > 5.0) {
       ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "Global frontier not reached. Triggering global planner again");
@@ -1058,6 +1170,11 @@ Rrg::GraphStatus Rrg::buildGraph() {
     else {
       global_exploration_ongoing_ = false;
     }
+  }
+
+  if(planning_params_.only_manhole_traversal) {
+    local_exploration_ongoing_ = false;
+    return GraphStatus::OK;
   }
 
   if (planning_params_.type == PlanningModeType::kAdaptiveExploration) {
@@ -1100,7 +1217,7 @@ Rrg::GraphStatus Rrg::buildGraph() {
   while ((loop_count++ < planning_params_.num_loops_max) &&
          (num_vertices < planning_num_vertices_max_) &&
          (num_edges < planning_num_edges_max_)) {
-    Vertex new_vertex(-1, StateVec::Zero());
+    GbplannerVertex new_vertex(-1, StateVec::Zero());
 
     if (planning_params_.type == PlanningModeType::kAdaptiveExploration) {
       if (!sampleVertex(random_sampler_adaptive_, root_vertex_->state,
@@ -1129,7 +1246,7 @@ Rrg::GraphStatus Rrg::buildGraph() {
   stat_->build_graph_time = GET_ELAPSED_TIME(ttime);
   t2 = std::chrono::high_resolution_clock::now();
 
-  std::shared_ptr<Graph> g = local_graph_->graph_;
+  std::shared_ptr<BaseGraph> g = local_graph_->graph_;
 
   stat_chrono_->build_graph_time =
       std::chrono::duration<double, std::milli>(t2 - t1).count();
@@ -1139,7 +1256,7 @@ Rrg::GraphStatus Rrg::buildGraph() {
     visualization_->visualizeGeofence(geofence_manager_);
 
   planner_trigger_count_++;
-  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Formed a graph with [%d] vertices and [%d] edges with [%d] loops",
+  ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "Formed a graph with [%d] vertices and [%d] edges with [%d] loops",
            num_vertices, num_edges, loop_count);
 
   if (planning_params_.type == PlanningModeType::kAdaptiveExploration)
@@ -1155,6 +1272,9 @@ Rrg::GraphStatus Rrg::buildGraph() {
       visualization_->visualizeProjectedGraph(projected_graph_);
     } else
       visualization_->visualizeGraph(local_graph_);
+    local_graph_->findShortestPaths(local_graph_rep_);
+    stat_->shortest_path_time = GET_ELAPSED_TIME(ttime);
+    // correctYaw();
     return Rrg::GraphStatus::OK;
   } else {
     visualization_->visualizeFailedEdges(stat_);
@@ -1202,7 +1322,7 @@ Rrg::GraphStatus Rrg::buildGridGraph(StateVec state, Eigen::Vector3d robot_size,
            num_nodes[2]);
 
   int num_total_nodes = num_nodes[0] * num_nodes[1] * num_nodes[2];
-  Vertex** vertices_mat = new Vertex*[num_total_nodes];
+  GbplannerVertex** vertices_mat = new GbplannerVertex*[num_total_nodes];
   bool* collision_free_mat = new bool[num_total_nodes];
 
   for (int i = 0; i < num_nodes[0]; ++i) {
@@ -1252,8 +1372,8 @@ Rrg::GraphStatus Rrg::buildGridGraph(StateVec state, Eigen::Vector3d robot_size,
         z_val += state.z();
 
         StateVec new_state(x_val, y_val, z_val, heading);
-        Vertex* new_vertex =
-            new Vertex(local_graph_->generateVertexID(), new_state);
+        GbplannerVertex* new_vertex =
+            new GbplannerVertex(local_graph_->generateVertexID(), new_state);
         local_graph_->addVertex(new_vertex);
         vertices_mat[cur_ind] = new_vertex;
 
@@ -1409,11 +1529,12 @@ Rrg::GraphStatus Rrg::buildGridGraph(StateVec state, Eigen::Vector3d robot_size,
 void Rrg::correctYaw() {
   // Choose the heading angle tangent with the moving direction.
   if (planning_params_.yaw_tangent_correction) {
+		// If this param is true, do it for all vertices
     int num_vertices = local_graph_->getNumVertices();
     for (int id = 1; id < num_vertices; ++id) {
       int pid = local_graph_->getParentIDFromShortestPath(id, local_graph_rep_);
-      Vertex* v = local_graph_->getVertex(id);
-      Vertex* vp = local_graph_->getVertex(pid);
+      GbplannerVertex* v = local_graph_->getVertex(id);
+      GbplannerVertex* vp = local_graph_->getVertex(pid);
       Eigen::Vector3d vec(v->state[0] - vp->state[0],
                           v->state[1] - vp->state[1],
                           v->state[2] - vp->state[2]);
@@ -1421,10 +1542,36 @@ void Rrg::correctYaw() {
       v->state[3] = std::atan2(vec[1], vec[0]);
     }
   }
+  else {
+		// Else
+    if(planning_params_.keep_leaf_yaw_only) {
+			// do it for all but leaves
+			int num_vertices = local_graph_->getNumVertices();
+			for (int id = 1; id < num_vertices; ++id) {
+				int pid = local_graph_->getParentIDFromShortestPath(id, local_graph_rep_);
+				GbplannerVertex* v = local_graph_->getVertex(id);
+				if(v->is_leaf_vertex) {
+					continue;
+				}
+				GbplannerVertex* vp = local_graph_->getVertex(pid);
+				Eigen::Vector3d vec(v->state[0] - vp->state[0],
+														v->state[1] - vp->state[1],
+														v->state[2] - vp->state[2]);
+				if (planning_params_.planning_backward) vec = -vec;
+				v->state[3] = std::atan2(vec[1], vec[0]);
+			}
+		}
+		// Else do it for none
+  }
 }
 
-Rrg::GraphStatus Rrg::evaluateGraph() {
+Rrg::GraphStatus Rrg::evaluateGraph(bool assisted) {
   Rrg::GraphStatus gstatus = Rrg::GraphStatus::OK;
+
+  if(planning_params_.only_manhole_traversal) {
+    auto_global_planner_trig_ = true;
+    return Rrg::GraphStatus::NOT_OK;
+  }
 
   START_TIMER(ttime);
   auto t1 = std::chrono::high_resolution_clock::now();
@@ -1432,19 +1579,23 @@ Rrg::GraphStatus Rrg::evaluateGraph() {
   // Dijkstra and mark leaf vertices.
   local_graph_->findShortestPaths(local_graph_rep_);
   local_graph_->findLeafVertices(local_graph_rep_);
-  std::vector<Vertex*> leaf_vertices;
+  std::vector<GbplannerVertex*> leaf_vertices;
   local_graph_->getLeafVertices(leaf_vertices);
   stat_->shortest_path_time = GET_ELAPSED_TIME(ttime);
   t2 = std::chrono::high_resolution_clock::now();
   stat_chrono_->shortest_path_time =
       std::chrono::duration<double, std::milli>(t2 - t1).count();
 
-  correctYaw();
+  // correctYaw();
 
   // Gain calculation for each vertex.
-  computeExplorationGain(planning_params_.leafs_only_for_volumetric_gain,
-                         planning_params_.cluster_vertices_for_gain);
+  if(assisted)
+    computeSemAssistedExplorationGain();
+  else
+    computeExplorationGain();
 
+  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "[Evaluate graph]: Gain Calculation Done");
+  add_frontiers_to_global_graph_ = true;
   // Gain evaluation for valid paths, starting from the leaf to the root.
   START_TIMER(ttime);
   t1 = std::chrono::high_resolution_clock::now();
@@ -1454,9 +1605,11 @@ Rrg::GraphStatus Rrg::evaluateGraph() {
   bool frontier_exists = false;
   std::vector<int> negative_edge_leafs;
   std::vector<Eigen::Vector3d> inadmissible_negative_edges;
+  int path_len_count = 0, path_dir_count = 0;
+  double path_len_time = 0.0, path_dir_time = 0.0;
   for (int i = 0; i < num_leaf_vertices; ++i) {
     int id = leaf_vertices[i]->id;
-    std::vector<Vertex*> path;
+    std::vector<GbplannerVertex*> path;
     local_graph_->getShortestPath(id, local_graph_rep_, true, path);
     int path_size = path.size();
     int num_unknown_voxels = 0;
@@ -1465,25 +1618,39 @@ Rrg::GraphStatus Rrg::evaluateGraph() {
       double path_gain = 0;
       double lambda = planning_params_.path_length_penalty;
       bool inadmissible_edge = false;
+      Timer tc;
       for (int ind = 0; ind < path_size; ++ind) {
-        Vertex* v_id = path[ind];
+        GbplannerVertex* v_id = path[ind];
         double path_length =
             local_graph_->getShortestDistance(v_id->id, local_graph_rep_);
-        double vol_gain =
-            v_id->vol_gain.gain *
-            exp(-v_id->is_hanging * planning_params_.hanging_vertex_penalty);
+        double vol_gain;
+        if(assisted)
+        {
+          vol_gain =
+              v_id->total_gain *
+              exp(-v_id->is_hanging * planning_params_.hanging_vertex_penalty);
+        }
+        else
+        {
+          vol_gain =
+              v_id->vol_gain.gain *
+              exp(-v_id->is_hanging * planning_params_.hanging_vertex_penalty);
+        }
 
         if (ind > 0 && robot_params_.type == RobotType::kGroundRobot) {
           double inclination =
               edge_inclinations_[path[ind]->id][path[ind - 1]->id];
+          double max_negative_inclination = 0.37;
+          if (inclination > max_negative_inclination) {
+          }
           Eigen::Vector3d segment =
               path[ind]->state.head(3) - path[ind - 1]->state.head(3);
           if ((path[ind]->state(2) - path[ind - 1]->state(2)) <
               -map_manager_->getResolution()) {
             // Negative slope
-            if (inclination > planning_params_.max_negative_inclination ||
-                (std::atan2(std::abs(segment(2)), segment.head(2).norm()) >
-                    planning_params_.max_negative_inclination)) {
+            if (inclination > max_negative_inclination ||
+                (std::atan2(std::abs(segment(2)), segment.head(2).norm())) >
+                    max_negative_inclination) {
               path_gain = 0.0;
               negative_edge_leafs.push_back(leaf_vertices[i]->id);
               inadmissible_negative_edges.push_back(
@@ -1501,11 +1668,14 @@ Rrg::GraphStatus Rrg::evaluateGraph() {
             frontier_exists = true;
         }
       }
+      path_len_time += tc.endTimer();
+      ++path_len_count;
       if (inadmissible_edge) {
         continue;
       }
 
       // Compare with exploring direction to penalty not-forward paths.
+      tc.reset();
       double lambda2 = planning_params_.path_direction_penalty;
       std::vector<Eigen::Vector3d> path_list;
       local_graph_->getShortestPath(id, local_graph_rep_, true, path_list);
@@ -1518,8 +1688,15 @@ Rrg::GraphStatus Rrg::evaluateGraph() {
         best_gain = path_gain;
         best_path_id = id;
       }
+      ++path_dir_count;
+      path_dir_time += tc.endTimer();
     }
   }
+  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Mean path len timer: %f", path_len_time / path_len_count);
+  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Mean path dir timer: %f", path_dir_time / path_dir_count);
+
+  Timer tc;
+  double dt;
 
   if (planning_params_.auto_global_planner_enable) {
     if (!frontier_exists) {
@@ -1529,7 +1706,7 @@ Rrg::GraphStatus Rrg::evaluateGraph() {
     } else {
       if (num_low_gain_iters_ > 0) --num_low_gain_iters_;
     }
-    if (num_low_gain_iters_ >= 4) {
+    if (num_low_gain_iters_ >= planning_params_.max_low_gain_iters) {
       ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "%d consecutinve low gain paths, triggering global planner.",
                num_low_gain_iters_);
       num_low_gain_iters_ = 0;
@@ -1538,7 +1715,11 @@ Rrg::GraphStatus Rrg::evaluateGraph() {
     }
   }
 
+  dt = tc.endTimer();
+  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "No frontier check timer: %f", dt);
+
   // Visualization at the end.
+  tc.reset();
   visualization_->visualizeShortestPaths(local_graph_, local_graph_rep_);
   if (best_gain > 0) {
     visualization_->visualizeBestPaths(local_graph_, local_graph_rep_, 10,
@@ -1547,7 +1728,10 @@ Rrg::GraphStatus Rrg::evaluateGraph() {
 
   visualization_->visualizeNegativePaths(inadmissible_negative_edges,
                                          local_graph_, local_graph_rep_);
+  dt = tc.endTimer();
+  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Visualization timer: %f", dt);
 
+  tc.reset();
   if (best_gain > 0) {
     // create a branch
     std::vector<int> path;
@@ -1560,12 +1744,13 @@ Rrg::GraphStatus Rrg::evaluateGraph() {
     //
     ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "Best path: with gain [%f] and ID [%d] ", best_gain, best_path_id);
     gstatus = Rrg::GraphStatus::OK;
-
-    add_frontiers_to_global_graph_ = true;
-    visualization_->visualizeGlobalGraph(global_graph_);
+    // visualization_->visualizeGlobalGraph(global_graph_);
   } else {
     gstatus = Rrg::GraphStatus::NO_GAIN;
   }
+  dt = tc.endTimer();
+  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Best vertex selection timer: %f", dt);
+
   stat_->evaluate_graph_time = GET_ELAPSED_TIME(ttime);
   t2 = std::chrono::high_resolution_clock::now();
   stat_chrono_->evaluate_graph_time =
@@ -1823,18 +2008,18 @@ void Rrg::addFrontiers(int best_vertex_id) {
   // by normal vertices or any frontiers. If yes, don't add this path;
   // otherwise, add this path to the global graph.
 
-  ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "Global graph: %d vertices, %d edges.",
+  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Global graph: %d vertices, %d edges.",
            global_graph_->getNumVertices(), global_graph_->getNumEdges());
   bool update_global_frontiers = true;
   if (update_global_frontiers) {
-    std::vector<Vertex*> global_frontiers;
+    std::vector<GbplannerVertex*> global_frontiers;
     int num_vertices = global_graph_->getNumVertices();
     for (int id = 0; id < num_vertices; ++id) {
       if (global_graph_->getVertex(id)->type == VertexType::kFrontier) {
         global_frontiers.push_back(global_graph_->getVertex(id));
       }
     }
-    ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "Have %d frontiers from global graph.",
+    ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Have %d frontiers from global graph.",
              (int)global_frontiers.size());
     for (auto& v : global_frontiers) {
       computeVolumetricGainRayModelNoBound(v->state, v->vol_gain);
@@ -1843,17 +2028,22 @@ void Rrg::addFrontiers(int best_vertex_id) {
   }
 
   // Get all potential frontiers at leaf vertices of newly sampled local graph.
-  std::vector<Vertex*> leaf_vertices;
+  std::vector<GbplannerVertex*> leaf_vertices;
   local_graph_->getLeafVertices(leaf_vertices);
-  std::vector<Vertex*> frontier_vertices;
+  std::vector<GbplannerVertex*> frontier_vertices;
   for (auto& v : leaf_vertices) {
-    if (v->type == VertexType::kFrontier) {
+    if(planning_params_.add_only_frontiers_to_global_graph) {
+      if (v->type == VertexType::kFrontier) {
+        frontier_vertices.push_back(v);
+      }
+    }
+    else {
       frontier_vertices.push_back(v);
     }
   }
-  ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "Get %d leaf vertices from newly local graph.",
+  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Got %d leaf vertices from newly local graph.",
            (int)leaf_vertices.size());
-  ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "Get %d frontiers from newly local graph.",
+  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Got %d frontiers from newly local graph.",
            (int)frontier_vertices.size());
 
   // Clustering the frontier and add principle path to the global.
@@ -1861,10 +2051,20 @@ void Rrg::addFrontiers(int best_vertex_id) {
       local_graph_, local_graph_rep_, frontier_vertices);
   visualization_->visualizeClusteredPaths(local_graph_, local_graph_rep_,
                                           frontier_vertices, cluster_ids);
-  const double kRangeCheck = 1.0;
-  const double kUpdateRadius = 3.0;
+  // const double kRangeCheck = 1.0;
+  // const double kUpdateRadius = 3.0;
+  double kRangeCheck;
+  double kUpdateRadius;
+  if(planning_params_.add_only_frontiers_to_global_graph) {
+    kRangeCheck = 1.0;
+    kUpdateRadius = 2.0;
+  }
+  else {
+    kRangeCheck = 0.7;
+    kUpdateRadius = 0.7;
+  }
   for (int i = 0; i < cluster_ids.size(); ++i) {
-    Vertex* nearest_vertex = NULL;
+    GbplannerVertex* nearest_vertex = NULL;
     // To add principal path, verify if around that area already have vertices
     // before. Also if the robot already passed that area before.
     if (!global_graph_->getNearestVertexInRange(
@@ -1874,7 +2074,7 @@ void Rrg::addFrontiers(int best_vertex_id) {
       if (!robot_state_hist_->getNearestStateInRange(
               &(local_graph_->getVertex(cluster_ids[i])->state), kUpdateRadius,
               &nearest_state)) {
-        std::vector<Vertex*> path;
+        std::vector<GbplannerVertex*> path;
         local_graph_->getShortestPath(cluster_ids[i], local_graph_rep_, true,
                                       path);
         // Only keep frontier for the leaf vertex, the remaining should be
@@ -1888,6 +2088,13 @@ void Rrg::addFrontiers(int best_vertex_id) {
   }
   visualization_->visualizeRobotStateHistory(robot_state_hist_->state_hist_);
 }
+
+bool Rrg::resetTimerCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res) {
+    resetMissionTimer();
+    ROS_WARN_COND(global_verbosity >= Verbosity::PLANNER_STATUS, "Mission time reset.");
+    res.success = true;
+    return true;
+  }
 
 void Rrg::freePointCloudtimerCallback(const ros::TimerEvent& event) {
   if (!planning_params_.freespace_cloud_enable) return;
@@ -1927,10 +2134,19 @@ void Rrg::freePointCloudtimerCallback(const ros::TimerEvent& event) {
 
 void Rrg::expandGlobalGraphFrontierAdditionTimerCallback(
     const ros::TimerEvent& event) {
+  // map_manager_->voxelAllocationTest(Eigen::Vector3d(15.0, 3.0, 2.0));
+  
   if (add_frontiers_to_global_graph_) {
-    ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "Timer: Adding frontiers to global graph");
+    auto t1 = std::chrono::high_resolution_clock::now();
+    auto t2 = t1;
+
+    ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Timer: Adding frontiers to global graph");
     add_frontiers_to_global_graph_ = false;
     addFrontiers(0);  // id given as 0 because it is not used
+    
+    t2 = std::chrono::high_resolution_clock::now();
+    double chrono_time = std::chrono::duration<double, std::milli>(t2 - t1).count();
+    ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Add frontiers time: %f", chrono_time);
   }
 }
 
@@ -1946,12 +2162,14 @@ void Rrg::expandGlobalGraphTimerCallback(const ros::TimerEvent& event) {
 
   ros::Time time_lim;
   START_TIMER(time_lim);
+  auto t1 = std::chrono::high_resolution_clock::now();
+  auto t2 = t1;
 
   if (planner_trigger_count_ == 0) return;
 
   bool update_global_frontiers = false;
   if (update_global_frontiers) {
-    std::vector<Vertex*> global_frontiers;
+    std::vector<GbplannerVertex*> global_frontiers;
     int num_vertices = global_graph_->getNumVertices();
     for (int id = 0; id < num_vertices; ++id) {
       if (global_graph_->getVertex(id)->type == VertexType::kFrontier) {
@@ -1964,7 +2182,7 @@ void Rrg::expandGlobalGraphTimerCallback(const ros::TimerEvent& event) {
     }
   }
 
-  std::vector<Vertex*> unvisited_vertices;
+  std::vector<GbplannerVertex*> unvisited_vertices;
   int global_graph_size = global_graph_->getNumVertices();
   for (int id = 0; id < global_graph_size; ++id) {
     if (global_graph_->getVertex(id)->type == VertexType::kUnvisited) {
@@ -1976,7 +2194,7 @@ void Rrg::expandGlobalGraphTimerCallback(const ros::TimerEvent& event) {
   const double kLocalBoxRadius = 10;
   const double kLocalBoxRadiusSq = kLocalBoxRadius * kLocalBoxRadius;
   std::vector<Eigen::Vector3d> cluster_centroids;
-  std::vector<Vertex*> unvisited_vertices_remain;
+  std::vector<GbplannerVertex*> unvisited_vertices_remain;
   while (true) {
     unvisited_vertices_remain.clear();
     // Randomly pick a vertex
@@ -2019,7 +2237,7 @@ void Rrg::expandGlobalGraphTimerCallback(const ros::TimerEvent& event) {
       StateVec centroid_state(cluster_centroids[i].x(),
                               cluster_centroids[i].y(),
                               cluster_centroids[i].z(), 0);
-      Vertex new_vertex(-1, StateVec::Zero());
+      GbplannerVertex new_vertex(-1, StateVec::Zero());
       if (!sampleVertex(random_sampler_, centroid_state, new_vertex)) continue;
       if (new_vertex.is_hanging) continue;
       if (robot_params_.type == RobotType::kGroundRobot) {
@@ -2039,11 +2257,11 @@ void Rrg::expandGlobalGraphTimerCallback(const ros::TimerEvent& event) {
       robot_state_hist_->getNearestStates(&new_vertex.state, kSparseRadius,
                                           &s_res);
       if (s_res.size()) continue;
-      std::vector<Vertex*> v_res;
+      std::vector<GbplannerVertex*> v_res;
       global_graph_->getNearestVertices(&new_vertex.state, kSparseRadius,
                                         &v_res);
       if (v_res.size()) continue;
-      std::vector<Vertex*> f_res;
+      std::vector<GbplannerVertex*> f_res;
       global_graph_->getNearestVertices(&new_vertex.state,
                                         kOverlappedFrontierRadius, &f_res);
       bool frontier_existed = false;
@@ -2070,11 +2288,14 @@ void Rrg::expandGlobalGraphTimerCallback(const ros::TimerEvent& event) {
   }
 
   time_elapsed = GET_ELAPSED_TIME(time_lim);
+  t2 = std::chrono::high_resolution_clock::now();
+  double chrono_time = std::chrono::duration<double, std::milli>(t2 - t1).count();
+  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Expand global graph time: %f", chrono_time);
 }
 
 void Rrg::semanticsCallback(
     const planner_semantic_msgs::SemanticPoint& semantic) {
-  std::cout << "Inside semantic callback" << std::endl;
+  // std::cout << "Inside semantic callback" << std::endl;
   StateVec* new_state =
       new StateVec(semantic.point.x, semantic.point.y, semantic.point.z, 0.0);
   Eigen::Vector3d sem((*new_state)[0], (*new_state)[1], (*new_state)[2]);
@@ -2086,13 +2307,13 @@ void Rrg::semanticsCallback(
     return;
   }
 
-  Vertex* temp_nearest_vertex;
+  GbplannerVertex* temp_nearest_vertex;
   if (!global_graph_->getNearestVertex(new_state, &temp_nearest_vertex)) {
     ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "[SEMANTICS]: No nearest vertex found.");
     return;
   }
-  std::vector<Vertex*> nearest_vertices;
-  Vertex* nearest_vertex;
+  std::vector<GbplannerVertex*> nearest_vertices;
+  GbplannerVertex* nearest_vertex;
   Eigen::Vector3d nv(temp_nearest_vertex->state[0],
                      temp_nearest_vertex->state[1],
                      temp_nearest_vertex->state[2]);
@@ -2135,7 +2356,7 @@ void Rrg::semanticsCallback(
     ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "[SEMANTICS]: Cannot connect to nearest node");
     return;
   } else {
-    std::vector<Vertex*> semantic_path;
+    std::vector<GbplannerVertex*> semantic_path;
     ROS_INFO_COND(global_verbosity >= Verbosity::INFO, 
         "[SEMANTICS]: Found a path to the semantic point with %d vertices.",
         (int)path_ret.size());
@@ -2143,7 +2364,7 @@ void Rrg::semanticsCallback(
       for (int i = 1; i < path_ret.size(); ++i) {
         StateVec next_state(path_ret[i].position.x, path_ret[i].position.y,
                             path_ret[i].position.z, 0.0);
-        Vertex* vert = new Vertex(i, next_state);
+        GbplannerVertex* vert = new GbplannerVertex(i, next_state);
         if (i == path_ret.size() - 1) {
           vert->semantic_class.value = semantic.type.value;
           vert->type = VertexType::kFrontier;
@@ -2157,7 +2378,7 @@ void Rrg::semanticsCallback(
     } else {
       StateVec next_state(path_ret[1].position.x, path_ret[1].position.y,
                           path_ret[1].position.z, 0.0);
-      Vertex* vert = new Vertex(global_graph_->generateVertexID(), next_state);
+      GbplannerVertex* vert = new GbplannerVertex(global_graph_->generateVertexID(), next_state);
       vert->semantic_class.value = semantic.type.value;
       vert->type = VertexType::kFrontier;
       vert->is_leaf_vertex = true;
@@ -2171,6 +2392,9 @@ void Rrg::semanticsCallback(
   }
   visualization_->visualizeGlobalGraph(global_graph_);
 }
+
+
+
 
 void Rrg::printShortestPath(int id) {
   std::vector<int> id_list;
@@ -2200,15 +2424,26 @@ bool Rrg::search(geometry_msgs::Pose source_pose,
   RandomSamplingParams sampling_params;
   ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Start searching ...");
   int final_target_id;
+  // Eigen::Vector3d robot_box_og = robot_box_size_;
+  // robot_box_size_ = robot_params_.size;
+  sampling_params.reached_target_radius = 1.0;
+  sampling_params.num_vertices_max = 800;
+  // map_manager_->setRobotRadius((robot_params_.size + robot_params_.size_extension_min).maxCoeff() / 2.0);
+  // map_manager_->setBoxCheckMethod(1);
+  // map_manager_->setLineCheckMethod(2);
   ConnectStatus status = findPathToConnect(
       source, target, graph_search, sampling_params, final_target_id, path_ret);
+  // robot_box_size_ = robot_box_og;
+  // map_manager_->setRobotRadius(robot_box_size_.maxCoeff() / 2.0);
+  // map_manager_->setBoxCheckMethod(planning_params_.box_check_method);
+  // map_manager_->setLineCheckMethod(planning_params_.line_check_method);
+  // visualization
+  visualization_->visualizeGraph(graph_search);
+  visualization_->visualizeSampler(random_sampler_to_search_);
   if (status == ConnectStatus::kSuccess)
     return true;
   else
     return false;
-  // visualization
-  visualization_->visualizeGraph(graph_search);
-  visualization_->visualizeSampler(random_sampler_to_search_);
 }
 
 ConnectStatus Rrg::findPathToConnect(
@@ -2219,7 +2454,7 @@ ConnectStatus Rrg::findPathToConnect(
   path_ret.clear();
   graph_manager->reset();
 
-  ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "Search a path from src [%f,%f,%f] to tgt [%f,%f,%f]", source[0],
+  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Search a path from src [%f,%f,%f] to tgt [%f,%f,%f]", source[0],
            source[1], source[2], target[0], target[1], target[2]);
 
   // Check a corner case if exists a direct collision-free path to connect
@@ -2229,18 +2464,32 @@ ConnectStatus Rrg::findPathToConnect(
   if (try_straight_path) {
     Eigen::Vector3d src_pos(source[0], source[1], source[2]);
     Eigen::Vector3d tgt_pos(target[0], target[1], target[2]);
-    voxel_state = map_manager_->getPathStatus(
+    bool admissible = false;
+    if(unknown_as_free_)
+    {
+      voxel_state = map_manager_->getPathStatus(
         src_pos + robot_params_.center_offset,
         tgt_pos + robot_params_.center_offset, robot_box_size_, true);
-    if (voxel_state == MapManager::VoxelStatus::kFree) {
-      ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "Try straight path...");
+      if(voxel_state != MapManager::VoxelStatus::kOccupied)
+        admissible = true;
+    }
+    else
+    {
+      voxel_state = map_manager_->getPathStatus(
+          src_pos + robot_params_.center_offset,
+          tgt_pos + robot_params_.center_offset, robot_box_size_, false);
+      if(voxel_state == MapManager::VoxelStatus::kFree)
+        admissible = true;
+    }
+    if (admissible) {
+      ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Try straight path...");
       // Add source to the graph.
-      Vertex* source_vertex =
-          new Vertex(graph_manager->generateVertexID(), source);
+      GbplannerVertex* source_vertex =
+          new GbplannerVertex(graph_manager->generateVertexID(), source);
       graph_manager->addVertex(source_vertex);
       // Add target to the graph.
-      Vertex* target_vertex =
-          new Vertex(graph_manager->generateVertexID(), target);
+      GbplannerVertex* target_vertex =
+          new GbplannerVertex(graph_manager->generateVertexID(), target);
       graph_manager->addVertex(target_vertex);
       graph_manager->addEdge(source_vertex, target_vertex,
                              (tgt_pos - src_pos).norm());
@@ -2292,20 +2541,20 @@ ConnectStatus Rrg::findPathToConnect(
     }
   }
   // Add source to the graph.
-  Vertex* source_vertex = new Vertex(graph_manager->generateVertexID(), source);
+  GbplannerVertex* source_vertex = new GbplannerVertex(graph_manager->generateVertexID(), source);
   graph_manager->addVertex(source_vertex);
 
   // Start sampling points and add to the graph.
   bool reached_target = false;
   int num_paths_to_target = 0;
-  std::vector<Vertex*> target_neigbors;
+  std::vector<GbplannerVertex*> target_neigbors;
   int loop_count = 0;
   int num_vertices = 0;
   int num_edges = 0;
   random_sampler_to_search_.reset();
   bool stop_sampling = false;
   while (!stop_sampling) {
-    Vertex new_vertex(-1, StateVec::Zero());
+    GbplannerVertex new_vertex(-1, StateVec::Zero());
     if (!sampleVertex(random_sampler_to_search_, source, new_vertex)) continue;
     // StateVec &new_state = new_vertex->state;
     ExpandGraphReport rep;
@@ -2340,7 +2589,7 @@ ConnectStatus Rrg::findPathToConnect(
 
   // Try to add target to graph as well.
   bool added_target = false;
-  Vertex* target_vertex = NULL;
+  GbplannerVertex* target_vertex = NULL;
   if (reached_target) {
     ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Reached target.");
     // Check if the target voxel is free, then try to add to the graph.
@@ -2352,16 +2601,16 @@ ConnectStatus Rrg::findPathToConnect(
       ExpandGraphReport rep;
       expandGraph(graph_manager, target, rep);
       if (rep.status == ExpandGraphStatus::kSuccess) {
-        ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "Added target to the graph successfully.");
+        ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Added target to the graph successfully.");
         num_vertices += rep.num_vertices_added;
         num_edges += rep.num_edges_added;
         added_target = true;
         target_vertex = rep.vertex_added;
       } else {
-        ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "Cannot expand the graph to connect to the target.");
+        ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Cannot expand the graph to connect to the target.");
       }
     } else {
-      ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "Target is not free, failed to add to the graph.");
+      ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Target is not free, failed to add to the graph.");
     }
   } else {
     ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "ConnectStatus::kErrorNoFeasiblePath");
@@ -2375,18 +2624,18 @@ ConnectStatus Rrg::findPathToConnect(
 
   // Get id list of the shortest path.
   if (!added_target) {
-    ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "Sorting best path.");
+    ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Sorting best path.");
     // Sort all the shortest path that go to target neigbors based on distance
     // in ascending order.
     std::sort(target_neigbors.begin(), target_neigbors.end(),
-              [&graph_manager, &graph_rep](const Vertex* a, const Vertex* b) {
+              [&graph_manager, &graph_rep](const GbplannerVertex* a, const GbplannerVertex* b) {
                 return graph_manager->getShortestDistance(a->id, graph_rep) <
                        graph_manager->getShortestDistance(b->id, graph_rep);
               });
     // Pick the shortest one.
     target_vertex = target_neigbors[0];
   }
-  ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "Get shortest path [%d] from %d path.", target_vertex->id,
+  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Get shortest path [%d] from %d path.", target_vertex->id,
            (int)target_neigbors.size());
   std::vector<int> path_id_list;
   graph_manager->getShortestPath(target_vertex->id, graph_rep, false,
@@ -2434,10 +2683,6 @@ bool Rrg::loadParams(bool shared_params) {
   // Load all relevant parameters.
   if (!sensor_params_.loadParams(ns + "/SensorParams")) return false;
 
-  if (!free_frustum_params_.loadParams(ns + "/FreeFrustumParams")) {
-    ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "No setting for FreeFrustumParams.");
-  }
-
   if (!planning_params_.loadParams(ns + "/PlanningParams")) return false;
   world_frame_ = planning_params_.global_frame_id;
   std::vector<double> empty_vec;
@@ -2446,6 +2691,36 @@ bool Rrg::loadParams(bool shared_params) {
   }
   for (int i = 0; i < planning_params_.num_vertices_max; ++i) {
     edge_inclinations_.push_back(empty_vec);
+  }
+
+  // if(planning_params_.annotate_map_with_camera) {
+  // }
+  camera_annotation_params_.loadParams(ns + "/CameraAnnotationParams");
+
+  if(planning_params_.freespace_cloud_enable) {
+    ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "FreeFrustumParams disabled.");
+    if (!free_frustum_params_.loadParams(ns + "/FreeFrustumParams")) {
+      ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "No setting for FreeFrustumParams.");
+    }
+  }
+
+  if(planning_params_.inspection_planning) {
+    planning_params_.use_camera_gain = true;
+    planning_params_.yaw_tangent_correction = false;
+    // planning_params_.leafs_only_for_volumetric_gain = false;
+    planning_params_.cluster_vertices_for_gain = false;
+    planning_params_.path_safety_enhance_enable = false;
+    planning_params_.annotate_map_with_camera = true;
+  }
+  else {
+    planning_params_.use_camera_gain = false;
+    planning_params_.yaw_tangent_correction = true;
+    // planning_params_.annotate_map_with_camera = true;
+  }
+
+  if(!planning_params_.yaw_tangent_correction) {
+    ROS_WARN_COND(param_verbosity >= Verbosity::ERROR, "[PlanningParams] yaw_tangent_correction is false, disabling path_safety_enhance_enable.");
+    planning_params_.path_safety_enhance_enable = false;
   }
 
   map_manager_->setRaycastingParams(
@@ -2457,7 +2732,13 @@ bool Rrg::loadParams(bool shared_params) {
     planning_params_.go_home_if_fully_explored = false;
     planning_params_.auto_homing_enable = false;
   }
+
+  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "NoGainZones size: %d", planning_params_.no_gain_zones_list.size());
+  if(global_verbosity >= Verbosity::DEBUG) {
+    for (int i=0; i<planning_params_.no_gain_zones_list.size();++i)  std::cout << planning_params_.no_gain_zones_list[i] << std::endl;
+  }
   if (planning_params_.no_gain_zones_list.size() <= 0) {
+    ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "No NoGainZones.");
     use_no_gain_space_ = false;
   } else {
     for (auto& zone : planning_params_.no_gain_zones_list) {
@@ -2561,13 +2842,13 @@ void Rrg::initializeParams() {
   // Visualize in the beginning for checking.
   global_bound_.setDefault(global_space_params_.min_val,
                            global_space_params_.max_val);
-  if (planning_params_.type == PlanningModeType::kAdaptiveExploration) {
-    visualization_->visualizeWorkspace(
-        root_vertex_->state, global_space_params_, local_adaptive_params_);
-  } else {
-    visualization_->visualizeWorkspace(
-        root_vertex_->state, global_space_params_, local_space_params_);
-  }
+  // if (planning_params_.type == PlanningModeType::kAdaptiveExploration) {
+  //   visualization_->visualizeWorkspace(
+  //       root_vertex_->state, global_space_params_, local_adaptive_params_);
+  // } else {
+  //   visualization_->visualizeWorkspace(
+  //       root_vertex_->state, global_space_params_, local_space_params_);
+  // }
 }
 
 bool Rrg::setGlobalBound(planner_msgs::PlanningBound& bound,
@@ -2646,8 +2927,7 @@ bool Rrg::setGlobalBound(
         "[GlobalBound] Reset to default: Min [%f, %f, %f], Max [%f, %f, %f]",
         v_min.x(), v_min.y(), v_min.z(), v_max.x(), v_max.y(), v_max.z());
   } else {
-    std::cout << "World frame: " << world_frame_ << ", "
-              << planning_params_.global_frame_id << std::endl;
+    ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "world frame: %s, %s", world_frame_.c_str(), planning_params_.global_frame_id.c_str());
     // Transform points to the world frame
     tf::StampedTransform darpa_to_world_transform;
     try {
@@ -2726,12 +3006,46 @@ bool Rrg::setGlobalBound(
     visualization_->visualizeWorkspace(local_bb_root, global_space_params_,
                                        local_space_params_);
   }
-  ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "Visualization done");
+  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Visualization done");
   return true;
 }
 
 void Rrg::getGlobalBound(planner_msgs::PlanningBound& bound) {
   global_bound_.get(bound.min_val, bound.max_val);
+}
+
+void Rrg::computeSemAssistedExplorationGain() {
+  const int id_viz = 20;  // random vertex to show volumetric gain.
+  ros::Time tim;
+  START_TIMER(tim);
+  auto t1 = std::chrono::high_resolution_clock::now();
+  auto t2 = t1;
+  // Compute gain of all vertices in one function.
+  for (const auto& v : local_graph_->vertices_map_) {
+    bool viz_en = false;
+    if (v.second->id == id_viz) viz_en = true;
+    if (planning_params_.use_ray_model_for_volumetric_gain) {
+      computeVolumetricGainRayModel(v.second->state, v.second->vol_gain,
+                                      viz_en);
+    } else {
+      computeVolumetricGain(v.second->state, v.second->vol_gain, viz_en);
+    }
+    if (v.second->vol_gain.is_frontier) v.second->type = VertexType::kFrontier;
+
+    // std::cout << "Vol gain computed" << std::endl;
+
+    SemanticGain sem_gain;
+    computeSemanticGainRayModel(v.second, sem_gain);
+
+    // std::cout << "Sem gain computed" << std::endl;
+
+    v.second->total_gain = (config_->prediction_params.min_exp_weight + 1 - config_->prediction_params.kSem) * v.second->vol_gain.normalized_gain
+                           + (config_->prediction_params.kSemPriorWeight + config_->prediction_params.kSem) * sem_gain.normalized_gain;
+  }
+  stat_->compute_exp_gain_time = GET_ELAPSED_TIME(tim);
+  t2 = std::chrono::high_resolution_clock::now();
+  stat_chrono_->compute_exp_gain_time =
+      std::chrono::duration<double, std::milli>(t2 - t1).count();
 }
 
 void Rrg::computeExplorationGain(bool only_leaf_vertices) {
@@ -2760,7 +3074,9 @@ void Rrg::computeExplorationGain(bool only_leaf_vertices) {
       std::chrono::duration<double, std::milli>(t2 - t1).count();
 }
 
-void Rrg::computeExplorationGain(bool only_leaf_vertices, bool clustering) {
+void Rrg::computeExplorationGain() {
+  bool only_leaf_vertices = planning_params_.leafs_only_for_volumetric_gain;
+  bool clustering = planning_params_.cluster_vertices_for_gain;
   const int id_viz = 20;  // random vertex to show volumetric gain.
   const double clustering_range = planning_params_.clustering_radius;
   int num_clusters = 0;
@@ -2768,7 +3084,7 @@ void Rrg::computeExplorationGain(bool only_leaf_vertices, bool clustering) {
   START_TIMER(tim);
   auto t1 = std::chrono::high_resolution_clock::now();
   auto t2 = t1;
-  std::unordered_map<int, Vertex*> vertex_map = local_graph_->vertices_map_;
+  std::unordered_map<int, GbplannerVertex*> vertex_map = local_graph_->vertices_map_;
   std::list<int> vertex_ids;
   for (int i = 0; i < local_graph_->getNumVertices(); ++i) {
     if (vertex_map[i]->is_leaf_vertex) {
@@ -2803,7 +3119,7 @@ void Rrg::computeExplorationGain(bool only_leaf_vertices, bool clustering) {
     // Remove vertices in vicinity:
     if (clustering) {
       if ((!only_leaf_vertices) || (vertex_map[v_id]->is_leaf_vertex)) {
-        std::vector<Vertex*> nearest_vertices;
+        std::vector<GbplannerVertex*> nearest_vertices;
         local_graph_->getNearestVertices(&vertex_map[v_id]->state,
                                          clustering_range, &nearest_vertices);
         for (auto v : nearest_vertices) {
@@ -2820,7 +3136,7 @@ void Rrg::computeExplorationGain(bool only_leaf_vertices, bool clustering) {
     if (vertex_map[v_id]->vol_gain.is_frontier)
       vertex_map[v_id]->type = VertexType::kFrontier;
   }
-  ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "Num clusters: %d", num_clusters);
+  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Num clusters: %d", num_clusters);
   stat_->compute_exp_gain_time = GET_ELAPSED_TIME(tim);
   t2 = std::chrono::high_resolution_clock::now();
   stat_chrono_->compute_exp_gain_time =
@@ -2949,6 +3265,63 @@ void Rrg::computeVolumetricGain(StateVec& state, VolumetricGain& vgain,
   }
 }
 
+void Rrg::computeInspectionGainRayModel(GbplannerVertex* vert) {
+  vert->vol_gain.reset();
+
+  // std::cout << "GbplannerVertex " << vert->id << ":" << std::endl;
+  // std::cout
+
+  for(std::string sensor_name : planning_params_.inspection_sensor_list) {
+    std::vector<VoxelLog> voxel_logs;
+    SensorParamsBase sensor = sensor_params_.sensor[sensor_name];
+
+    // std::cout << "Sensor: " << sensor_name << std::endl;
+    
+    map_manager_->getCameraScanStatus(vert->state, sensor, voxel_logs);
+    // std::cout << voxel_logs.size() << std::endl;
+
+    for(VoxelLog log : voxel_logs) {
+      if (global_space_params_.isInsideSpace(log.voxel_center)) {
+        // valid voxel.
+        bool no_gain_zone_cleared = true;
+        if (use_no_gain_space_) {
+          for (auto& zone : no_gain_zones_) {
+            if (zone.isInsideSpace(log.voxel_center)) {
+              no_gain_zone_cleared = false;
+              break;
+            }
+          }
+        }
+        if(no_gain_zone_cleared) {
+          vert->vol_gain.unseen_voxel_hash_keys.insert(log.voxel_hash);
+        }
+      }
+    }
+  }
+
+  // std::cout << "Total num unseen keys:" << vert->vol_gain.unseen_voxel_hash_keys.size() << std::endl;
+}
+
+void Rrg::computeSemanticGainRayModel(GbplannerVertex* vert, SemanticGain &gain)
+{
+  double total_normalization_factor = 0.0;
+  for(std::string sensor_name : planning_params_.inspection_sensor_list) {
+    SensorParamsBase sensor = sensor_params_.sensor[sensor_name];
+    std::vector<VoxelLog> voxel_logs;
+    map_manager_->getSemanticScanStatus(vert->state, sensor, voxel_logs);
+
+    for(VoxelLog log : voxel_logs) {
+      if (global_space_params_.isInsideSpace(log.voxel_center)) {
+        gain.voxel_hash_keys.insert(log.voxel_hash);
+      }
+    }
+    total_normalization_factor += sensor.getMaxGain();
+  }
+
+  gain.gain = planning_params_.unknown_voxel_gain * gain.voxel_hash_keys.size();
+  gain.normalized_gain = gain.voxel_hash_keys.size() / total_normalization_factor;
+}
+
 void Rrg::computeVolumetricGainRayModel(StateVec& state, VolumetricGain& vgain,
                                         bool vis_en, bool iterative) {
   vgain.reset();
@@ -2959,6 +3332,7 @@ void Rrg::computeVolumetricGainRayModel(StateVec& state, VolumetricGain& vgain,
   // @TODO tung.
   // Compute for each sensor in the exploration sensor list.
   // However, this would be a problem if those sensors have significant overlap.
+  double total_normalization_factor = 0;
   for (int ind = 0; ind < planning_params_.exp_sensor_list.size(); ++ind) {
     std::string sensor_name = planning_params_.exp_sensor_list[ind];
 
@@ -2970,17 +3344,17 @@ void Rrg::computeVolumetricGainRayModel(StateVec& state, VolumetricGain& vgain,
     sensor_params_.sensor[sensor_name].getFrustumEndpoints(state,
                                                            multiray_endpoints);
 
-    // if(iterative) {
-    //   map_manager_->getScanStatusIterative(origin, multiray_endpoints,
-    //   gain_log_tmp, voxel_log_tmp, sensor_params_.sensor[sensor_name]);
-    // }
-    // else {
-    //   map_manager_->getScanStatus(origin, multiray_endpoints, gain_log_tmp,
-    //   voxel_log_tmp, sensor_params_.sensor[sensor_name]);
-    // }
-    map_manager_->getScanStatus(origin, multiray_endpoints, gain_log_tmp,
-                                voxel_log_tmp,
-                                sensor_params_.sensor[sensor_name]);
+    if(planning_params_.use_camera_gain) {
+      map_manager_->getCameraScanStatus(origin, multiray_endpoints, gain_log_tmp,
+                                  voxel_log_tmp,
+                                  sensor_params_.sensor[sensor_name]);  
+    }
+    else {
+      map_manager_->getScanStatus(origin, multiray_endpoints, gain_log_tmp,
+                                  voxel_log_tmp,
+                                  sensor_params_.sensor[sensor_name]);
+    }
+
     int num_unknown_voxels = 0, num_free_voxels = 0, num_occupied_voxels = 0,
         num_unknown_surf_voxels = 0;
     // num_unknown_voxels = std::get<0>(gain_log_tmp);
@@ -3033,6 +3407,8 @@ void Rrg::computeVolumetricGainRayModel(StateVec& state, VolumetricGain& vgain,
             num_unknown_voxels * map_manager_->getResolution())) {
       vgain.is_frontier = true;  // Event E2
     }
+
+    total_normalization_factor += sensor_params_.sensor[sensor_name].getMaxGain();
   }
 
   // Return gain values.
@@ -3047,6 +3423,7 @@ void Rrg::computeVolumetricGainRayModel(StateVec& state, VolumetricGain& vgain,
                   num_free_voxels * planning_params_.free_voxel_gain +
                   num_occupied_voxels * planning_params_.occupied_voxel_gain;
   }
+  vgain.normalized_gain = vgain.num_unknown_voxels * map_manager_->getResolution() / total_normalization_factor;
 
   // Visualize if required.
 #if FULL_PLANNER_VIZ
@@ -3142,8 +3519,8 @@ void Rrg::setRootStateForPlanning(const geometry_msgs::Pose& root_pose) {
 bool Rrg::setHomingPos() {
   if (global_graph_->getNumVertices() == 0) {
     ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "Global graph is empty: add current state as homing position.");
-    Vertex* g_root_vertex =
-        new Vertex(global_graph_->generateVertexID(), current_state_);
+    GbplannerVertex* g_root_vertex =
+        new GbplannerVertex(global_graph_->generateVertexID(), current_state_);
     global_graph_->addVertex(g_root_vertex);
     return true;
   } else {
@@ -3174,7 +3551,7 @@ std::vector<geometry_msgs::Pose> Rrg::searchHomingPath(
       cur_state(2) -= (ground_height - planning_params_.max_ground_height);
     }
   }
-  Vertex* nearest_vertex = NULL;
+  GbplannerVertex* nearest_vertex = NULL;
   if (!global_graph_->getNearestVertex(&cur_state, &nearest_vertex))
     return ret_path;
   if (nearest_vertex == NULL) return ret_path;
@@ -3184,7 +3561,7 @@ std::vector<geometry_msgs::Pose> Rrg::searchHomingPath(
                             cur_state[2] - origin[2]);
   double direction_norm = direction.norm();
 
-  Vertex* link_vertex = NULL;
+  GbplannerVertex* link_vertex = NULL;
   const double kRadiusLimit = 1.0;
   bool connect_state_to_graph = true;
   if (direction_norm <= kRadiusLimit) {
@@ -3192,8 +3569,8 @@ std::vector<geometry_msgs::Pose> Rrg::searchHomingPath(
     // kErrorShortEdge, dirty fix to check max
     // @TODO: find better way to do this.
     // Blindly add a link/vertex to the graph if small radius.
-    Vertex* new_vertex =
-        new Vertex(global_graph_->generateVertexID(), cur_state);
+    GbplannerVertex* new_vertex =
+        new GbplannerVertex(global_graph_->generateVertexID(), cur_state);
     new_vertex->parent = nearest_vertex;
     new_vertex->distance = nearest_vertex->distance + direction_norm;
     nearest_vertex->children.push_back(new_vertex);
@@ -3260,28 +3637,26 @@ std::vector<geometry_msgs::Pose> Rrg::searchHomingPath(
 
     // Set the heading angle tangent with the moving direction,
     // from the second waypoint; the first waypoint keeps the same direction.
-    if (planning_params_.yaw_tangent_correction) {
-      bool is_similar = comparePathWithDirectionApprioximately(
-          ret_path, tf::getYaw(ret_path[0].orientation));
-      for (int i = 0; i < (ret_path.size() - 1); ++i) {
-        Eigen::Vector3d vec;
-        if ((!planning_params_.homing_backward) || (is_similar)) {
-          vec << ret_path[i + 1].position.x - ret_path[i].position.x,
-              ret_path[i + 1].position.y - ret_path[i].position.y,
-              ret_path[i + 1].position.z - ret_path[i].position.z;
-        } else if (planning_params_.homing_backward) {
-          vec << ret_path[i].position.x - ret_path[i + 1].position.x,
-              ret_path[i].position.y - ret_path[i + 1].position.y,
-              ret_path[i].position.z - ret_path[i + 1].position.z;
-        }
-        double yaw = std::atan2(vec[1], vec[0]);
-        tf::Quaternion quat;
-        quat.setEuler(0.0, 0.0, yaw);
-        ret_path[i + 1].orientation.x = quat.x();
-        ret_path[i + 1].orientation.y = quat.y();
-        ret_path[i + 1].orientation.z = quat.z();
-        ret_path[i + 1].orientation.w = quat.w();
+    bool is_similar = comparePathWithDirectionApprioximately(
+        ret_path, tf::getYaw(ret_path[0].orientation));
+    for (int i = 0; i < (ret_path.size() - 1); ++i) {
+      Eigen::Vector3d vec;
+      if ((!planning_params_.homing_backward) || (is_similar)) {
+        vec << ret_path[i + 1].position.x - ret_path[i].position.x,
+            ret_path[i + 1].position.y - ret_path[i].position.y,
+            ret_path[i + 1].position.z - ret_path[i].position.z;
+      } else if (planning_params_.homing_backward) {
+        vec << ret_path[i].position.x - ret_path[i + 1].position.x,
+            ret_path[i].position.y - ret_path[i + 1].position.y,
+            ret_path[i].position.z - ret_path[i + 1].position.z;
       }
+      double yaw = std::atan2(vec[1], vec[0]);
+      tf::Quaternion quat;
+      quat.setEuler(0.0, 0.0, yaw);
+      ret_path[i + 1].orientation.x = quat.x();
+      ret_path[i + 1].orientation.y = quat.y();
+      ret_path[i + 1].orientation.z = quat.z();
+      ret_path[i + 1].orientation.w = quat.w();
     }
     visualization_->visualizeHomingPath(global_graph_, global_graph_rep_,
                                         link_vertex->id);
@@ -3307,7 +3682,7 @@ std::vector<geometry_msgs::Pose> Rrg::getGlobalPath(
   wp << waypoint.pose.position.x, waypoint.pose.position.y,
       waypoint.pose.position.z;
 
-  Vertex* wp_nearest_vertex;
+  GbplannerVertex* wp_nearest_vertex;
   if (!global_graph_->getNearestVertex(&wp, &wp_nearest_vertex)) {
     ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "Cannot find any nearby vertex to reposition.");
     return ret_path;
@@ -3334,7 +3709,7 @@ std::vector<geometry_msgs::Pose> Rrg::getGlobalPath(
       cur_state(2) -= (ground_height - planning_params_.max_ground_height);
     }
   }
-  Vertex* nearest_vertex = NULL;
+  GbplannerVertex* nearest_vertex = NULL;
   if (!global_graph_->getNearestVertex(&cur_state, &nearest_vertex))
     return ret_path;
   if (nearest_vertex == NULL) return ret_path;
@@ -3344,7 +3719,7 @@ std::vector<geometry_msgs::Pose> Rrg::getGlobalPath(
                             cur_state[2] - origin[2]);
   double direction_norm = direction.norm();
 
-  Vertex* link_vertex = NULL;
+  GbplannerVertex* link_vertex = NULL;
   const double kRadiusLimit = 1.0;
   bool connect_state_to_graph = true;
   if (direction_norm <= kRadiusLimit) {
@@ -3352,8 +3727,8 @@ std::vector<geometry_msgs::Pose> Rrg::getGlobalPath(
     // kErrorShortEdge, dirty fix to check max
     // @TODO: find better way to do this.
     // Blindly add a link/vertex to the graph if small radius.
-    Vertex* new_vertex =
-        new Vertex(global_graph_->generateVertexID(), cur_state);
+    GbplannerVertex* new_vertex =
+        new GbplannerVertex(global_graph_->generateVertexID(), cur_state);
     new_vertex->parent = nearest_vertex;
     new_vertex->distance = nearest_vertex->distance + direction_norm;
     nearest_vertex->children.push_back(new_vertex);
@@ -3507,28 +3882,26 @@ std::vector<geometry_msgs::Pose> Rrg::getHomingPath(std::string tgt_frame) {
     if (improveFreePath(ret_path, mod_path, true)) {
       ret_path = mod_path;
       // Re-assign yaw angle after modification.
-      if (planning_params_.yaw_tangent_correction) {
-        bool is_similar = comparePathWithDirectionApprioximately(
-            ret_path, tf::getYaw(ret_path[0].orientation));
-        for (int i = 0; i < (ret_path.size() - 1); ++i) {
-          Eigen::Vector3d vec;
-          if ((!planning_params_.homing_backward) || (is_similar)) {
-            vec << ret_path[i + 1].position.x - ret_path[i].position.x,
-                ret_path[i + 1].position.y - ret_path[i].position.y,
-                ret_path[i + 1].position.z - ret_path[i].position.z;
-          } else if (planning_params_.homing_backward) {
-            vec << ret_path[i].position.x - ret_path[i + 1].position.x,
-                ret_path[i].position.y - ret_path[i + 1].position.y,
-                ret_path[i].position.z - ret_path[i + 1].position.z;
-          }
-          double yaw = std::atan2(vec[1], vec[0]);
-          tf::Quaternion quat;
-          quat.setEuler(0.0, 0.0, yaw);
-          ret_path[i + 1].orientation.x = quat.x();
-          ret_path[i + 1].orientation.y = quat.y();
-          ret_path[i + 1].orientation.z = quat.z();
-          ret_path[i + 1].orientation.w = quat.w();
+      bool is_similar = comparePathWithDirectionApprioximately(
+          ret_path, tf::getYaw(ret_path[0].orientation));
+      for (int i = 0; i < (ret_path.size() - 1); ++i) {
+        Eigen::Vector3d vec;
+        if ((!planning_params_.homing_backward) || (is_similar)) {
+          vec << ret_path[i + 1].position.x - ret_path[i].position.x,
+              ret_path[i + 1].position.y - ret_path[i].position.y,
+              ret_path[i + 1].position.z - ret_path[i].position.z;
+        } else if (planning_params_.homing_backward) {
+          vec << ret_path[i].position.x - ret_path[i + 1].position.x,
+              ret_path[i].position.y - ret_path[i + 1].position.y,
+              ret_path[i].position.z - ret_path[i + 1].position.z;
         }
+        double yaw = std::atan2(vec[1], vec[0]);
+        tf::Quaternion quat;
+        quat.setEuler(0.0, 0.0, yaw);
+        ret_path[i + 1].orientation.x = quat.x();
+        ret_path[i + 1].orientation.y = quat.y();
+        ret_path[i + 1].orientation.z = quat.z();
+        ret_path[i + 1].orientation.w = quat.w();
       }
     }
 
@@ -3569,16 +3942,16 @@ bool Rrg::reconnectPathBlindly(std::vector<geometry_msgs::Pose>& ref_path,
   path_graph.reset(new GraphManager());
 
   StateVec root_state(path_intp[0][0], path_intp[0][1], path_intp[0][2], 0);
-  Vertex* root_vertex = new Vertex(path_graph->generateVertexID(), root_state);
+  GbplannerVertex* root_vertex = new GbplannerVertex(path_graph->generateVertexID(), root_state);
   path_graph->addVertex(root_vertex);
 
   // Add all remaining vertices of the path.
-  std::vector<Vertex*> vertex_list;
+  std::vector<GbplannerVertex*> vertex_list;
   vertex_list.push_back(root_vertex);
-  Vertex* parent_vertex = root_vertex;
+  GbplannerVertex* parent_vertex = root_vertex;
   for (int i = 1; i < path_intp.size(); ++i) {
     StateVec new_state(path_intp[i][0], path_intp[i][1], path_intp[i][2], 0);
-    Vertex* new_vertex = new Vertex(path_graph->generateVertexID(), new_state);
+    GbplannerVertex* new_vertex = new GbplannerVertex(path_graph->generateVertexID(), new_state);
     new_vertex->parent = parent_vertex;
     Eigen::Vector3d dist(new_state[0] - parent_vertex->state[0],
                          new_state[1] - parent_vertex->state[1],
@@ -3696,12 +4069,12 @@ std::vector<geometry_msgs::Pose> Rrg::getBestPath(std::string tgt_frame,
         std::min(time_budget_remaining, current_battery_time_remaining_);
     // homing_path = getHomingPath(tgt_frame);
     // Start searching from current root vertex of spanning local graph.
-    Vertex* root_vertex = local_graph_->getVertex(0);
+    GbplannerVertex* root_vertex = local_graph_->getVertex(0);
     homing_path = searchHomingPath(tgt_frame, root_vertex->state);
     if (!homing_path.empty()) {
       double homing_len = Trajectory::getPathLength(homing_path);
       double time_to_home = homing_len / planning_params_.v_homing_max;
-      ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "Time to home: %f; Time remaining: %f", time_to_home,
+      ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Time to home: %f; Time remaining: %f", time_to_home,
                time_remaining);
 
       const double kTimeDelta = 20;
@@ -3748,7 +4121,7 @@ std::vector<geometry_msgs::Pose> Rrg::getBestPath(std::string tgt_frame,
   std::vector<StateVec> best_path;
   local_graph_->getShortestPath(id, local_graph_rep_, true, best_path);
   Eigen::Vector3d p0(best_path[0][0], best_path[0][1], best_path[0][2]);
-  std::vector<Vertex*> best_path_vertices;
+  std::vector<GbplannerVertex*> best_path_vertices;
   local_graph_->getShortestPath(best_vertex_->id, local_graph_rep_, true,
                                 best_path_vertices);
 
@@ -3767,7 +4140,7 @@ std::vector<geometry_msgs::Pose> Rrg::getBestPath(std::string tgt_frame,
     return ret;
   }
 
-  std::vector<Vertex*> ref_vertices;
+  std::vector<GbplannerVertex*> ref_vertices;
   for (int i = 0; i < best_path.size(); ++i) {
     // Truncate path upto first hanging vertex. is_hanging will always be false
     // for robot type kAerialRobot
@@ -3787,7 +4160,7 @@ std::vector<geometry_msgs::Pose> Rrg::getBestPath(std::string tgt_frame,
     if ((dir_vec.norm() > 0) &&
         (MapManager::VoxelStatus::kFree !=
          map_manager_->getPathStatus(p_start, p_end, robot_box_size_, true))) {
-      ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "Segment [%d] is not clear.", i);
+      ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Segment [%d] is not clear.", i);
     }
 
     tf::Quaternion quat;
@@ -3820,6 +4193,10 @@ std::vector<geometry_msgs::Pose> Rrg::getBestPath(std::string tgt_frame,
   }
 
   // Modify the best path.
+  // ROS_WARN("Before mod:");
+  // for(int i=0; i<ret.size(); ++i) {
+  //   std::cout << ret[i].position.x << " " << ret[i].position.y << " " << ret[i].position.z << ", " << tf::getYaw(ret[i].orientation) << std::endl;
+  // }
   if (planning_params_.path_safety_enhance_enable) {
     ros::Time mod_time;
     START_TIMER(mod_time);
@@ -3833,20 +4210,31 @@ std::vector<geometry_msgs::Pose> Rrg::getBestPath(std::string tgt_frame,
     ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "Compute an aternate path in %f(s)", dmod_time);
     visualization_->visualizeModPath(mod_path);
   }
+  // ROS_WARN("After mod:");
+  // for(int i=0; i<ret.size(); ++i) {
+  //   std::cout << ret[i].position.x << " " << ret[i].position.y << " " << ret[i].position.z << ", " << tf::getYaw(ret[i].orientation) << std::endl;
+  // }
 
   if (!path_added) {
     addRefPathToGraph(global_graph_, ref_vertices);
   }
 
   // Interpolate path
-  const double kInterpolationDistance =
-      planning_params_.path_interpolation_distance;
-  std::vector<geometry_msgs::Pose> interp_path;
-  if (Trajectory::interpolatePath(ret, kInterpolationDistance, interp_path)) {
-    ret = interp_path;
+  if(planning_params_.path_interpolation_distance > 0.0) {
+    const double kInterpolationDistance =
+        planning_params_.path_interpolation_distance;
+    std::vector<geometry_msgs::Pose> interp_path;
+    if (Trajectory::interpolatePath(ret, kInterpolationDistance, interp_path)) {
+      ret = interp_path;
+    }
   }
 
   visualization_->visualizeRefPath(ret);
+
+  // ROS_WARN("Final Path:");
+  // for(int i=0; i<ret.size(); ++i) {
+  //   std::cout << ret[i].position.x << " " << ret[i].position.y << " " << ret[i].position.z << ", " << tf::getYaw(ret[i].orientation) << std::endl;
+  // }
 
   return ret;
 }
@@ -4094,8 +4482,1817 @@ bool Rrg::improveFreePath(const std::vector<geometry_msgs::Pose>& path_orig,
   return mod_success;
 }
 
+void Rrg::generateGridSamples(std::vector<int> &viewpoint_ids) {
+  double xy_spacing = 1.0; // 2.0
+  double z_spacing = 2.0; // 3.2;
+  double thr_dist = 1.5;
+  double target_viewing_dist = 2.5;
+  std::vector<std::pair<Eigen::Vector3d, double>> selected_points;
+  Eigen::Vector3d centroid = Eigen::Vector3d::Zero();
+  Eigen::Vector3d max(-9999, -99999, -9999), min(9999, 9999, 9999);
+  // for(double x = local_space_params_.min_val.x(); x <= local_space_params_.max_val.x(); x+=planning_params_.inspection_xy_spacing) {
+  //   for(double y = local_space_params_.min_val.y(); y <= local_space_params_.max_val.y(); y+=planning_params_.inspection_xy_spacing) {
+  //     for(double z = local_space_params_.min_val.z(); z <= local_space_params_.max_val.z(); z+=planning_params_.inspection_z_spacing) {
+  //       Eigen::Vector3d sampled_point(x,y,z);
+  //       sampled_point += current_state_.head(3);
+  for(double x = inspection_bound_.min_val.x(); x <= inspection_bound_.max_val.x(); x+=planning_params_.inspection_xy_spacing) {
+    for(double y = inspection_bound_.min_val.y(); y <= inspection_bound_.max_val.y(); y+=planning_params_.inspection_xy_spacing) {
+      for(double z = inspection_bound_.min_val.z() + planning_params_.inspection_z_spacing; z <= inspection_bound_.max_val.z() - planning_params_.inspection_z_spacing; z+=planning_params_.inspection_z_spacing) {
+        Eigen::Vector3d sampled_point(x,y,z);
+        // sampled_point += current_state_.head(3);
+        double dist = map_manager_->getPointDistance(sampled_point);
+        ///
+        // StateVec new_state(x,y,z,0.0);
+        // GbplannerVertex* new_v = new GbplannerVertex(local_graph_->generateVertexID(), new_state);
+        // local_graph_->addVertex(new_v);
+        ///
+        if(dist >= planning_params_.inspection_thr_esdf_dist - planning_params_.inspection_xy_spacing && dist <= planning_params_.inspection_thr_esdf_dist + planning_params_.inspection_xy_spacing) {
+        // if(dist >= planning_params_.inspection_thr_esdf_dist && dist <= planning_params_.inspection_thr_esdf_dist + map_manager_->getResolution()) {
+          // if(inspection_bound_.isInsideSpace(sampled_point)) {
+          // }
+          selected_points.push_back(std::make_pair(sampled_point, dist));
+          // centroid += sampled_point;
+          max = max.cwiseMax(sampled_point);
+          min = min.cwiseMin(sampled_point);
+          // StateVec new_state(x,y,z,0.0);
+          // Eigen::Vector3d dir = sampled_point - current_state_.head(3);
+          // dir.z() = 0.0;
+          // sampled_point -= dir.normalized() * (target_viewing_dist - dist);
+          // new_state.head(3) = sampled_point;
+          // if(map_manager_->getBoxStatus(new_state.head(3), robot_box_size_, true) == MapManager::VoxelStatus::kFree) {
+          //   GbplannerVertex* new_v = new GbplannerVertex(local_graph_->generateVertexID(), new_state);
+          //   local_graph_->addVertex(new_v);
+          // }
+        }
+      }
+    }
+  }
+
+  // centroid /= selected_points.size();
+  centroid = (max + min) / 2.0;
+  // ROS_WARN("Centroid: %f, %f, %f", centroid.x(), centroid.y(), centroid.z());
+
+  viewpoint_ids.clear();
+  double edge_len_max_og = planning_params_.edge_length_max;
+  double nearest_range_max_og = planning_params_.nearest_range_max;
+  planning_params_.edge_length_max *= 3.0;
+  planning_params_.nearest_range_max *= 3.0;
+  planning_params_.nearest_range *= 3.0;
+  for(auto sample : selected_points) {
+    StateVec new_state;
+    Eigen::Vector3d dir = sample.first - centroid;
+    dir.z() = 0.0;
+    sample.first -= dir.normalized() * (planning_params_.inspection_target_viewing_range - sample.second);
+    new_state.head(3) = sample.first;
+    new_state(3) = std::atan2(dir.y(), dir.x());
+    bool success = false;
+    if(map_manager_->getBoxStatus(new_state.head(3), robot_box_size_, true) == MapManager::VoxelStatus::kFree) {
+      success = true;
+    }
+    else {
+      Eigen::Vector3d dir_normed = dir.normalized();
+      for(double dr=map_manager_->getResolution(); dr<(planning_params_.inspection_target_viewing_range - sample.second); dr+=map_manager_->getResolution()) {
+        new_state.head(3) += dir_normed * dr;
+        if(map_manager_->getBoxStatus(new_state.head(3), robot_box_size_, true) == MapManager::VoxelStatus::kFree) {
+          success = true;
+          sample.first = new_state.head(3);
+          break;
+        }
+      }
+    }
+    if(success) {
+      if(global_space_params_.isInsideSpace(sample.first)) {
+        // GbplannerVertex* new_v = new GbplannerVertex(-1, new_state);
+        double edge_len_min_og = planning_params_.edge_length_min;
+        planning_params_.edge_length_min = -0.01;
+        GbplannerVertex new_v(-1, new_state);
+        ExpandGraphReport rep;
+        expandGraph(local_graph_, new_v, rep);
+        if(rep.status == ExpandGraphStatus::kSuccess) {
+          viewpoint_ids.push_back(rep.vertex_added->id);
+          if(planning_params_.use_flipped_yaw) {
+            StateVec fliped_state;
+            fliped_state = new_state;
+            fliped_state[3] = M_PI + fliped_state[3];
+            truncateYaw(fliped_state[3]);
+            ExpandGraphReport fliped_rep;
+            GbplannerVertex fliped_v(-1, fliped_state);
+            expandGraph(local_graph_, fliped_v, fliped_rep);
+            if(fliped_rep.status == ExpandGraphStatus::kSuccess) {
+              viewpoint_ids.push_back(fliped_rep.vertex_added->id);
+            }
+          }
+          
+          // GbplannerVertex* new_v = new GbplannerVertex(local_graph_->generateVertexID(), new_state);
+          // local_graph_->addVertex(new_v);
+        }
+        planning_params_.edge_length_min = edge_len_min_og;
+      }
+    }
+  }
+  planning_params_.edge_length_max = edge_len_max_og;
+  planning_params_.nearest_range_max = nearest_range_max_og;
+  planning_params_.nearest_range = nearest_range_max_og;
+
+  // ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "Number of ")
+  // std::cout << "Number of vertices: " << local_graph_->getNumVertices();
+}
+
+std::vector<int> Rrg::getLongsInspectionViewpoints()
+{
+  // std::vector<geometry_msgs::Pose> inspection_path;
+
+  // std::vector<geometry_msgs::Pose> long_viewpoints;
+  // std::vector<StateVec> long_viewpoints_vec;
+
+  // Eigen::Vector3d min_bound(999, 999, 999), max_bound(-999, -999, -999);
+
+  // for(Longitudinal l : current_compartment_longs_)
+  // {
+  //   StateVec v_ep1, v_ep2;
+  //   Eigen::Vector3d v_r = current_state_.head(3) - l.center;
+  //   double yaw_dir = std::atan2(l.direction.y(), l.direction.x());
+  //   Eigen::Vector3d insp_pt_1, insp_pt_2;
+  //   if((v_r.cross(l.direction)).z() >= 0)
+  //   {
+  //     v_ep1(3) = yaw_dir + M_PI/2.0;
+  //     v_ep2(3) = yaw_dir + M_PI/2.0;
+  //   }
+  //   else
+  //   {
+  //     v_ep1(3) = yaw_dir - M_PI/2.0;
+  //     v_ep2(3) = yaw_dir - M_PI/2.0;
+  //   }
+
+  //   insp_pt_1 = l.end_point1 + l.direction * planning_params_.inspection_pt_dist;
+  //   insp_pt_2 = l.end_point2 - l.direction * planning_params_.inspection_pt_dist;
+
+  //   v_ep1.head(3) = l.end_point1 + (l.direction - Eigen::Vector3d(std::cos(v_ep1(3)), std::sin(v_ep1(3)), 0.0)) 
+  //                   * planning_params_.inspection_pt_dist;
+  //   v_ep2.head(3) = l.end_point2 - (l.direction + Eigen::Vector3d(std::cos(v_ep2(3)), std::sin(v_ep2(3)), 0.0)) 
+  //                   * planning_params_.inspection_pt_dist;
+
+  //   min_bound = min_bound.cwiseMin(v_ep1.head(3));
+  //   min_bound = min_bound.cwiseMin(v_ep2.head(3));
+  //   max_bound = max_bound.cwiseMax(v_ep1.head(3));
+  //   max_bound = max_bound.cwiseMax(v_ep2.head(3));
+    
+  //   geometry_msgs::Pose ep1_pose, ep2_pose;
+
+  //   bool ip1_seen = true;
+  //   bool ip2_seen = true;
+  //   for(double dx = -0.2; dx <= 0.2; dx+=0.2)
+  //   {
+  //     if(!map_manager_->isPointSeen(insp_pt_1 + dx*l.direction))
+  //     {
+  //       ip1_seen = false;
+  //     }
+  //     if(!map_manager_->isPointSeen(insp_pt_2 + dx*l.direction))
+  //     {
+  //       ip2_seen = false;
+  //     }
+  //   }
+    
+  //   if(!ip1_seen)
+  //   {
+  //     long_viewpoints_vec.push_back(v_ep1);
+  //     convert(v_ep1, ep1_pose);
+  //     long_viewpoints.push_back(ep1_pose);
+  //   }
+  //   if(!ip2_seen)
+  //   {
+  //     long_viewpoints_vec.push_back(v_ep2);
+  //     convert(v_ep2, ep2_pose);
+  //     long_viewpoints.push_back(ep2_pose);
+  //   }
+    
+  // }
+
+  // // visualization_->visualizeViewpoints(long_viewpoints);
+
+  // min_bound = min_bound - 1.5*Eigen::Vector3d::Ones();
+  // max_bound = max_bound + 1.5*Eigen::Vector3d::Ones();
+  
+  // // BoundedSpaceParams inspection_bound, og_bound;
+  // // inspection_bound.setBound(min_bound, max_bound);
+  // // og_bound = global_space_params_;
+  // // setExplorationAndInspectionBounds(inspection_bound, inspection_bound);
+
+  // bool og_param = planning_params_.use_current_state;
+  // planning_params_.use_current_state = true;
+  // int local_planner_graph_vertices_og = planning_params_.num_vertices_max;
+  // planning_params_.num_vertices_max = planning_params_.inspection_graph_vertices;
+  // planning_num_vertices_max_ = planning_params_.inspection_graph_vertices;
+  // reset();
+  // planning_params_.use_current_state = og_param;
+
+  // Timer graph_timer;
+  
+  // GraphStatus status = buildGraph();
+  // // if(status != GraphStatus::OK)
+  // // {
+  // //   std::vector<geometry_msgs::Pose> empty_path;
+  // //   return empty_path;
+  // // }
+  // ROS_WARN_COND(global_verbosity >= Verbosity::INFO, "Num of vertices in conneting graph: %d", local_graph_->getNumVertices());
+
+  // planning_params_.num_vertices_max = local_planner_graph_vertices_og;
+  // planning_num_vertices_max_ = planning_params_.num_vertices_max;
+
+  // // Add viewpoints
+  // std::vector<int> viewpoint_ids;
+  // for(int i=0; i<long_viewpoints.size(); ++i)
+  // {
+  //   MapManager::VoxelStatus vs = map_manager_->getBoxStatus(long_viewpoints_vec[i].head(3), robot_box_size_, true);
+  //   // ROS_INFO("Viewpoint status: %d", vs);
+  //   GbplannerVertex new_vertex(-1, long_viewpoints_vec[i]);
+  //   ExpandGraphReport rep;
+  //   expandGraph(local_graph_, new_vertex, rep, true);
+  //   if(rep.status == ExpandGraphStatus::kSuccess)
+  //   {
+  //     viewpoint_ids.push_back(rep.vertex_added->id);
+  //   }
+  // }
+
+  // ROS_WARN_COND(global_verbosity >= Verbosity::INFO, "Num of vertices in FULL graph: %d", local_graph_->getNumVertices());
+
+  // visualization_->visualizeGraph(local_graph_);
+
+  // return viewpoint_ids;
+
+  return getLongsInspectionViewpoints(current_compartment_longs_);
+}
+
+
+std::vector<int> Rrg::getLongsInspectionViewpoints(std::vector<Longitudinal> longs, bool all)
+{
+  std::vector<geometry_msgs::Pose> inspection_path;
+
+  std::vector<geometry_msgs::Pose> long_viewpoints;
+  std::vector<StateVec> long_viewpoints_vec;
+
+  // Eigen::Vector3d min_bound(999, 999, 999), max_bound(-999, -999, -999);
+
+  // for(Longitudinal l : longs)
+  // {
+  //   StateVec v_ep1, v_ep2;
+  //   Eigen::Vector3d v_r = current_state_.head(3) - l.center;
+  //   double yaw_dir = std::atan2(l.direction.y(), l.direction.x());
+  //   Eigen::Vector3d insp_pt_1, insp_pt_2;
+  //   if((v_r.cross(l.direction)).z() >= 0)
+  //   {
+  //     v_ep1(3) = yaw_dir + M_PI/2.0;
+  //     v_ep2(3) = yaw_dir + M_PI/2.0;
+  //   }
+  //   else
+  //   {
+  //     v_ep1(3) = yaw_dir - M_PI/2.0;
+  //     v_ep2(3) = yaw_dir - M_PI/2.0;
+  //   }
+
+  //   insp_pt_1 = l.end_point1 + l.direction * planning_params_.inspection_pt_dist;
+  //   insp_pt_2 = l.end_point2 - l.direction * planning_params_.inspection_pt_dist;
+
+  //   // v_ep1.head(3) = l.end_point1 + (l.direction - Eigen::Vector3d(std::cos(v_ep1(3)), std::sin(v_ep1(3)), 0.0)) 
+  //   //                 * planning_params_.inspection_pt_dist;
+  //   // v_ep2.head(3) = l.end_point2 - (l.direction + Eigen::Vector3d(std::cos(v_ep2(3)), std::sin(v_ep2(3)), 0.0)) 
+  //   //                 * planning_params_.inspection_pt_dist;
+
+  //   v_ep1.head(3) = insp_pt_1 - Eigen::Vector3d(std::cos(v_ep1(3)), std::sin(v_ep1(3)), 0.0) * planning_params_.inspection_target_viewing_range;
+  //   v_ep2.head(3) = insp_pt_2 - Eigen::Vector3d(std::cos(v_ep2(3)), std::sin(v_ep2(3)), 0.0) * planning_params_.inspection_target_viewing_range;
+  //   // min_bound = min_bound.cwiseMin(v_ep1.head(3));
+  //   // min_bound = min_bound.cwiseMin(v_ep2.head(3));
+  //   // max_bound = max_bound.cwiseMax(v_ep1.head(3));
+  //   // max_bound = max_bound.cwiseMax(v_ep2.head(3));
+    
+  //   geometry_msgs::Pose ep1_pose, ep2_pose;
+    
+  //   bool ip1_seen = true;
+  //   bool ip2_seen = true;
+  //   if(!all)
+  //   {
+  //     for(double dx = -0.4; dx <= 0.2; dx+=0.4)
+  //     {
+  //       if(!map_manager_->isPointSeen(insp_pt_1 + dx*l.direction))
+  //       {
+  //         ip1_seen = false;
+  //       }
+  //       if(!map_manager_->isPointSeen(insp_pt_2 + dx*l.direction))
+  //       {
+  //         ip2_seen = false;
+  //       }
+  //     }
+  //   }
+    
+  //   if(!ip1_seen)
+  //   {
+  //     long_viewpoints_vec.push_back(v_ep1);
+  //     convert(v_ep1, ep1_pose);
+  //     long_viewpoints.push_back(ep1_pose);
+  //   }
+  //   if(!ip2_seen)
+  //   {
+  //     long_viewpoints_vec.push_back(v_ep2);
+  //     convert(v_ep2, ep2_pose);
+  //     long_viewpoints.push_back(ep2_pose);
+  //   }
+    
+  // }
+
+  std::cout << "Calculating viewpoints for " << longs.size() << " longs" << std::endl;
+  long_viewpoints_vec = getLongsInspectionViewpointsOnly(longs, all);
+  std::cout << "Num viewpoints: " << long_viewpoints_vec.size() << std::endl;
+  for(auto vp : long_viewpoints_vec)
+  {
+    geometry_msgs::Pose vp_pose;
+    convert(vp, vp_pose);
+    long_viewpoints.push_back(vp_pose);
+  }
+  visualization_->visualizeViewpoints(long_viewpoints);
+
+  // visualization_->visualizeViewpoints(long_viewpoints);
+
+  // min_bound = min_bound - 1.5*Eigen::Vector3d::Ones();
+  // max_bound = max_bound + 1.5*Eigen::Vector3d::Ones();
+  
+  // BoundedSpaceParams inspection_bound, og_bound;
+  // inspection_bound.setBound(min_bound, max_bound);
+  // og_bound = global_space_params_;
+  // setExplorationAndInspectionBounds(inspection_bound, inspection_bound);
+
+  bool og_param = planning_params_.use_current_state;
+  // planning_params_.use_current_state = true;
+  int local_planner_graph_vertices_og = planning_params_.num_vertices_max;
+  planning_params_.num_vertices_max = planning_params_.inspection_graph_vertices;
+  planning_num_vertices_max_ = planning_params_.inspection_graph_vertices;
+  reset();
+  planning_params_.use_current_state = og_param;
+
+  Timer graph_timer;
+  
+  if(planning_params_.unknown_as_free)
+    unknown_as_free_ = true;
+  GraphStatus status = buildGraph();
+
+  std::cout << "Graph timer " << graph_timer.endTimer() << std::endl;
+  // if(status != GraphStatus::OK)
+  // {
+  //   std::vector<geometry_msgs::Pose> empty_path;
+  //   return empty_path;
+  // }
+  ROS_WARN_COND(global_verbosity >= Verbosity::INFO, "Num of vertices in conneting graph: %d", local_graph_->getNumVertices());
+
+  planning_params_.num_vertices_max = local_planner_graph_vertices_og;
+  planning_num_vertices_max_ = planning_params_.num_vertices_max;
+
+  // Add viewpoints
+  std::vector<int> viewpoint_ids;
+  for(int i=0; i<long_viewpoints.size(); ++i)
+  {
+    MapManager::VoxelStatus vs = map_manager_->getBoxStatus(long_viewpoints_vec[i].head(3), robot_box_size_, true);
+    // ROS_INFO("Viewpoint status: %d", vs);
+    GbplannerVertex new_vertex(-1, long_viewpoints_vec[i]);
+    ExpandGraphReport rep;
+    expandGraph(local_graph_, new_vertex, rep, true, true);
+    if(rep.status == ExpandGraphStatus::kSuccess)
+    {
+      viewpoint_ids.push_back(rep.vertex_added->id);
+    }
+  }
+
+  unknown_as_free_ = false;
+
+  std::cout << "Num viewpoints added to graph: " << viewpoint_ids.size() << std::endl;
+
+  ROS_WARN_COND(global_verbosity >= Verbosity::INFO, "Num of vertices in FULL graph: %d", local_graph_->getNumVertices());
+
+  visualization_->visualizeGraph(local_graph_);
+
+  return viewpoint_ids;
+}
+
+bool Rrg::isSeen(StateVec viewpoint, Longitudinal l)
+{
+  Eigen::Vector3d insp_pt;
+  if((viewpoint.head(3) - l.end_point1).norm() < (viewpoint.head(3) - l.end_point2).norm())
+  {
+    insp_pt = l.end_point1 + l.direction * planning_params_.inspection_pt_dist;
+  }
+  else
+  {
+    insp_pt = l.end_point2 - l.direction * planning_params_.inspection_pt_dist;
+  }
+
+  bool ip_seen = true;
+  for(double dx = -semantic_annotation_half_width_; dx <= semantic_annotation_half_width_; dx+=map_manager_->getResolution())
+  {
+    if(!map_manager_->isPointSeen(insp_pt + dx*l.direction))
+    {
+      ip_seen = false;
+    }
+  }
+
+  return ip_seen;
+}
+
+std::vector<StateVec> Rrg::getLongsInspectionViewpointsOnly(std::vector<Longitudinal> longs, bool all)
+{
+  std::vector<geometry_msgs::Pose> inspection_path;
+
+  std::vector<geometry_msgs::Pose> long_viewpoints;
+  std::vector<StateVec> long_viewpoints_vec;
+
+  Eigen::Vector3d min_bound(999, 999, 999), max_bound(-999, -999, -999);
+
+  for(Longitudinal l : longs)
+  {
+    StateVec v_ep1, v_ep2, v_c;
+    Eigen::Vector3d v_r = current_state_.head(3) - l.center;
+    double yaw_dir = std::atan2(l.direction.y(), l.direction.x());
+    Eigen::Vector3d insp_pt_1, insp_pt_2;
+    // double ang_offset = 15.0 * M_PI / 180.0;
+    double ang_offset = config_->prediction_params.viewpoint_ang_offset;
+    if((v_r.cross(l.direction)).z() >= 0)
+    {
+      v_c(3) = yaw_dir + M_PI/2.0;
+      v_ep1(3) = yaw_dir + (M_PI/2.0 - ang_offset);
+      v_ep2(3) = yaw_dir + (M_PI/2.0 + ang_offset);
+    }
+    else
+    {
+      v_c(3) = yaw_dir - M_PI/2.0;
+      v_ep1(3) = yaw_dir - (M_PI/2.0 - ang_offset);
+      v_ep2(3) = yaw_dir - (M_PI/2.0 + ang_offset);
+    }
+
+    truncateAngle(v_c(3));
+    truncateAngle(v_ep1(3));
+    truncateAngle(v_ep2(3));
+
+    insp_pt_1 = l.end_point1 + l.direction * planning_params_.inspection_pt_dist;
+    insp_pt_2 = l.end_point2 - l.direction * planning_params_.inspection_pt_dist;
+
+    v_ep1.head(3) = insp_pt_1 - Eigen::Vector3d(std::cos(v_ep1(3)), std::sin(v_ep1(3)), 0.0) * planning_params_.inspection_target_viewing_range;
+    v_ep2.head(3) = insp_pt_2 - Eigen::Vector3d(std::cos(v_ep2(3)), std::sin(v_ep2(3)), 0.0) * planning_params_.inspection_target_viewing_range;
+    v_c.head(3) = l.center - Eigen::Vector3d(std::cos(v_c(3)), std::sin(v_c(3)), 0.0) * planning_params_.inspection_target_viewing_range;
+    
+    geometry_msgs::Pose ep1_pose, ep2_pose, c_pose;
+    if(!all)
+    {
+      bool ip1_seen = true;
+      bool ip2_seen = true;
+      bool c_seen = true;
+      // for(double dx = -2.25; dx <= 2.25; dx+=map_manager_->getResolution())
+      for(double dx = -semantic_annotation_half_width_; dx <= semantic_annotation_half_width_; dx+=map_manager_->getResolution())
+      {
+        if(!map_manager_->isPointSeen(l.center + dx*l.direction))
+        {
+          c_seen = false;
+        }
+        if(!map_manager_->isPointSeen(insp_pt_1 + dx*l.direction))
+        {
+          ip1_seen = false;
+        }
+        if(!map_manager_->isPointSeen(insp_pt_2 + dx*l.direction))
+        {
+          ip2_seen = false;
+        }
+      }
+      
+      if(!ip1_seen)
+      {
+        long_viewpoints_vec.push_back(v_ep1);
+        convert(v_ep1, ep1_pose);
+        long_viewpoints.push_back(ep1_pose);
+      }
+      if(!ip2_seen)
+      {
+        long_viewpoints_vec.push_back(v_ep2);
+        convert(v_ep2, ep2_pose);
+        long_viewpoints.push_back(ep2_pose);
+      }
+      if(!c_seen && config_->prediction_params.view_center)
+      {
+        long_viewpoints_vec.push_back(v_c);
+        convert(v_c, c_pose);
+        long_viewpoints.push_back(c_pose);
+      }
+    }
+    else
+    {
+      // MapManager::VoxelStatus vs1 = map_manager_->getBoxStatus(v_ep1.head(3), robot_box_size_, true);
+      // if(vs1 == MapManager::VoxelStatus::kFree)
+      // {
+      //   long_viewpoints_vec.push_back(v_ep1);
+      //   convert(v_ep1, ep1_pose);
+      //   long_viewpoints.push_back(ep1_pose);
+      // }
+      // MapManager::VoxelStatus vs2 = map_manager_->getBoxStatus(v_ep2.head(3), robot_box_size_, true);
+      // if(vs2 == MapManager::VoxelStatus::kFree)
+      // {
+      //   long_viewpoints_vec.push_back(v_ep2);
+      //   convert(v_ep2, ep2_pose);
+      //   long_viewpoints.push_back(ep2_pose);
+      // }
+
+      long_viewpoints_vec.push_back(v_ep1);
+      convert(v_ep1, ep1_pose);
+      long_viewpoints.push_back(ep1_pose);
+
+      long_viewpoints_vec.push_back(v_ep2);
+      convert(v_ep2, ep2_pose);
+      long_viewpoints.push_back(ep2_pose);
+
+      if(config_->prediction_params.view_center)
+      {
+        long_viewpoints_vec.push_back(v_c);
+        convert(v_c, c_pose);
+        long_viewpoints.push_back(c_pose);
+      }
+
+    }
+    
+  }
+  
+  return long_viewpoints_vec;
+}
+
+
+void Rrg::insertLongsInspectionViewpoints(std::vector<Longitudinal> longs)
+{
+  std::vector<geometry_msgs::Pose> inspection_path;
+
+  std::vector<geometry_msgs::Pose> long_viewpoints;
+  std::vector<StateVec> long_viewpoints_vec;
+
+  // Eigen::Vector3d min_bound(999, 999, 999), max_bound(-999, -999, -999);
+
+  // for(Longitudinal l : longs)
+  // {
+  //   StateVec v_ep1, v_ep2;
+  //   Eigen::Vector3d v_r = current_state_.head(3) - l.center;
+  //   double yaw_dir = std::atan2(l.direction.y(), l.direction.x());
+  //   Eigen::Vector3d insp_pt_1, insp_pt_2;
+  //   if((v_r.cross(l.direction)).z() >= 0)
+  //   {
+  //     v_ep1(3) = yaw_dir + M_PI/2.0;
+  //     v_ep2(3) = yaw_dir + M_PI/2.0;
+  //   }
+  //   else
+  //   {
+  //     v_ep1(3) = yaw_dir - M_PI/2.0;
+  //     v_ep2(3) = yaw_dir - M_PI/2.0;
+  //   }
+
+  //   insp_pt_1 = l.end_point1 + l.direction * planning_params_.inspection_pt_dist;
+  //   insp_pt_2 = l.end_point2 - l.direction * planning_params_.inspection_pt_dist;
+
+  //   v_ep1.head(3) = l.end_point1 + (l.direction - Eigen::Vector3d(std::cos(v_ep1(3)), std::sin(v_ep1(3)), 0.0)) 
+  //                   * planning_params_.inspection_pt_dist;
+  //   v_ep2.head(3) = l.end_point2 - (l.direction + Eigen::Vector3d(std::cos(v_ep2(3)), std::sin(v_ep2(3)), 0.0)) 
+  //                   * planning_params_.inspection_pt_dist;
+
+  //   // min_bound = min_bound.cwiseMin(v_ep1.head(3));
+  //   // min_bound = min_bound.cwiseMin(v_ep2.head(3));
+  //   // max_bound = max_bound.cwiseMax(v_ep1.head(3));
+  //   // max_bound = max_bound.cwiseMax(v_ep2.head(3));
+    
+  //   geometry_msgs::Pose ep1_pose, ep2_pose;
+    
+  //   bool ip1_seen = true;
+  //   bool ip2_seen = true;
+  //   for(double dx = -0.2; dx <= 0.2; dx+=0.2)
+  //   {
+  //     if(!map_manager_->isPointSeen(insp_pt_1 + dx*l.direction))
+  //     {
+  //       ip1_seen = false;
+  //     }
+  //     if(!map_manager_->isPointSeen(insp_pt_2 + dx*l.direction))
+  //     {
+  //       ip2_seen = false;
+  //     }
+  //   }
+    
+  //   if(!ip1_seen)
+  //   {
+  //     long_viewpoints_vec.push_back(v_ep1);
+  //     convert(v_ep1, ep1_pose);
+  //     long_viewpoints.push_back(ep1_pose);
+  //   }
+  //   if(!ip2_seen)
+  //   {
+  //     long_viewpoints_vec.push_back(v_ep2);
+  //     convert(v_ep2, ep2_pose);
+  //     long_viewpoints.push_back(ep2_pose);
+  //   }
+    
+  // }
+
+  long_viewpoints_vec = getLongsInspectionViewpointsOnly(longs, false);
+  for(auto v : long_viewpoints_vec)
+  {
+    geometry_msgs::Pose vp_pose;
+    convert(v, vp_pose);
+    long_viewpoints.push_back(vp_pose);
+  }
+
+  // visualization_->visualizeViewpoints(long_viewpoints);
+
+  // min_bound = min_bound - 1.5*Eigen::Vector3d::Ones();
+  // max_bound = max_bound + 1.5*Eigen::Vector3d::Ones();
+  
+  // BoundedSpaceParams inspection_bound, og_bound;
+  // inspection_bound.setBound(min_bound, max_bound);
+  // og_bound = global_space_params_;
+  // setExplorationAndInspectionBounds(inspection_bound, inspection_bound);
+
+  // bool og_param = planning_params_.use_current_state;
+  // planning_params_.use_current_state = true;
+  // int local_planner_graph_vertices_og = planning_params_.num_vertices_max;
+  // planning_params_.num_vertices_max = planning_params_.inspection_graph_vertices;
+  // planning_num_vertices_max_ = planning_params_.inspection_graph_vertices;
+  // reset();
+  // planning_params_.use_current_state = og_param;
+
+  Timer graph_timer;
+  
+  // GraphStatus status = buildGraph();
+  // if(status != GraphStatus::OK)
+  // {
+  //   std::vector<geometry_msgs::Pose> empty_path;
+  //   return empty_path;
+  // }
+  ROS_WARN_COND(global_verbosity >= Verbosity::INFO, "Num of vertices in conneting graph: %d", local_graph_->getNumVertices());
+
+  // planning_params_.num_vertices_max = local_planner_graph_vertices_og;
+  // planning_num_vertices_max_ = planning_params_.num_vertices_max;
+
+  // Add viewpoints
+  std::vector<int> viewpoint_ids;
+  for(int i=0; i<long_viewpoints.size(); ++i)
+  {
+    MapManager::VoxelStatus vs = map_manager_->getBoxStatus(long_viewpoints_vec[i].head(3), robot_box_size_, true);
+    // ROS_INFO("Viewpoint status: %d", vs);
+    GbplannerVertex new_vertex(-1, long_viewpoints_vec[i]);
+    ExpandGraphReport rep;
+    expandGraph(local_graph_, new_vertex, rep, true);
+    if(rep.status == ExpandGraphStatus::kSuccess)
+    {
+      viewpoint_ids.push_back(rep.vertex_added->id);
+    }
+  }
+
+  ROS_WARN_COND(global_verbosity >= Verbosity::INFO, "Num of vertices in FULL graph: %d", local_graph_->getNumVertices());
+
+  visualization_->visualizeGraph(local_graph_);
+}
+
+std::vector<StateVec> Rrg::getBlindTSPOrder(std::vector<StateVec> viewpoints)
+{
+  std::vector<int> temp_cost_mat_row(viewpoints.size(), 9999999);
+	std::vector<std::vector<int>> cost_matrix(viewpoints.size(), temp_cost_mat_row);
+	for (int i = 0; i < viewpoints.size(); ++i)
+	{
+		for (int j = 0; j < viewpoints.size(); ++j)
+		{
+			if (i == j || j == 0)  // Same vertex or connecting to current state
+			{
+				cost_matrix[i][j] = 0;
+			}
+			else
+			{
+        if(planning_params_.use_flipped_yaw) {
+          double d_yaw = viewpoints[i][3] - viewpoints[j][3];
+          truncateYaw(d_yaw);
+          cost_matrix[i][j] = std::max((viewpoints[i].head(3) - viewpoints[j].head(3)).norm()/planning_params_.v_max, std::abs(d_yaw) / planning_params_.yaw_rate_max);
+        }
+        else {
+          cost_matrix[i][j] = (viewpoints[i].head(3) - viewpoints[j].head(3)).norm();
+        }
+			}
+		}
+	}
+
+  std::vector<int> vp_ids;
+  for(int i=0; i<viewpoints.size(); ++i) vp_ids.push_back(i);
+
+  std::vector<int> tsp_order = doTSP(vp_ids, cost_matrix);
+  std::vector<int> reordered_tsp_sol;
+  if(tsp_order[0] == 0) {
+    reordered_tsp_sol = tsp_order;
+  }
+  else if(tsp_order.back() == 0) {
+    reordered_tsp_sol.push_back(0);
+    reordered_tsp_sol.insert(reordered_tsp_sol.begin()+1, tsp_order.begin(), tsp_order.end()-1);
+  }
+  else {
+    auto it = std::find(tsp_order.begin(), tsp_order.end(), 0);
+    if(it == tsp_order.end()) {
+      ROS_WARN_COND(global_verbosity >= Verbosity::ERROR, "Root vertex not in TSP order");
+    }
+    int root_ind = it - tsp_order.begin();
+    
+    reordered_tsp_sol.push_back(0);
+    reordered_tsp_sol.insert(reordered_tsp_sol.begin()+reordered_tsp_sol.size(), it+1, tsp_order.end());
+    reordered_tsp_sol.insert(reordered_tsp_sol.begin()+reordered_tsp_sol.size(), tsp_order.begin(), it);
+  }
+  tsp_order = reordered_tsp_sol;
+  if(tsp_order.size() >= 3)
+  {
+    double d_yaw_f = local_graph_->getVertex(0)->state[3] - local_graph_->getVertex(tsp_order[1])->state[3];
+    truncateAngle(d_yaw_f);
+    double d_yaw_b = local_graph_->getVertex(0)->state[3] - local_graph_->getVertex(tsp_order.back())->state[3];
+    truncateAngle(d_yaw_b);
+    double cf, cb;
+    {
+      double t_trans = (current_state_.head(3) - viewpoints[tsp_order[0]].head(3)).norm()/planning_params_.v_max;
+      double t_rot = std::abs(d_yaw_f) / planning_params_.yaw_rate_max;
+      if(t_trans > t_rot)
+      {
+        cf = t_trans;
+      }
+      else
+      {
+        cf = t_rot + t_trans;
+      }
+    }
+    {
+      double t_trans = (current_state_.head(3) - viewpoints[tsp_order.back()].head(3)).norm()/planning_params_.v_max;
+      double t_rot = std::abs(d_yaw_b) / planning_params_.yaw_rate_max;
+      if(t_trans > t_rot)
+      {
+        cb = t_trans;
+      }
+      else
+      {
+        cb = t_rot + t_trans;
+      }
+    }
+    // std::cout << "f: " << local_graph_->getVertex(tsp_order[1])->state.transpose() << "cf: " << cf 
+    //               << " | b: " << local_graph_->getVertex(tsp_order.back())->state.transpose() << " cb: " << cb << std::endl;
+    // double cf = std::max((current_state_.head(3) - viewpoints[tsp_order[0]].head(3)).norm() / planning_params_.v_max,
+    //                       std::abs(d_yaw_f) / planning_params_.yaw_rate_max);
+    // double cb = std::max((current_state_.head(3) - viewpoints[tsp_order.back()].head(3)).norm() / planning_params_.v_max,
+    //                       std::abs(d_yaw_b) / planning_params_.yaw_rate_max);
+    if(cf > cb)
+    {
+      reordered_tsp_sol.clear();
+      reordered_tsp_sol.insert(reordered_tsp_sol.begin(), tsp_order.begin()+1, tsp_order.begin()+tsp_order.size());
+      std::reverse(reordered_tsp_sol.begin(), reordered_tsp_sol.end());
+
+      reordered_tsp_sol.insert(reordered_tsp_sol.begin(), tsp_order[0]);
+      tsp_order = reordered_tsp_sol;
+    }
+  }
+
+  std::vector<StateVec> ordered_viewpoints;
+  for(int i=0; i<tsp_order.size(); ++i)
+  {
+    ordered_viewpoints.push_back(viewpoints[tsp_order[i]]);
+  }
+
+  return ordered_viewpoints;
+}
+
+std::vector<StateVec> Rrg::getBlindInspectionOrder(std::vector<Longitudinal> longs)
+{
+  std::vector<StateVec> viewpoints = getLongsInspectionViewpointsOnly(longs, true);
+  viewpoints.insert(viewpoints.begin(), current_state_);
+
+  return getBlindTSPOrder(viewpoints);
+}
+
+
+std::vector<geometry_msgs::Pose> Rrg::getInspectionPath(InspectionStatus &status) {
+  auto t1 = std::chrono::high_resolution_clock::now();
+  auto t2 = t1;
+
+  std::vector<int> viewpoint_ids;
+  Timer gain_timer;
+  std::set<size_t> cumulative_unseen_voxels;
+  std::vector<std::pair<int, std::set<std::size_t>>> remaining_vertices;
+  std::vector<int> all_vertex_ids;
+  std::vector<int> selected_vertex_ids;
+  std::map<int, ShortestPathsReport> path_rep_map;
+  std::vector<geometry_msgs::Pose> ret_path;
+  Timer T1;
+
+  if(planning_params_.use_gvi)
+  {
+    ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Inspection bounds:");
+    if(global_verbosity >= Verbosity::DEBUG) {
+      std::cout << "Min val: " << inspection_bound_.min_val.transpose() << std::endl;
+      std::cout << "Max val: " << inspection_bound_.max_val.transpose() << std::endl;
+    }
+
+    // inspection_bound_.max_val = Eigen::Vector3d(1.0, 1.5, 5.0);
+    // inspection_bound_.min_val = Eigen::Vector3d(-3.0, -2.5, 0.0);
+
+    bool og_param = planning_params_.use_current_state;
+    planning_params_.use_current_state = true;
+    int local_planner_graph_vertices_og = planning_params_.num_vertices_max;
+    planning_params_.num_vertices_max = planning_params_.inspection_graph_vertices;
+    planning_num_vertices_max_ = planning_params_.inspection_graph_vertices;
+    reset();
+    planning_params_.use_current_state = og_param;
+
+    Timer graph_timer;
+    
+    GraphStatus status = buildGraph();
+    if(status != GraphStatus::OK)
+    {
+      std::vector<geometry_msgs::Pose> empty_path;
+      return empty_path;
+    }
+    ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Num of vertices in conneting graph: %d", local_graph_->getNumVertices());
+    
+    
+    generateGridSamples(viewpoint_ids);  
+    ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Total Num of vertices graph: %d", local_graph_->getNumVertices());
+
+    ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Number of Viewpoints: %d", viewpoint_ids.size());
+    ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "[Inpsection]: Graph building: %f", graph_timer.endTimer());
+
+    planning_params_.num_vertices_max = local_planner_graph_vertices_og;
+    planning_num_vertices_max_ = planning_params_.num_vertices_max;
+
+    local_graph_->findShortestPaths(local_graph_rep_);
+    add_frontiers_to_global_graph_ = true;
+    
+    // Compute gain
+    
+
+    // Eigen::Vector3d centroid = Eigen::Vector3d::Zero();
+    // Eigen::Vector3d max(-9999, -99999, -9999), min(9999, 9999, 9999);
+    // for(int i : viewpoint_ids) {
+    //   GbplannerVertex* v = local_graph_->getVertex(i);
+    //   max = max.cwiseMax(v->state.head(3));
+    //   min = min.cwiseMin(v->state.head(3));
+    // }
+    // centroid = (max + min) / 2.0;
+    Eigen::Vector3d centroid = (inspection_bound_.max_val + inspection_bound_.min_val) / 2.0;
+    ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Centroid: %f, %f, %f", centroid.x(), centroid.y(), centroid.z());
+
+    // for(int i=0; i<viewpoint_ids.size(); ++i) {
+    for(int i : viewpoint_ids) {
+      // all_vertex_ids.push_back(i);
+      GbplannerVertex* v = local_graph_->getVertex(i);
+      // if(map_manager_->getVoxelDistance(v->state.head(3)) <= 3.0) {
+      if(true) {
+        int best_gain = 0;
+        double best_yaw = 0.0;
+        VolumetricGain best_vol_gain;
+        
+        StateVec s_og = v->state;
+
+        // Eigen::Vector3d dir = v->state.head(3) - centroid;
+
+        computeInspectionGainRayModel(v);
+
+        remaining_vertices.push_back(std::make_pair(i, v->vol_gain.unseen_voxel_hash_keys));
+        // ROS_INFO("GbplannerVertex: %d, voxles seen: %d", v->id, v->vol_gain.unseen_voxel_hash_keys.size());
+        cumulative_unseen_voxels.merge(v->vol_gain.unseen_voxel_hash_keys);
+      }
+    }
+    ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "[Inpsection]: Gain calculation: %f", gain_timer.endTimer());
+
+    visualization_->visualizeGraph(local_graph_);
+    // visualization_->visualizeGraphVertices(local_graph_, all_vertex_ids);
+
+    // std::vector<geometry_msgs::Pose> empty_path;
+    // return empty_path;
+
+    Timer sorting_timer;
+    int min_coverage = (int)(planning_params_.min_coverage_percentage * cumulative_unseen_voxels.size());
+    int current_coverage = 0;  // Number of unseen voxels seen by all vertices selected so far
+    std::vector<std::pair<int, std::set<std::size_t>>> selected_vertices;
+    std::set<std::size_t> current_visibility;
+    while(current_coverage <= min_coverage && !remaining_vertices.empty()) {
+      std::sort(remaining_vertices.begin(), remaining_vertices.end(),
+              [](const std::pair<int, std::set<std::size_t>> &v1, const std::pair<int, std::set<std::size_t>> &v2)
+              {
+                return v1.second.size() > v2.second.size();
+              });
+
+      // ROS_INFO("Best order: ");
+      // for(auto p : remaining_vertices) {
+      //   std::cout << p.first << " ";
+      // }
+      // std::cout << std::endl;
+      // Selecting best vertex for now
+      auto vert_selected = remaining_vertices[0];
+      remaining_vertices.erase(remaining_vertices.begin());
+      std::set<std::size_t> vert_visibility = vert_selected.second;
+      current_visibility.merge(vert_visibility);
+      selected_vertices.push_back(vert_selected);
+      current_coverage = current_visibility.size();
+
+      std::set<std::size_t> vert_sel_visibility = vert_selected.second;
+      for (int i = 0; i < remaining_vertices.size(); ++i)
+      {
+        // std::set<std::size_t> vert_sel_visibility = full_vertices;
+        std::vector<std::size_t> remaining_visibility;
+        // logger_->debug("VP sel visibility: ");
+        // for(auto fvr : vert_sel_visibility)
+        // {
+        // 	std::cout << fvr << std::endl;
+        // }
+        // ROS_INFO("GbplannerVertex: %d", i);
+        int visibility_before = remaining_vertices[i].second.size();
+        // ROS_INFO("Before: %d", remaining_vertices[i].second.size());
+        std::set<std::size_t> vr_visibility = remaining_vertices[i].second;
+        std::set_difference(remaining_vertices[i].second.begin(), remaining_vertices[i].second.end(),
+                  vert_sel_visibility.begin(), vert_sel_visibility.end(),
+                  std::back_inserter(remaining_visibility));
+        
+        // logger_->debug("VR visibility before: ");
+        // for(auto fvr : remaining_vertices[i].second)
+        // {
+        // 	std::cout << fvr << std::endl;
+        // }
+        remaining_vertices[i].second.clear();
+        remaining_vertices[i].second.insert(remaining_visibility.begin(), remaining_visibility.end());
+
+        // if(remaining_vertices[i].second.size() < visibility_before) {
+        //   ROS_INFO("Before: %d", visibility_before);
+        //   ROS_INFO("After: %d", remaining_vertices[i].second.size());
+        // }
+        // logger_->debug("VR visibility after: ");
+        // for(auto fvr : remaining_vertices[i].second)
+        // {
+        // 	std::cout << fvr << std::endl;
+        // }
+      }
+
+      if(selected_vertices.size() > planning_params_.max_inspection_vertices) {
+        ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "Max inspection vertices limit reached");
+        break;
+      }
+    }
+
+    ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "Selected vertices: %d, total vertices: %d", selected_vertices.size(), local_graph_->getNumVertices());
+    ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "Achieved coverage: %d, Max possible coverage: %d, percentage: %f", current_coverage, cumulative_unseen_voxels.size(), (100.0*current_coverage)/cumulative_unseen_voxels.size());
+
+    ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "[Inpsection]: Sorting: %f", sorting_timer.endTimer());
+
+    viewpoint_ids.push_back(0);  // Adding current node
+
+    if(!selected_vertices.empty()) {      
+      T1.reset();
+      // for (int i = 0; i < viewpoint_ids.size(); ++i)
+      // {
+      for(auto p : selected_vertices) {
+        ShortestPathsReport rep;
+        local_graph_->findShortestPaths(p.first, rep);
+        path_rep_map[p.first] = rep;
+        selected_vertex_ids.push_back(p.first);
+      }
+      // for(auto p : selected_vertices) {
+      //   selected_vertex_ids.push_back(p.first);
+      // }
+      {
+        ShortestPathsReport rep;
+        local_graph_->findShortestPaths(0, rep);
+        path_rep_map[0] = rep;
+      }
+      selected_vertex_ids.push_back(0);
+      ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "[Inpsection]: TSP: Shortest path calculations: %f", T1.endTimer());
+    }
+  }
+  else
+  {
+    viewpoint_ids = getLongsInspectionViewpoints();
+    if(viewpoint_ids.empty())
+    {
+      status = InspectionStatus::kNothingToInspect;
+      return ret_path;
+    }
+    selected_vertex_ids = viewpoint_ids;
+    selected_vertex_ids.push_back(0);
+    for(auto p : selected_vertex_ids) {
+      ShortestPathsReport rep;
+      local_graph_->findShortestPaths(p, rep);
+      path_rep_map[p] = rep;
+    }
+    
+  }
+
+
+  /* Trial */
+  // if(!selected_vertex_ids.empty()) {
+  //   ROS_WARN("Viewpoints not empty");
+  //   visualization_->visualizeGraphVertices(local_graph_, selected_vertex_ids);
+
+  //   int closest_viewpoint = -1;
+  //   std::vector<GbplannerVertex*> nearest_vertices;
+  //   StateVec c = current_state_;
+  //   // if(local_graph_->getNearestVertices(&current_state_, 5.0, &nearest_vertices))
+  //   // {
+  //   //   std::sort(nearest_vertices.begin(), nearest_vertices.end(), [&c](const GbplannerVertex* a, const GbplannerVertex* b)
+  //   //   {
+  //   //     double d_yaw_a = c[3] - a->state[3];
+  //   //     double d_yaw_b = c[3] - b->state[3];
+  //   //     truncateAngle(d_yaw_a);
+  //   //     truncateAngle(d_yaw_b);
+  //   //     return std::max((c.head(3) - a->state.head(3)).norm()/1.0, d_yaw_a/0.5) < std::max((c.head(3) - b->state.head(3)).norm()/1.0, d_yaw_b/0.5);
+  //   //   });
+  //   //   for(auto v : nearest_vertices)
+  //   //   {
+  //   //     if(v->id == 0) continue;
+  //   //     auto it = std::find(selected_vertex_ids.begin(), selected_vertex_ids.end(), v->id);
+  //   //     if(it != selected_vertex_ids.end())
+  //   //     {
+  //   //       closest_viewpoint = v->id;
+  //   //       break;
+  //   //     }
+  //   //   }
+
+  //   // }
+  //   double min_cost = 9999.9;
+  //   for(int id : selected_vertex_ids)
+  //   {
+  //     truncateAngle(local_graph_->getVertex(id)->state(3));
+  //     double d_yaw = c[3] - local_graph_->getVertex(id)->state(3);
+  //     truncateAngle(d_yaw);
+  //     double cost = 
+  //       std::max(
+  //         (c.head(3) - local_graph_->getVertex(id)->state.head(3)).norm()/planning_params_.v_max, 
+  //         std::abs(d_yaw)/planning_params_.yaw_rate_max);
+  //     if(cost < min_cost && cost > 0.01)
+  //     {
+  //       min_cost = cost;
+  //       closest_viewpoint = id;
+  //     }
+  //   }
+
+  //   std::vector<geometry_msgs::Pose> current_path;
+  //   std::cout << closest_viewpoint << std::endl;
+  //   if(closest_viewpoint >= 0)
+  //   {
+  //     std::vector<int> order;
+  //     order.push_back(0);
+  //     order.push_back(closest_viewpoint);
+	// 	  current_path = connectTSPOrder(order, path_rep_map, local_graph_);
+  //   }
+
+  //   status = InspectionStatus::kOk;
+
+  //   return current_path;
+
+  // }
+  /*********/
+  
+  //// TSP /////
+  // Connecting the selected viewpoints
+  Timer tsp_timer; 
+  if(!selected_vertex_ids.empty()) {
+
+    std::vector<std::vector<int>> cost_matrix;
+		generateCostMatrix(selected_vertex_ids, cost_matrix, path_rep_map);
+    ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "[Inpsection]: TSP: Cost matrix: %f", T1.endTimer());
+
+    visualization_->visualizeGraphVertices(local_graph_, selected_vertex_ids);
+    
+
+    std::vector<int> tsp_order = doTSP(selected_vertex_ids, cost_matrix);
+    ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "[Inpsection]: TSP: doTSP: %f", T1.endTimer());
+    
+    // std::cout << "TSP order Before: "; for (int i = 0; i < tsp_order.size(); ++i) std::cout << tsp_order[i] << ", "; std::cout << std::endl;
+
+    std::vector<int> reordered_tsp_sol;
+    if(tsp_order[0] == 0) {
+      reordered_tsp_sol = tsp_order;
+    }
+    else if(tsp_order.back() == 0) {
+      reordered_tsp_sol.push_back(0);
+      reordered_tsp_sol.insert(reordered_tsp_sol.begin()+1, tsp_order.begin(), tsp_order.end()-1);
+    }
+    else {
+      auto it = std::find(tsp_order.begin(), tsp_order.end(), 0);
+      if(it == tsp_order.end()) {
+        ROS_WARN_COND(global_verbosity >= Verbosity::ERROR, "Root vertex not in TSP order");
+      }
+      int root_ind = it - tsp_order.begin();
+      
+      reordered_tsp_sol.push_back(0);
+      reordered_tsp_sol.insert(reordered_tsp_sol.begin()+reordered_tsp_sol.size(), it+1, tsp_order.end());
+      reordered_tsp_sol.insert(reordered_tsp_sol.begin()+reordered_tsp_sol.size(), tsp_order.begin(), it);
+    }
+    tsp_order = reordered_tsp_sol;
+    // std::cout << "TSP order After: "; for (int i = 0; i < tsp_order.size(); ++i) std::cout << tsp_order[i] << ", "; std::cout << std::endl;
+		
+
+    std::vector<geometry_msgs::Pose> current_path;
+		current_path = connectTSPOrder(tsp_order, path_rep_map, local_graph_);
+    ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "[Inpsection]: TSP: connectTSPOrder: %f", T1.endTimer());
+
+    // geometry_msgs::Pose current_pose;
+    // convert(current_state_, current_pose);
+    // current_path.push_back(current_pose);
+
+    visualization_->visualizeRefPath(current_path);
+
+    // for(auto p : selected_vertices) {
+    //   GbplannerVertex* v = local_graph_->getVertex(p.first);
+    //   for(auto sensor : camera_annotation_params_.sensor_list) {
+    //     std::vector<Eigen::Vector3d> multiray_endpoints;
+    //     camera_annotation_params_.sensor[sensor].getFrustumEndpoints(v->state, multiray_endpoints);
+    //     Eigen::Vector3d current_pos = v->state.head(3);
+    //     map_manager_->annotateCameraVoxels(current_pos, multiray_endpoints);
+    //   }
+    // }
+    ret_path = current_path;
+  }
+  else {
+    ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "No vertex selected");
+  }
+  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "[Inpsection]: TSP: %f", tsp_timer.endTimer());
+
+  t2 = std::chrono::high_resolution_clock::now();
+
+  ROS_WARN_COND(global_verbosity >= Verbosity::INFO, "Inspection path calculation time: %f", std::chrono::duration<double, std::milli>(t2 - t1).count());
+
+  status = InspectionStatus::kOk;
+
+  return ret_path;
+}
+
+std::vector<geometry_msgs::Pose> Rrg::getInspectionPath(std::vector<Longitudinal> longs, InspectionStatus &status) {
+  auto t1 = std::chrono::high_resolution_clock::now();
+  auto t2 = t1;
+
+  std::vector<int> viewpoint_ids;
+  Timer gain_timer;
+  std::set<size_t> cumulative_unseen_voxels;
+  std::vector<std::pair<int, std::set<std::size_t>>> remaining_vertices;
+  std::vector<int> all_vertex_ids;
+  std::vector<int> selected_vertex_ids;
+  std::map<int, ShortestPathsReport> path_rep_map;
+  std::vector<geometry_msgs::Pose> ret_path;
+  Timer T1;
+
+  viewpoint_ids = getLongsInspectionViewpoints(longs);
+  if(viewpoint_ids.empty())
+  {
+    status = InspectionStatus::kNothingToInspect;
+    return ret_path;
+  }
+  selected_vertex_ids = viewpoint_ids;
+  // selected_vertex_ids.push_back(0);
+  for(auto p : selected_vertex_ids) {
+    ShortestPathsReport rep;
+    local_graph_->findShortestPaths(p, rep);
+    path_rep_map[p] = rep;
+  }
+
+  ShortestPathsReport rep;
+  local_graph_->findShortestPaths(0, rep);
+  path_rep_map[0] = rep;
+
+  std::cout << "Added rep for 0 separately" << std::endl;
+
+
+  /* Trial */
+  // if(!selected_vertex_ids.empty()) {
+  //   ROS_WARN("Viewpoints not empty");
+  //   visualization_->visualizeGraphVertices(local_graph_, selected_vertex_ids);
+
+  //   int closest_viewpoint = -1;
+  //   std::vector<GbplannerVertex*> nearest_vertices;
+  //   StateVec c = current_state_;
+  //   // if(local_graph_->getNearestVertices(&current_state_, 5.0, &nearest_vertices))
+  //   // {
+  //   //   std::sort(nearest_vertices.begin(), nearest_vertices.end(), [&c](const GbplannerVertex* a, const GbplannerVertex* b)
+  //   //   {
+  //   //     return (c.head(3) - a->state.head(3)).norm() < (c.head(3) - b->state.head(3)).norm();
+  //   //   });
+  //   //   for(auto v : nearest_vertices)
+  //   //   {
+  //   //     if(v->id == 0 || (current_state_.head(3) - v->state.head(3)).norm() <= 0.1) continue;
+  //   //     auto it = std::find(selected_vertex_ids.begin(), selected_vertex_ids.end(), v->id);
+  //   //     if(it != selected_vertex_ids.end())
+  //   //     {
+  //   //       closest_viewpoint = v->id;
+  //   //       break;
+  //   //     }
+  //   //   }
+  //   // }
+
+  //   double min_cost = 9999.9;
+  //   for(int id : selected_vertex_ids)
+  //   {
+  //     truncateAngle(local_graph_->getVertex(id)->state(3));
+  //     double d_yaw = c[3] - local_graph_->getVertex(id)->state(3);
+  //     truncateAngle(d_yaw);
+  //     double cost = 
+  //       std::max(
+  //         (c.head(3) - local_graph_->getVertex(id)->state.head(3)).norm()/planning_params_.v_max, 
+  //         std::abs(d_yaw)/planning_params_.yaw_rate_max);
+  //     if(cost < min_cost)
+  //     {
+  //       min_cost = cost;
+  //       closest_viewpoint = id;
+  //     }
+  //   }
+
+  //   std::vector<geometry_msgs::Pose> current_path;
+  //   std::cout << closest_viewpoint << std::endl;
+  //   if(closest_viewpoint >= 0)
+  //   {
+  //     std::vector<int> order;
+  //     order.push_back(0);
+  //     order.push_back(closest_viewpoint);
+	// 	  current_path = connectTSPOrder(order, path_rep_map, local_graph_);
+  //   }
+
+  //   t2 = std::chrono::high_resolution_clock::now();
+
+  //   ROS_WARN_COND(global_verbosity >= Verbosity::INFO, "Inspection path calculation time: %f", std::chrono::duration<double, std::milli>(t2 - t1).count());
+
+  //   status = InspectionStatus::kOk;
+
+  //   return current_path;
+
+  // }
+  /*********/
+  
+  //// TSP /////
+  // Connecting the selected viewpoints
+  Timer tsp_timer; 
+  // if(!selected_vertex_ids.empty()) 
+  // {
+  //   if(selected_vertex_ids.size() == 1)
+  //   {
+  //     std::vector<int> tsp_order;
+  //     tsp_order.push_back(0);
+  //     tsp_order.push_back(selected_vertex_ids[0]);
+  //     std::vector<geometry_msgs::Pose> current_path;
+	// 	  current_path = connectTSPOrder(tsp_order, path_rep_map, local_graph_);
+  //     visualization_->visualizeRefPath(current_path);
+  //     ret_path = current_path;
+  //   }
+  //   else
+  //   {
+  //     Eigen::Vector3d mean_pos(0.0, 0.0, 0.0);
+  //     for(int id : selected_vertex_ids)
+  //     {
+  //       mean_pos += local_graph_->getVertex(id)->state.head(3);
+  //     }
+  //     mean_pos /= selected_vertex_ids.size();
+  //     std::vector<int> set1, set2;
+  //     for(int id : selected_vertex_ids)
+  //     {
+  //       if(local_graph_->getVertex(id)->state.y() - mean_pos.y() > 0.2)
+  //         set1.push_back(id);
+  //       else
+  //         set2.push_back(id);
+  //     }
+  //     if(local_graph_->getVertex(0)->state.y() - mean_pos.y() > 0.2)
+  //       set1.push_back(0);
+  //     else
+  //       set2.push_back(0);
+  //     if(!set1.empty())
+  //     {
+  //       std::vector<std::vector<int>> cost_matrix;
+  //       generateCostMatrix(selected_vertex_ids, cost_matrix, path_rep_map);
+  //       ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "[Inpsection]: TSP: Cost matrix: %f", T1.endTimer());
+
+  //       visualization_->visualizeGraphVertices(local_graph_, selected_vertex_ids);
+        
+
+  //       std::vector<int> tsp_order = doTSP(selected_vertex_ids, cost_matrix);
+  //       ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "[Inpsection]: TSP: doTSP: %f", T1.endTimer());
+  //     }
+  //   }
+  // }
+  if(!selected_vertex_ids.empty()) {
+
+    if(selected_vertex_ids.size() == 1)
+    {
+      std::vector<int> tsp_order;
+      tsp_order.push_back(0);
+      tsp_order.push_back(selected_vertex_ids[0]);
+      std::vector<geometry_msgs::Pose> current_path;
+		  current_path = connectTSPOrder(tsp_order, path_rep_map, local_graph_);
+      visualization_->visualizeRefPath(current_path);
+      ret_path = current_path;
+    }
+    else
+    {
+      selected_vertex_ids.push_back(0);
+
+      std::vector<std::vector<int>> cost_matrix;
+      generateCostMatrix(selected_vertex_ids, cost_matrix, path_rep_map);
+      ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "[Inpsection]: TSP: Cost matrix: %f", T1.endTimer());
+
+      visualization_->visualizeGraphVertices(local_graph_, selected_vertex_ids);
+      
+
+      std::vector<int> tsp_order = doTSP(selected_vertex_ids, cost_matrix);
+      ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "[Inpsection]: TSP: doTSP: %f", T1.endTimer());
+      
+      // std::cout << "TSP order Before: "; for (int i = 0; i < tsp_order.size(); ++i) std::cout << tsp_order[i] << ", "; std::cout << std::endl;
+
+      std::vector<int> reordered_tsp_sol;
+      if(tsp_order[0] == 0) {
+        reordered_tsp_sol = tsp_order;
+      }
+      else if(tsp_order.back() == 0) {
+        reordered_tsp_sol.push_back(0);
+        reordered_tsp_sol.insert(reordered_tsp_sol.begin()+1, tsp_order.begin(), tsp_order.end()-1);
+      }
+      else {
+        auto it = std::find(tsp_order.begin(), tsp_order.end(), 0);
+        if(it == tsp_order.end()) {
+          ROS_WARN_COND(global_verbosity >= Verbosity::ERROR, "Root vertex not in TSP order");
+        }
+        int root_ind = it - tsp_order.begin();
+        
+        reordered_tsp_sol.push_back(0);
+        reordered_tsp_sol.insert(reordered_tsp_sol.begin()+reordered_tsp_sol.size(), it+1, tsp_order.end());
+        reordered_tsp_sol.insert(reordered_tsp_sol.begin()+reordered_tsp_sol.size(), tsp_order.begin(), it);
+      }
+      tsp_order = reordered_tsp_sol;
+      if(tsp_order.size() >= 3)
+      {
+        // std::cout << "Checking tsp order" << std::endl;
+        StateVec f_state = local_graph_->getVertex(tsp_order[1])->state;
+        int f_ind = tsp_order[1];
+        if((local_graph_->getVertex(0)->state.head(3) - f_state.head(3)).norm() < config_->system_params.vp_reach_thr)
+        {
+          if(tsp_order.size() > 2)
+          {
+            f_state = local_graph_->getVertex(tsp_order[2])->state;
+            f_ind = tsp_order[2];
+          }
+        }
+
+        StateVec b_state = local_graph_->getVertex(tsp_order.back())->state;
+        int b_ind = tsp_order.size()-1;
+        if((local_graph_->getVertex(0)->state.head(3) - b_state.head(3)).norm() < config_->system_params.vp_reach_thr)
+        {
+          if(tsp_order.size() >= 2)
+          {
+            b_state = local_graph_->getVertex(tsp_order[tsp_order.size() - 2])->state;
+            b_ind = tsp_order[tsp_order.size() - 2];
+          }
+        }
+
+        double d_yaw_f = local_graph_->getVertex(0)->state[3] - f_state[3];
+        truncateAngle(d_yaw_f);
+        double d_yaw_b = local_graph_->getVertex(0)->state[3] - b_state[3];
+        truncateAngle(d_yaw_b);
+        // double cf = std::max(path_rep_map[0].distance_map[f_ind] / planning_params_.v_max,
+        //                      std::abs(d_yaw_f) / planning_params_.yaw_rate_max);
+        // double cb = std::max(path_rep_map[0].distance_map[b_ind] / planning_params_.v_max,
+        //                      std::abs(d_yaw_b) / planning_params_.yaw_rate_max);
+        // double cf, cb;
+        // {
+        //   double t_trans = path_rep_map[0].distance_map[f_ind]/planning_params_.v_max;
+        //   double t_rot = std::abs(d_yaw_f) / planning_params_.yaw_rate_max;
+        //   if(t_trans > t_rot)
+        //   {
+        //     cf = t_trans;
+        //   }
+        //   else
+        //   {
+        //     cf = t_rot + t_trans;
+        //   }
+        // }
+        // {
+        //   double t_trans = path_rep_map[0].distance_map[b_ind]/planning_params_.v_max;
+        //   double t_rot = std::abs(d_yaw_b) / planning_params_.yaw_rate_max;
+        //   if(t_trans > t_rot)
+        //   {
+        //     cb = t_trans;
+        //   }
+        //   else
+        //   {
+        //     cb = t_rot + t_trans;
+        //   }
+        // }
+        // double cf = path_rep_map[0].distance_map[tsp_order[1]] + std::abs(d_yaw_f);
+        // double cb = path_rep_map[0].distance_map[tsp_order.back()] + std::abs(d_yaw_b);
+        double dxf = f_state.x() - local_graph_->getVertex(0)->state.x();
+        double dyf = f_state.y() - local_graph_->getVertex(0)->state.y();
+        double dzf = f_state.z() - local_graph_->getVertex(0)->state.z();
+
+        double dxb = b_state.x() - local_graph_->getVertex(0)->state.x();
+        double dyb = b_state.y() - local_graph_->getVertex(0)->state.y();
+        double dzb = b_state.z() - local_graph_->getVertex(0)->state.z();
+
+        double cf_check = std::sqrt(dxf*dxf + dyf*dyf + dzf*dzf);
+        double cb_check = std::sqrt(dxb*dxb + dyb*dyb + dzb*dzb);
+        double cf = (f_state.head(3) - local_graph_->getVertex(0)->state.head(3)).norm();
+        double cb = (b_state.head(3) - local_graph_->getVertex(0)->state.head(3)).norm();
+        if(std::abs(cf - cf_check) > 0.001 || std::abs(cb - cb_check) > 0.001)
+        {
+          std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! MATH ERROR !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+        }
+        cf = cf_check;
+        cb = cb_check;
+
+        if(cf > cb)
+        {
+          reordered_tsp_sol.clear();
+          // std::cout << "Needs to reverse" << std::endl;
+          // std::cout << "OG:" << std::endl;
+          // for(int e : tsp_order) std::cout << e << " ";
+          // std::cout << std::endl;
+
+          reordered_tsp_sol.insert(reordered_tsp_sol.begin(), tsp_order.begin()+1, tsp_order.begin()+tsp_order.size());
+          // std::cout << "copied reordered:" << std::endl;
+          // for(int e : reordered_tsp_sol) std::cout << e << " ";
+          // std::cout << std::endl;
+
+          std::reverse(reordered_tsp_sol.begin(), reordered_tsp_sol.end());
+          // std::cout << "reversed reordered:" << std::endl;
+          // for(int e : reordered_tsp_sol) std::cout << e << " ";
+          // std::cout << std::endl;
+
+          reordered_tsp_sol.insert(reordered_tsp_sol.begin(), tsp_order[0]);
+          // std::cout << "final reordered:" << std::endl;
+          // for(int e : reordered_tsp_sol) std::cout << e << " ";
+          // std::cout << std::endl;
+          
+          tsp_order = reordered_tsp_sol;
+        }
+      }
+      // std::cout << "TSP order After: "; for (int i = 0; i < tsp_order.size(); ++i) std::cout << tsp_order[i] << ", "; std::cout << std::endl;
+      std::vector<int> pruned_tsp_path;
+      //////////////////////////////////////////////////
+      // pruned_tsp_path.push_back(tsp_order[0]);
+      // if(tsp_order.size() > 1)
+      // {
+      //   pruned_tsp_path.push_back(tsp_order[1]);
+      // }
+      //////////////////////////////////////////////////
+      for(auto it = tsp_order.begin(); it != tsp_order.end(); ++it)
+      {
+        pruned_tsp_path.push_back(*it);
+        if((local_graph_->getVertex(*it)->state.head(3) - current_state_.head(3)).norm() >= config_->system_params.vp_reach_thr)
+        {
+          break;
+        }
+      }
+      //////////////////////////////////////////////////
+
+      std::vector<geometry_msgs::Pose> current_path;
+      current_path = connectTSPOrder(pruned_tsp_path, path_rep_map, local_graph_);
+      // std::cout << "Pruned path calculated" << std::endl;
+      std::vector<geometry_msgs::Pose> full_path;
+      full_path = connectTSPOrder(tsp_order, path_rep_map, local_graph_);
+      ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "[Inpsection]: TSP: connectTSPOrder: %f", T1.endTimer());
+
+      // geometry_msgs::Pose current_pose;
+      // convert(current_state_, current_pose);
+      // current_path.push_back(current_pose);
+
+      visualization_->visualizeRefPath(full_path);
+
+      // for(auto p : selected_vertices) {
+      //   GbplannerVertex* v = local_graph_->getVertex(p.first);
+      //   for(auto sensor : camera_annotation_params_.sensor_list) {
+      //     std::vector<Eigen::Vector3d> multiray_endpoints;
+      //     camera_annotation_params_.sensor[sensor].getFrustumEndpoints(v->state, multiray_endpoints);
+      //     Eigen::Vector3d current_pos = v->state.head(3);
+      //     map_manager_->annotateCameraVoxels(current_pos, multiray_endpoints);
+      //   }
+      // }
+      ret_path = current_path;
+    }
+  }
+  else {
+    ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "No vertex selected");
+  }
+  ROS_WARN_COND(global_verbosity >= Verbosity::INFO, "[Inpsection]: TSP: %f", tsp_timer.endTimer());
+
+  t2 = std::chrono::high_resolution_clock::now();
+
+  ROS_WARN_COND(global_verbosity >= Verbosity::INFO, "Inspection path calculation time: %f", std::chrono::duration<double, std::milli>(t2 - t1).count());
+
+  status = InspectionStatus::kOk;
+
+  return ret_path;
+}
+
+
+void Rrg::doAnnotation(bool trig)
+{
+  planning_params_.annotate_map_with_camera = trig;
+}
+
+std::vector<StateVec> Rrg::getVerificationViewpoints(std::vector<Longitudinal> longs)
+{
+  std::vector<geometry_msgs::Pose> ret_path;
+
+  Eigen::Vector3d long_centroid(0, 0, 0);
+  for(auto l : longs)
+  {
+    long_centroid += l.center;
+  }
+  long_centroid /= longs.size();
+
+  std::vector<StateVec> viewpoints;
+  std::vector<geometry_msgs::Pose> viewpoints_msg;
+  std::vector<Eigen::Vector3d> points_to_annotate;
+  // Eigen::Matrix<double, 3, 8> neighbor_table;
+  // neighbor_table << 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0,
+  //                   0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1,
+  //                   0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1;
+  // neighbor_table *= 0.2;
+  for(auto l : longs)
+  {
+    Eigen::Vector3d v_r = long_centroid - l.center;
+    double yaw_dir = std::atan2(l.direction.y(), l.direction.x());
+    StateVec vp;
+    if((v_r.cross(l.direction)).z() >= 0)
+    {
+      vp(3) = yaw_dir + M_PI/2.0;
+    }
+    else
+    {
+      vp(3) = yaw_dir - M_PI/2.0;
+    }
+
+    vp.head(3) = l.center 
+                    - planning_params_.verification_target_viewing_range 
+                      * Eigen::Vector3d(std::cos(vp(3)), std::sin(vp(3)), 0.0);
+    viewpoints.push_back(vp);
+    geometry_msgs::Pose vp_pose;
+    convert(vp, vp_pose);
+    viewpoints_msg.push_back(vp_pose);
+
+    // points_to_annotate.push_back(l.center - Eigen::Vector3d(4.2,0.0,0.0));
+    // points_to_annotate.push_back(l.end_point1 - Eigen::Vector3d(4.2,0.0,0.0));
+    // points_to_annotate.push_back(l.end_point2 - Eigen::Vector3d(4.2,0.0,0.0));
+    
+    // for(int i=0; i<8; ++i)
+    // {
+    //   points_to_annotate.push_back(l.center + neighbor_table.col(i) - Eigen::Vector3d(4.2,0.0,0.0));
+    //   points_to_annotate.push_back(l.end_point1 + neighbor_table.col(i) - Eigen::Vector3d(4.2,0.0,0.0));
+    //   points_to_annotate.push_back(l.end_point2 + neighbor_table.col(i) - Eigen::Vector3d(4.2,0.0,0.0));
+    // }
+
+    for(double dx=-0.2; dx<=0.2; dx+=0.2)
+    {
+      for(double dy=-0.2; dy<=0.2; dy+=0.2)
+      {
+        for(double dz=-0.2; dz<=0.2; dz+=0.2)
+        {
+          points_to_annotate.push_back(l.center + Eigen::Vector3d(dx, dy, dz) - Eigen::Vector3d(4.2,0.0,0.0));
+          points_to_annotate.push_back(l.end_point1 + Eigen::Vector3d(dx, dy, dz) - Eigen::Vector3d(4.2,0.0,0.0));
+          points_to_annotate.push_back(l.end_point2 + Eigen::Vector3d(dx, dy, dz) - Eigen::Vector3d(4.2,0.0,0.0));
+        }
+      }
+    }
+  }
+
+  annotateSemanticPredictions(points_to_annotate);
+
+  std::map<int, std::vector<int>> visibility_count;
+  std::map<int, bool> visible;
+  std::vector<StateVec> selected_viewpoints;
+
+  for(int i=0; i<viewpoints.size(); ++i)
+  {
+    for(int j=0; j<viewpoints.size(); ++j)
+    {
+      if(j==i)
+      {
+        visibility_count[i].push_back(j);
+        continue;
+      }
+      
+      Eigen::Vector3d ray_c = longs[j].center - viewpoints[i].head(3);
+      Eigen::Vector3d ray_ep1 = longs[j].end_point1 - viewpoints[i].head(3);
+      Eigen::Vector3d ray_ep2 = longs[j].end_point2 - viewpoints[i].head(3);
+      Eigen::Vector3d heading(std::cos(viewpoints[i][3]), std::sin(viewpoints[i][3]), 0.0);
+      
+      double theta_c = std::atan2(ray_c.y(), ray_c.x())-viewpoints[i][3];
+      truncateAngle(theta_c);
+      double phi_c = std::atan2(ray_c.z(), Eigen::Vector3d(ray_c.x(), ray_c.y(), 0.0).dot(heading));
+      
+      double theta_ep1 = std::atan2(ray_ep1.y(), ray_ep1.x())-viewpoints[i][3];
+      truncateAngle(theta_ep1);
+      double phi_ep1 = std::atan2(ray_ep1.z(), Eigen::Vector3d(ray_ep1.x(), ray_ep1.y(), 0.0).dot(heading));
+      
+      double theta_ep2 = std::atan2(ray_ep2.y(), ray_ep2.x())-viewpoints[i][3];
+      truncateAngle(theta_ep2);
+      double phi_ep2 = std::atan2(ray_ep2.z(), Eigen::Vector3d(ray_ep2.x(), ray_ep2.y(), 0.0).dot(heading));
+      if(std::abs(theta_c) <= M_PI/2 && std::abs(phi_c) <= M_PI/4.0 &&
+         std::abs(theta_ep1) <= M_PI/2 && std::abs(phi_ep1) <= M_PI/4.0 &&
+         std::abs(theta_ep2) <= M_PI/2 && std::abs(phi_ep2) <= M_PI/4.0)
+      {
+        visibility_count[i].push_back(j);
+      }
+    }
+  }
+
+  std::vector<std::pair<int, std::vector<int>>> visibility_count_vec;
+  for(auto it : visibility_count) visibility_count_vec.push_back(std::make_pair(it.first, it.second));
+
+  std::sort(visibility_count_vec.begin(), visibility_count_vec.end(), [](std::pair<int, std::vector<int>>& a, std::pair<int, std::vector<int>>& b)
+  {
+    return a.second.size() > b.second.size();
+  });
+
+  int sems_seen = 0;
+  for(auto it : visibility_count_vec)
+  {
+    bool new_sems_seen = false;
+    for(int ind : it.second)
+    {
+      if(!visible[ind])
+      {
+        new_sems_seen = true;
+        visible[ind] = true;
+        ++sems_seen;
+      }
+    }
+    if(new_sems_seen)
+      selected_viewpoints.push_back(viewpoints[it.first]);
+    
+    if(sems_seen >= viewpoints.size())  // All sems seen
+      break;
+  }
+
+  std::vector<geometry_msgs::Pose> selected_viewpoints_msg;
+  for(auto &vp : selected_viewpoints)
+  {
+    vp.x() -= 4.2;  /// HACK!!!
+    geometry_msgs::Pose vp_pose;
+    convert(vp, vp_pose);
+    selected_viewpoints_msg.push_back(vp_pose);
+  }
+
+  visualization_->visualizeViewpoints(selected_viewpoints_msg);
+
+  return selected_viewpoints;
+}
+
+void Rrg::generateCostMatrix(std::vector<int> nodes, std::vector<std::vector<int>> &cost_matrix, std::map<int, ShortestPathsReport> &path_rep_map)
+{
+	std::vector<int> temp_cost_mat_row(nodes.size(), 9999999);
+	std::vector<std::vector<int>> temp_cost_mat(nodes.size(), temp_cost_mat_row);
+	cost_matrix = temp_cost_mat;
+
+	for (int i = 0; i < nodes.size(); ++i)
+	{
+		for (int j = 0; j < nodes.size(); ++j)
+		{
+			if (i == j)
+			{
+				cost_matrix[i][j] = 0;
+			}
+			else
+			{
+        if(nodes[j] == 0)
+        {
+          cost_matrix[i][j] = 0;
+        }
+        else
+        {
+          if(planning_params_.use_flipped_yaw) {
+            double d_yaw = local_graph_->getVertex(nodes[i])->state[3] - local_graph_->getVertex(nodes[j])->state[3];
+            truncateYaw(d_yaw);
+            // if(planning_params_.use_gvi)
+            //   cost_matrix[i][j] = std::max(path_rep_map[nodes[i]].distance_map[nodes[j]]/planning_params_.v_max, std::abs(d_yaw) / planning_params_.yaw_rate_max);
+            // else
+            // {
+            //   double t_trans = path_rep_map[nodes[i]].distance_map[nodes[j]]/planning_params_.v_max;
+            //   double t_rot = std::abs(d_yaw) / planning_params_.yaw_rate_max;
+            //   if(t_trans > t_rot)
+            //   {
+            //     cost_matrix[i][j] = t_trans;
+            //   }
+            //   else
+            //   {
+            //     cost_matrix[i][j] = t_rot + t_trans;
+            //   }
+            // }
+            double t_trans = path_rep_map[nodes[i]].distance_map[nodes[j]]/planning_params_.v_max;
+            double t_rot = std::abs(d_yaw) / planning_params_.yaw_rate_max;
+            if(t_trans > t_rot)
+            {
+              cost_matrix[i][j] = t_trans;
+            }
+            else
+            {
+              cost_matrix[i][j] = t_rot + t_trans;
+            }
+            // cost_matrix[i][j] = path_rep_map[nodes[i]].distance_map[nodes[j]] + std::abs(d_yaw);
+          }
+          else {
+            cost_matrix[i][j] = path_rep_map[nodes[i]].distance_map[nodes[j]];
+          }
+        }
+			}
+		}
+	}
+
+	// logger_->debug("Cost matrix:");
+	// for(int i=0; i<nodes.size(); ++i)
+	// {
+	// 	logger_->debug("{}", fmt::join(cost_matrix[i], " "));
+	// }
+}
+
+double Rrg::calculateTourCost(const std::vector<int>& tour, const std::vector<std::vector<double>>& costMatrix) {
+    double total = 0.0;
+    int n = tour.size();
+    for (int i = 0; i < n; ++i) {
+        total += costMatrix[tour[i]][tour[(i + 1) % n]];
+    }
+    return total;
+}
+
+// Perform a 2-opt swap (reverse tour segment between i and k)
+void Rrg::twoOptSwap(std::vector<int>& tour, int i, int k) {
+    std::reverse(tour.begin() + i, tour.begin() + k + 1);
+}
+
+// Solve TSP using 2-opt algorithm
+std::vector<int> Rrg::solveTSP(const std::vector<std::vector<double>>& costMatrix) {
+    int n = costMatrix.size();
+    std::vector<int> tour(n);
+    for (int i = 0; i < n; ++i) tour[i] = i;
+
+    bool improved = true;
+    double bestCost = calculateTourCost(tour, costMatrix);
+
+    while (improved) {
+        improved = false;
+        for (int i = 1; i < n - 1; ++i) {
+            for (int k = i + 1; k < n; ++k) {
+                std::vector<int> newTour = tour;
+                twoOptSwap(newTour, i, k);
+                double newCost = calculateTourCost(newTour, costMatrix);
+                if (newCost < bestCost) {
+                    tour = newTour;
+                    bestCost = newCost;
+                    improved = true;
+                }
+            }
+        }
+    }
+
+    return tour;
+}
+
+std::vector<int> Rrg::doTSP(std::vector<int> &nodes, std::vector<std::vector<int>> &cost_matrix)
+{
+  std::vector<int> tsp_order;
+  std::vector<std::vector<double>> cost_matrix_double;
+  cost_matrix_double.reserve(cost_matrix.size());
+
+  for (const auto& row : cost_matrix) {
+      std::vector<double> doubleRow;
+      doubleRow.reserve(row.size());
+
+      for (int val : row) {
+          doubleRow.push_back(static_cast<double>(val));
+      }
+
+      cost_matrix_double.push_back(std::move(doubleRow));
+  }
+  std::vector<int> sol = solveTSP(cost_matrix_double);
+	for (int i = 0; i < sol.size(); i++)
+	{
+		int id = nodes[sol[i]];
+		tsp_order.push_back(id);
+	}
+
+	return tsp_order;
+}
+
+std::vector<geometry_msgs::Pose> Rrg::connectTSPOrder(std::vector<int> &tsp_nodes, std::map<int, ShortestPathsReport> &path_rep_map, std::shared_ptr<GraphManager> graph)
+{
+  // std::cout << std::endl;
+	std::vector<geometry_msgs::Pose> tsp_path;
+	for (int i = 0; i < tsp_nodes.size() - 1; ++i)
+	{
+		std::vector<StateVec> current_path_segment_vec;
+		std::vector<geometry_msgs::Pose> current_path_segment;
+		graph->getShortestPath(tsp_nodes[i + 1], path_rep_map[tsp_nodes[i]], true, current_path_segment_vec);
+		convert(current_path_segment_vec, current_path_segment);
+		linearlyInterpolateYaw(current_path_segment);
+		for (int j = 0; j < current_path_segment.size() - 1; ++j)
+		{
+			tsp_path.push_back(current_path_segment[j]);
+		}
+	}
+
+	geometry_msgs::Pose last_pose;
+	convert(graph->getVertex(tsp_nodes.back())->state, last_pose);
+	tsp_path.push_back(last_pose);
+
+	return tsp_path;
+}
+
+
 bool Rrg::addRefPathToGraph(const std::shared_ptr<GraphManager> graph_manager,
-                            const std::vector<Vertex*>& vertices) {
+                            const std::vector<GbplannerVertex*>& vertices) {
   if (vertices.size() <= 0) return false;
 
   // The whole path is collision free already and start from root vertex.
@@ -4106,7 +6303,7 @@ bool Rrg::addRefPathToGraph(const std::shared_ptr<GraphManager> graph_manager,
   StateVec first_state;
   first_state << vertices[0]->state[0], vertices[0]->state[1],
       vertices[0]->state[2], vertices[0]->state[3];
-  Vertex* nearest_vertex = NULL;
+  GbplannerVertex* nearest_vertex = NULL;
   if (!graph_manager->getNearestVertex(&first_state, &nearest_vertex))
     return false;
   if (nearest_vertex == NULL) return false;
@@ -4116,7 +6313,7 @@ bool Rrg::addRefPathToGraph(const std::shared_ptr<GraphManager> graph_manager,
                             first_state[1] - origin[1],
                             first_state[2] - origin[2]);
   double direction_norm = direction.norm();
-  Vertex* parent_vertex = NULL;
+  GbplannerVertex* parent_vertex = NULL;
   const double kDeltaLimit = 0.1;
   const double kRadiusLimit = 0.5;
 
@@ -4127,8 +6324,8 @@ bool Rrg::addRefPathToGraph(const std::shared_ptr<GraphManager> graph_manager,
              std::max(kRadiusLimit, planning_params_.edge_length_min)) {
     // @TODO: find better way to do this.
     // Blindly add a link/vertex to the graph.
-    Vertex* new_vertex =
-        new Vertex(graph_manager->generateVertexID(), first_state);
+    GbplannerVertex* new_vertex =
+        new GbplannerVertex(graph_manager->generateVertexID(), first_state);
     new_vertex->parent = nearest_vertex;
     new_vertex->distance = nearest_vertex->distance + direction_norm;
     nearest_vertex->children.push_back(new_vertex);
@@ -4138,7 +6335,7 @@ bool Rrg::addRefPathToGraph(const std::shared_ptr<GraphManager> graph_manager,
   } else {
     ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "[GlobalGraph] Try to add current state to the graph.");
     ExpandGraphReport rep;
-    Vertex new_vertex(-1, first_state);
+    GbplannerVertex new_vertex(-1, first_state);
     expandGraph(graph_manager, new_vertex, rep);
     if (rep.status == ExpandGraphStatus::kSuccess) {
       ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "[GlobalGraph] Added successfully.");
@@ -4150,7 +6347,7 @@ bool Rrg::addRefPathToGraph(const std::shared_ptr<GraphManager> graph_manager,
   }
 
   // Add all remaining vertices of the path.
-  std::vector<Vertex*> vertex_list;
+  std::vector<GbplannerVertex*> vertex_list;
   vertex_list.push_back(parent_vertex);
   for (int i = 1; i < vertices.size(); ++i) {
     // Don't add the part of the path after the first hanging vertex
@@ -4167,8 +6364,8 @@ bool Rrg::addRefPathToGraph(const std::shared_ptr<GraphManager> graph_manager,
                               new_state[2] - origin[2]);
     double direction_norm = direction.norm();
 
-    Vertex* new_vertex =
-        new Vertex(graph_manager->generateVertexID(), new_state);
+    GbplannerVertex* new_vertex =
+        new GbplannerVertex(graph_manager->generateVertexID(), new_state);
     new_vertex->type = vertices[i]->type;
     new_vertex->parent = parent_vertex;
     new_vertex->distance = parent_vertex->distance + direction_norm;
@@ -4223,15 +6420,15 @@ bool Rrg::addRefPathToGraph(const std::shared_ptr<GraphManager> graph_manager,
       if (edge_length <= intp_len) continue;
       edge_vec.normalize();
       int n_intp = (int)std::ceil(edge_length / intp_len);  // segments
-      Vertex* prev_vertex = vertex_list[i];
+      GbplannerVertex* prev_vertex = vertex_list[i];
       double acc_len = 0;
       for (int j = 1; j < n_intp; ++j) {
         Eigen::Vector3d new_v;
         new_v = start_vertex + j * intp_len * edge_vec;
         StateVec new_state;
         new_state << new_v[0], new_v[1], new_v[2], vertex_list[i]->state[3];
-        Vertex* new_vertex =
-            new Vertex(graph_manager->generateVertexID(), new_state);
+        GbplannerVertex* new_vertex =
+            new GbplannerVertex(graph_manager->generateVertexID(), new_state);
         graph_manager->addVertex(new_vertex);
         graph_manager->addEdge(new_vertex, prev_vertex, intp_len);
         prev_vertex = new_vertex;
@@ -4258,7 +6455,7 @@ bool Rrg::addRefPathToGraph(const std::shared_ptr<GraphManager> graph_manager,
   StateVec first_state;
   first_state << path[0].position.x, path[0].position.y, path[0].position.z,
       0.0;
-  Vertex* nearest_vertex = NULL;
+  GbplannerVertex* nearest_vertex = NULL;
   if (!graph_manager->getNearestVertex(&first_state, &nearest_vertex))
     return false;
   if (nearest_vertex == NULL) return false;
@@ -4268,7 +6465,7 @@ bool Rrg::addRefPathToGraph(const std::shared_ptr<GraphManager> graph_manager,
                             first_state[1] - origin[1],
                             first_state[2] - origin[2]);
   double direction_norm = direction.norm();
-  Vertex* parent_vertex = NULL;
+  GbplannerVertex* parent_vertex = NULL;
   const double kDeltaLimit = 0.1;
   const double kRadiusLimit = 0.5;
 
@@ -4279,8 +6476,8 @@ bool Rrg::addRefPathToGraph(const std::shared_ptr<GraphManager> graph_manager,
              std::max(kRadiusLimit, planning_params_.edge_length_min)) {
     // @TODO: find better way to do this.
     // Blindly add a link/vertex to the graph.
-    Vertex* new_vertex =
-        new Vertex(graph_manager->generateVertexID(), first_state);
+    GbplannerVertex* new_vertex =
+        new GbplannerVertex(graph_manager->generateVertexID(), first_state);
     new_vertex->parent = nearest_vertex;
     new_vertex->distance = nearest_vertex->distance + direction_norm;
     nearest_vertex->children.push_back(new_vertex);
@@ -4290,7 +6487,7 @@ bool Rrg::addRefPathToGraph(const std::shared_ptr<GraphManager> graph_manager,
   } else {
     ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "[GlobalGraph] Try to add current state to the graph.");
     ExpandGraphReport rep;
-    Vertex new_vertex(-1, first_state);
+    GbplannerVertex new_vertex(-1, first_state);
     expandGraph(graph_manager, new_vertex, rep);
     if (rep.status == ExpandGraphStatus::kSuccess) {
       ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "[GlobalGraph] Added successfully.");
@@ -4302,7 +6499,7 @@ bool Rrg::addRefPathToGraph(const std::shared_ptr<GraphManager> graph_manager,
   }
 
   // Add all remaining vertices of the path.
-  std::vector<Vertex*> vertex_list;
+  std::vector<GbplannerVertex*> vertex_list;
   vertex_list.push_back(parent_vertex);
   for (int i = 1; i < path.size(); ++i) {
     StateVec new_state;
@@ -4315,8 +6512,8 @@ bool Rrg::addRefPathToGraph(const std::shared_ptr<GraphManager> graph_manager,
                               new_state[2] - origin[2]);
     double direction_norm = direction.norm();
 
-    Vertex* new_vertex =
-        new Vertex(graph_manager->generateVertexID(), new_state);
+    GbplannerVertex* new_vertex =
+        new GbplannerVertex(graph_manager->generateVertexID(), new_state);
     // new_vertex->type = vertices[i]->type;
     new_vertex->parent = parent_vertex;
     new_vertex->distance = parent_vertex->distance + direction_norm;
@@ -4371,15 +6568,15 @@ bool Rrg::addRefPathToGraph(const std::shared_ptr<GraphManager> graph_manager,
       if (edge_length <= intp_len) continue;
       edge_vec.normalize();
       int n_intp = (int)std::ceil(edge_length / intp_len);  // segments
-      Vertex* prev_vertex = vertex_list[i];
+      GbplannerVertex* prev_vertex = vertex_list[i];
       double acc_len = 0;
       for (int j = 1; j < n_intp; ++j) {
         Eigen::Vector3d new_v;
         new_v = start_vertex + j * intp_len * edge_vec;
         StateVec new_state;
         new_state << new_v[0], new_v[1], new_v[2], vertex_list[i]->state[3];
-        Vertex* new_vertex =
-            new Vertex(graph_manager->generateVertexID(), new_state);
+        GbplannerVertex* new_vertex =
+            new GbplannerVertex(graph_manager->generateVertexID(), new_state);
         graph_manager->addVertex(new_vertex);
         graph_manager->addEdge(new_vertex, prev_vertex, intp_len);
         prev_vertex = new_vertex;
@@ -4423,6 +6620,7 @@ void Rrg::setState(StateVec& state) {
 
 void Rrg::timerCallback(const ros::TimerEvent& event) {
   // Re-initialize until get non-zero value.
+  // ROS_WARN("tC: start: GG verts: %d, edges: %d", global_graph_->getNumVertices(), global_graph_->getNumEdges());
   if (rostime_start_.toSec() == 0) rostime_start_ = ros::Time::now();
 
   if (!odometry_ready) {
@@ -4485,8 +6683,9 @@ void Rrg::timerCallback(const ros::TimerEvent& event) {
   }
 
   // Enforce edges from dometry.
+  // map_manager_->setLineCheckMethod(2);
   bool enforce_vertex_from_odometry = true;
-  constexpr double kOdoEnforceLength = 0.5;
+  double kOdoEnforceLength = planning_params_.edge_length_min;
   if (enforce_vertex_from_odometry) {
     while (robot_backtracking_queue_.size()) {
       StateVec bt_state = robot_backtracking_queue_.front();
@@ -4500,10 +6699,13 @@ void Rrg::timerCallback(const ros::TimerEvent& event) {
             bt_state[2] - robot_backtracking_prev_->state[2]);
         double dir_norm = cur_dir.norm();
         if (dir_norm >= kOdoEnforceLength) {
-          Vertex* new_vertex =
-              new Vertex(global_graph_->generateVertexID(), bt_state);
+          GbplannerVertex* new_vertex =
+              new GbplannerVertex(global_graph_->generateVertexID(), bt_state);
           new_vertex->parent = robot_backtracking_prev_;
           new_vertex->distance = robot_backtracking_prev_->distance + dir_norm;
+          // GbplannerVertex new_vertex(-1, bt_state);
+          // new_vertex.parent = robot_backtracking_prev_;
+          // new_vertex.distance = robot_backtracking_prev_->distance + dir_norm;
           // offsetZAxis(new_vertex->state);
           if (robot_params_.type == RobotType::kGroundRobot) {
             MapManager::VoxelStatus vs;
@@ -4513,6 +6715,12 @@ void Rrg::timerCallback(const ros::TimerEvent& event) {
               new_vertex->state(2) -=
                   (ground_height - planning_params_.max_ground_height);
             }
+            // Eigen::Vector3d new_vertex_pos = new_vertex.state.head(3);
+            // double ground_height = projectSample(new_vertex_pos, vs);
+            // if (vs == MapManager::VoxelStatus::kOccupied) {
+            //   new_vertex.state(2) -=
+            //       (ground_height - planning_params_.max_ground_height);
+            // }
           }
           global_graph_->addVertex(new_vertex);
           // could increase the distance to limit shortest paths along these
@@ -4521,17 +6729,24 @@ void Rrg::timerCallback(const ros::TimerEvent& event) {
           global_graph_->addEdge(new_vertex, robot_backtracking_prev_,
                                  dir_norm * kEdgeWeightExtended);
           robot_backtracking_prev_ = new_vertex;
+          ExpandGraphReport rep;
+          // ROS_WARN("Expand edges on odometry");
+          expandGraphEdges(global_graph_, new_vertex, rep);
+          // ExpandGraphReport rep;
+          // ROS_WARN("Expand edges on odometry");
+          // expandGraph(global_graph_, new_vertex, rep, false);
         }
       }
     }
   }
+  map_manager_->setLineCheckMethod(planning_params_.line_check_method);
 
   // Get position from odometry to add more vertices to the graph for homing.
   Eigen::Vector3d cur_dir(current_state_[0] - last_state_marker_[0],
                           current_state_[1] - last_state_marker_[1],
                           current_state_[2] - last_state_marker_[2]);
 
-  constexpr double kOdoUpdateMinLength = kOdoEnforceLength;
+  double kOdoUpdateMinLength = kOdoEnforceLength;
   if (cur_dir.norm() >= kOdoUpdateMinLength) {
     // Add this to the global graph.
     const bool add_odometry_to_global_graph = true;
@@ -4541,7 +6756,7 @@ void Rrg::timerCallback(const ros::TimerEvent& event) {
       new_state[2] -=
           (planning_params_.robot_height - planning_params_.max_ground_height);
       ExpandGraphReport rep;
-      Vertex new_vertex(-1, new_state);
+      GbplannerVertex new_vertex(-1, new_state);
       expandGraph(global_graph_, new_vertex, rep);
       // ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "From odometry, added %d vertices and %d edges",
       // rep.num_vertices_added, rep.num_edges_added);
@@ -4570,6 +6785,9 @@ void Rrg::timerCallback(const ros::TimerEvent& event) {
 
     last_state_marker_global_ = current_state_;
   }
+
+  // ROS_WARN("tC: end: GG verts: %d, edges: %d", global_graph_->getNumVertices(), global_graph_->getNumEdges());
+  visualization_->visualizeGlobalGraph(global_graph_);
 }
 
 void Rrg::setBoundMode(BoundModeType bmode) {
@@ -4650,7 +6868,7 @@ bool Rrg::comparePathWithDirectionApprioximately(
 
 std::vector<int> Rrg::performShortestPathsClustering(
     const std::shared_ptr<GraphManager> graph_manager,
-    const ShortestPathsReport& graph_rep, std::vector<Vertex*>& vertices,
+    const ShortestPathsReport& graph_rep, std::vector<GbplannerVertex*>& vertices,
     double dist_threshold, double principle_path_min_length,
     bool refinement_enable) {
   // Asumme long paths are principle paths.
@@ -4660,7 +6878,7 @@ std::vector<int> Rrg::performShortestPathsClustering(
 
   // Sort into descending order.
   std::sort(vertices.begin(), vertices.end(),
-            [&graph_manager, &graph_rep](const Vertex* a, const Vertex* b) {
+            [&graph_manager, &graph_rep](const GbplannerVertex* a, const GbplannerVertex* b) {
               return graph_manager->getShortestDistance(a->id, graph_rep) >
                      graph_manager->getShortestDistance(b->id, graph_rep);
             });
@@ -4687,7 +6905,7 @@ std::vector<int> Rrg::performShortestPathsClustering(
     }
   }
 
-  ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "Cluster %d paths into %d clusters.", (int)vertices.size(),
+  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Cluster %d paths into %d clusters.", (int)vertices.size(),
            (int)cluster_paths.size());
 
   // Refinement step, remove short path and choose closest cluster.
@@ -4717,7 +6935,7 @@ std::vector<int> Rrg::performShortestPathsClustering(
         }
       }
     }
-    ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "Clustering with refinement %d paths into %d clusters.",
+    ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Clustering with refinement %d paths into %d clusters.",
              (int)vertices.size(), (int)cluster_paths_refine.size());
     return cluster_ids_refine;
   } else {
@@ -4727,16 +6945,16 @@ std::vector<int> Rrg::performShortestPathsClustering(
 
 void Rrg::cleanViolatedEdgesInGraph(
     std::shared_ptr<GraphManager> graph_manager) {
-  std::shared_ptr<Graph> g = graph_manager->graph_;
-  std::pair<Graph::GraphType::edge_iterator, Graph::GraphType::edge_iterator>
+  std::shared_ptr<BaseGraph> g = graph_manager->graph_;
+  std::pair<BaseGraph::GraphType::edge_iterator, BaseGraph::GraphType::edge_iterator>
       ei;
   g->getEdgeIterator(ei);
-  for (Graph::GraphType::edge_iterator it = ei.first; it != ei.second; ++it) {
+  for (BaseGraph::GraphType::edge_iterator it = ei.first; it != ei.second; ++it) {
     int src_id, tgt_id;
     double weight;
     std::tie(src_id, tgt_id, weight) = g->getEdgeProperty(it);
-    Vertex* src_v = graph_manager->getVertex(src_id);
-    Vertex* tgt_v = graph_manager->getVertex(tgt_id);
+    GbplannerVertex* src_v = graph_manager->getVertex(src_id);
+    GbplannerVertex* tgt_v = graph_manager->getVertex(tgt_id);
     if (GeofenceManager::CoordinateStatus::kViolated ==
         geofence_manager_->getPathStatus(
             Eigen::Vector2d(src_v->state[0], src_v->state[1]),
@@ -4748,9 +6966,9 @@ void Rrg::cleanViolatedEdgesInGraph(
 }
 
 bool Rrg::connectStateToGraph(std::shared_ptr<GraphManager> graph,
-                              StateVec& cur_state, Vertex*& v_added,
+                              StateVec& cur_state, GbplannerVertex*& v_added,
                               double dist_ignore_collision_check) {
-  Vertex* nearest_vertex = NULL;
+  GbplannerVertex* nearest_vertex = NULL;
   if (!graph->getNearestVertex(&cur_state, &nearest_vertex)) return false;
   if (nearest_vertex == NULL) return false;
   Eigen::Vector3d origin(nearest_vertex->state[0], nearest_vertex->state[1],
@@ -4768,7 +6986,7 @@ bool Rrg::connectStateToGraph(std::shared_ptr<GraphManager> graph,
   } else if (direction_norm <= std::max(dist_ignore_collision_check,
                                         planning_params_.edge_length_min)) {
     // Blindly add a link/vertex to the graph if small radius.
-    Vertex* new_vertex = new Vertex(graph->generateVertexID(), cur_state);
+    GbplannerVertex* new_vertex = new GbplannerVertex(graph->generateVertexID(), cur_state);
     new_vertex->parent = nearest_vertex;
     new_vertex->distance = nearest_vertex->distance + direction_norm;
     graph->addVertex(new_vertex);
@@ -4780,7 +6998,7 @@ bool Rrg::connectStateToGraph(std::shared_ptr<GraphManager> graph,
   } else {
     ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "[GlobalGraph] Try to add current state to the graph.");
     ExpandGraphReport rep;
-    Vertex new_vertex(-1, cur_state);
+    GbplannerVertex new_vertex(-1, cur_state);
     expandGraph(graph, new_vertex, rep);
     if (rep.status == ExpandGraphStatus::kSuccess) {
       ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "[GlobalGraph] Added successfully.");
@@ -4833,15 +7051,1141 @@ bool Rrg::isRemainingTimeSufficient(const double& time_cost,
   return true;
 }
 
-std::vector<geometry_msgs::Pose> Rrg::reRunGlobalPlanner() {
-  return runGlobalPlanner(current_global_vertex_id_, true, true);
+bool Rrg::getManholePathCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res) {
+	std::vector<geometry_msgs::Pose> path = getManholeTraversalPath();
+	
+	if(!path.empty()) {
+		res.success = true;
+	}
+	return true;
+}
+
+bool Rrg::approvePassingCallback(planner_msgs::planner_manhole_approval::Request &req, planner_msgs::planner_manhole_approval::Response &res) {
+  if(req.approval == planner_msgs::planner_manhole_approval::Request::kApproved) {
+    manhole_passing_approved_ = ManholeApproval::kApproved;
+    ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Manhole Passing Approved");
+  }
+  else if(req.approval == planner_msgs::planner_manhole_approval::Request::kRejected) {
+    manhole_passing_approved_ = ManholeApproval::kRejected;
+    ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Manhole Passing Rejected");
+  }
+  else if(req.approval == planner_msgs::planner_manhole_approval::Request::kReEvaluate) {
+    manhole_passing_approved_ = ManholeApproval::kReEvaluate;
+    ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Manhole Passing to be Re-evaluated");
+  }
+  
+  return true;
+}
+
+void Rrg::setNextCompartmentCenter(Eigen::Vector3d &center)
+{
+  next_compartment_ = center;
+}
+
+std::vector<geometry_msgs::Pose> Rrg::getManholeTraversalPath() {
+	std::vector<geometry_msgs::Pose> through_path;
+
+  std::vector<ManholeDetection> updated_detections;
+  // if(!manhole_detector_->getStableManholes(updated_detections)) {
+  //   return through_path;
+  // }
+  manhole_detector_->getStableManholes(updated_detections);
+
+  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "MH Mode: %d", manhole_traversal_status_);
+  
+  if(manhole_traversal_status_ == ManholeTraversalMode::kNone) {
+    manhole_traversal_status_ = ManholeTraversalMode::kGoingTo;
+  }
+  else if(manhole_traversal_status_ == ManholeTraversalMode::kGoingTo) {
+    // manhole_detector_->reEvaluate(manhole_under_execution_);
+    // double waiting_time = 0.75;
+    // double dt = 0.01;
+    // for(double t=0; t<waiting_time; t+=dt) {
+    //   ros::Duration(dt).sleep();
+    //   // ros::spinOnce();
+    // }
+    if(planning_params_.auto_manhole_path_approval) {
+    	manhole_traversal_status_ = ManholeTraversalMode::kPassingThrough;
+    }
+    else{
+    	manhole_traversal_status_ = ManholeTraversalMode::kPathCheck;
+    }
+  }
+  else if(manhole_traversal_status_ == ManholeTraversalMode::kPathCheck) {
+    if(planning_params_.auto_manhole_path_approval) {
+      manhole_passing_approved_ = ManholeApproval::kApproved;
+    }
+    if(manhole_passing_approved_ == ManholeApproval::kApproved) {
+      ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Manhole Traversal Approved");
+      manhole_passing_approved_ = ManholeApproval::kWaiting;
+      manhole_traversal_status_ = ManholeTraversalMode::kPassingThrough;
+    }
+    else if(manhole_passing_approved_ == ManholeApproval::kRejected) {
+      ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Manhole Traversal Rejected");
+      manhole_traversal_status_ = ManholeTraversalMode::kNone;
+      detected_manholes_[manhole_under_execution_]->active = false;
+      return through_path;
+    }
+    else if(manhole_passing_approved_ == ManholeApproval::kReEvaluate) {
+      ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Manhole Traversal ReEvaluate");
+      manhole_traversal_status_ = ManholeTraversalMode::kPathCheck;
+    }
+  }
+
+  // if(!manhole_detector_->getStableManholes(updated_detections)) {
+  //   return through_path;
+  // }
+  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "MH Mode: %d", manhole_traversal_status_);
+  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "MH under exect: %d", manhole_under_execution_);
+
+  if(manhole_traversal_status_ != ManholeTraversalMode::kPassingThrough) {
+    manhole_detector_->getStableManholes(updated_detections);
+
+    bool manhole_still_exists = false;
+    // std::cout << "Dets IDs:" << std::endl;
+    for(auto new_det : updated_detections) {
+      auto it = detected_manholes_.find(new_det.id);
+      // std::cout << new_det.id << std::endl;
+      if((manhole_traversal_status_ == ManholeTraversalMode::kPathCheck) && 
+        new_det.id == manhole_under_execution_) {
+        manhole_still_exists = true;
+      }
+      if(it != detected_manholes_.end()) {
+        std::shared_ptr<Manhole> mh = detected_manholes_[new_det.id];
+        tf::Quaternion quat;
+        quat.setEuler(0.0, 0.0, new_det.mean_yaw);
+        tf::Vector3 origin(new_det.mean_pos[0], new_det.mean_pos[1], new_det.mean_pos[2]);
+        tf::Pose poseTF(quat, origin);
+        geometry_msgs::Pose pose;
+        tf::poseTFToMsg(poseTF, pose);
+        mh->pose = pose;
+      }
+      else {
+        // New manhole
+        if(new_det.mean_pos[2] > planning_params_.max_manhole_height) {
+          ROS_WARN("Manhole %d too high (%f)", new_det.id, new_det.mean_pos[2]);
+          continue;
+        }
+        std::shared_ptr<Manhole> mh;
+        mh.reset(new Manhole());
+        mh->id = new_det.id;
+        tf::Quaternion quat;
+        quat.setEuler(0.0, 0.0, new_det.mean_yaw);
+        tf::Vector3 origin(new_det.mean_pos[0], new_det.mean_pos[1], new_det.mean_pos[2]);
+        tf::Pose poseTF(quat, origin);
+        geometry_msgs::Pose pose;
+        tf::poseTFToMsg(poseTF, pose);
+        mh->pose = pose;
+
+        detected_manholes_[mh->id] = mh;
+      }
+    }
+
+    if(manhole_traversal_status_ == ManholeTraversalMode::kPathCheck
+      && !manhole_still_exists) {  // If after second detection, the manhole is found to be a false detection, reject it and go to the next closest
+      ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "This MH does not exist");
+      manhole_traversal_status_ = ManholeTraversalMode::kGoingTo;
+    }
+    ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Detections updated");
+  }
+  else {
+    for(auto new_det : updated_detections) {
+      auto it = detected_manholes_.find(new_det.id);
+      if(it != detected_manholes_.end()) {
+        std::shared_ptr<Manhole> mh = detected_manholes_[new_det.id];
+        tf::Quaternion quat;
+        quat.setEuler(0.0, 0.0, new_det.mean_yaw);
+        tf::Vector3 origin(new_det.mean_pos[0], new_det.mean_pos[1], new_det.mean_pos[2]);
+        tf::Pose poseTF(quat, origin);
+        geometry_msgs::Pose pose;
+        tf::poseTFToMsg(poseTF, pose);
+        mh->pose = pose;
+      }
+      else {
+        // New manhole
+        if(new_det.mean_pos[2] > planning_params_.max_manhole_height) {
+          ROS_WARN("Manhole %d too high (%f)", new_det.id, new_det.mean_pos[2]);
+          continue;
+        }
+        std::shared_ptr<Manhole> mh;
+        mh.reset(new Manhole());
+        mh->id = new_det.id;
+        tf::Quaternion quat;
+        quat.setEuler(0.0, 0.0, new_det.mean_yaw);
+        tf::Vector3 origin(new_det.mean_pos[0], new_det.mean_pos[1], new_det.mean_pos[2]);
+        tf::Pose poseTF(quat, origin);
+        geometry_msgs::Pose pose;
+        tf::poseTFToMsg(poseTF, pose);
+        mh->pose = pose;
+
+        detected_manholes_[mh->id] = mh;
+      }
+    }
+  }
+
+
+	if(detected_manholes_.empty()) {
+    ROS_ERROR_COND(global_verbosity >= Verbosity::ERROR, "No Manholes at all");
+		return through_path;
+	}
+
+	std::shared_ptr<Manhole> best_manhole;
+	double closest_distance = std::numeric_limits<double>::max();
+  bool found = false;
+  if(manhole_traversal_status_ != ManholeTraversalMode::kPassingThrough && manhole_traversal_status_ != ManholeTraversalMode::kPathCheck) {
+    for(auto it : detected_manholes_) {
+      std::shared_ptr<Manhole> current_manhole = it.second;
+      if(!current_manhole->active) {
+        /* TODO: Update active status of all the semantics based on this */
+        continue;
+      }
+      
+      // double mh_robot_dist = (planning_params_.compartment_centers[next_compartment_index_-1] - Eigen::Vector3d(current_manhole->pose.position.x, current_manhole->pose.position.y, current_manhole->pose.position.z)).norm();
+      // Eigen::Vector3d compartment_dim = planning_params_.compartment_dimensions.max_val - planning_params_.compartment_dimensions.min_val;
+      // if(mh_robot_dist > compartment_dim.norm()/2.0)
+      // {
+      //   continue;
+      // }
+      // double dist;
+      // if(next_compartment_.x() < std::numeric_limits<double>::max())
+      //   dist = (next_compartment_ - Eigen::Vector3d(current_manhole->pose.position.x, current_manhole->pose.position.y, current_manhole->pose.position.z)).norm();
+      // else
+      //   dist = (current_state_.head(3) - Eigen::Vector3d(current_manhole->pose.position.x, current_manhole->pose.position.y, current_manhole->pose.position.z)).norm();
+      // if(dist < closest_distance) {
+      //   closest_distance = dist;
+      //   best_manhole = current_manhole;
+      //   found = true;
+      // }
+      if(planning_params_.exploration_only)  // If exploration only, go to the closest manhole
+      {
+        double mh_robot_dist = (current_state_.head(3) 
+              - Eigen::Vector3d(current_manhole->pose.position.x, 
+                                current_manhole->pose.position.y, 
+                                current_manhole->pose.position.z)).norm();
+        if(mh_robot_dist < closest_distance) {
+          closest_distance = mh_robot_dist;
+          best_manhole = current_manhole;
+          found = true;
+        }
+      }
+      else // If exploration + inspection, find the manhole that leads to the next compartment
+      {
+        double mh_robot_dist = (planning_params_.compartment_centers[next_compartment_index_-1] - Eigen::Vector3d(current_manhole->pose.position.x, current_manhole->pose.position.y, current_manhole->pose.position.z)).norm();
+        Eigen::Vector3d compartment_dim = planning_params_.compartment_dimensions.max_val - planning_params_.compartment_dimensions.min_val;
+        if(mh_robot_dist > compartment_dim.norm()/2.0)
+        {
+          continue;
+        }
+        double dist;
+        if(next_compartment_.x() < std::numeric_limits<double>::max())
+          dist = (next_compartment_ - Eigen::Vector3d(current_manhole->pose.position.x, current_manhole->pose.position.y, current_manhole->pose.position.z)).norm();
+        else
+          dist = (current_state_.head(3) - Eigen::Vector3d(current_manhole->pose.position.x, current_manhole->pose.position.y, current_manhole->pose.position.z)).norm();
+        if(dist < closest_distance) {
+          closest_distance = dist;
+          best_manhole = current_manhole;
+          found = true;
+        }
+      }
+    }
+    if(found)
+      manhole_under_execution_ = best_manhole->id;
+  }
+  else {
+    best_manhole = detected_manholes_[manhole_under_execution_];
+    found = true;
+  }
+
+  if(!found) {
+    ROS_ERROR_COND(global_verbosity >= Verbosity::ERROR, "No Manhole Found");
+    manhole_traversal_status_ = ManholeTraversalMode::kNone;
+    return through_path;
+  }
+
+  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Best mh found: %d", manhole_under_execution_);
+
+  bool decision_made = false;
+  int max_tries = 5;
+  std::vector<geometry_msgs::Pose> empty_path;
+  
+  if(manhole_traversal_status_ != ManholeTraversalMode::kPassingThrough) {
+    decision_made = true;
+  }
+
+  if(global_verbosity >= Verbosity::DEBUG) {
+    std::cout << best_manhole->pose.position.x << " " << best_manhole->pose.position.y << " " << best_manhole->pose.position.z << " | "
+              << best_manhole->pose.orientation.x << " " << best_manhole->pose.orientation.y << " " << best_manhole->pose.orientation.z << " " << best_manhole->pose.orientation.w << std::endl;
+  }
+  
+  double direction = tf::getYaw(best_manhole->pose.orientation);
+  // std::cout << "Direction: " << direction << std::endl;
+  geometry_msgs::Pose p0;
+  p0.position.x = best_manhole->pose.position.x - planning_params_.manhole_traversal_path_edge_length * std::cos(direction);
+  p0.position.y = best_manhole->pose.position.y - planning_params_.manhole_traversal_path_edge_length * std::sin(direction);
+  p0.position.z = best_manhole->pose.position.z;
+  p0.orientation = best_manhole->pose.orientation;
+  // through_path.push_back(p0);
+  // through_path.push_back(best_manhole->pose);
+  geometry_msgs::Pose p1;
+  p1.position.x = best_manhole->pose.position.x + planning_params_.manhole_traversal_path_edge_length * std::cos(direction);
+  p1.position.y = best_manhole->pose.position.y + planning_params_.manhole_traversal_path_edge_length * std::sin(direction);
+  p1.position.z = best_manhole->pose.position.z;
+  p1.orientation = best_manhole->pose.orientation;
+  // through_path.push_back(p1);
+  
+  // best_manhole->active = false;
+  // best_manhole->through_path = through_path;
+
+  geometry_msgs::Pose first_pose;
+  if(getDistance(current_state_, p0) < getDistance(current_state_, p1)) {
+    first_pose = p0;
+  }
+  else {
+    first_pose = p1;
+  }
+
+  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Path direction set");
+  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "MH Mode (later): %d", manhole_traversal_status_);
+
+  geometry_msgs::Quaternion corrected_quat = best_manhole->pose.orientation;
+
+  if(getDistance(current_state_, p0) < getDistance(current_state_, p1)) {
+      tf::Quaternion quat;
+      double corrected_yaw = std::atan2(p1.position.y - p0.position.y, p1.position.x - p0.position.x);
+      quat.setEuler(0.0, 0.0, corrected_yaw);
+      tf::quaternionTFToMsg(quat, corrected_quat);
+      tf::quaternionTFToMsg(quat, p0.orientation);
+      tf::quaternionTFToMsg(quat, best_manhole->pose.orientation);
+      tf::quaternionTFToMsg(quat, p1.orientation);
+      // through_path.push_back(p0);
+      // through_path.push_back(best_manhole->pose);
+      // through_path.push_back(p1);
+
+  }
+  else {
+    tf::Quaternion quat;
+    double corrected_yaw = std::atan2(p0.position.y - p1.position.y, p0.position.x - p1.position.x);
+    quat.setEuler(0.0, 0.0, corrected_yaw);
+    tf::quaternionTFToMsg(quat, corrected_quat);
+    tf::quaternionTFToMsg(quat, p0.orientation);
+    tf::quaternionTFToMsg(quat, best_manhole->pose.orientation);
+    tf::quaternionTFToMsg(quat, p1.orientation);
+    // through_path.push_back(p1);
+    // through_path.push_back(best_manhole->pose);
+    // through_path.push_back(p0);
+  }
+
+  tf::Quaternion corrected_quat_tf;
+  tf::quaternionMsgToTF(corrected_quat, corrected_quat_tf);
+  double corrected_yaw = tf::getYaw(corrected_quat_tf);
+
+  // std::cout << "p0" << p0.position.x << " " << p0.position.y << " " << p0.position.z << " " << corrected_yaw << std::endl;
+  // std::cout << "mh" << best_manhole->pose.position.x << " " << best_manhole->pose.position.y << " " << best_manhole->pose.position.z << " " << corrected_yaw << std::endl;
+  // std::cout << "p1" << p1.position.x << " " << p1.position.y << " " << p1.position.z << " " << corrected_yaw << std::endl;
+  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Corrected quat: %f", corrected_yaw);
+
+  if(manhole_traversal_status_ != ManholeTraversalMode::kGoingTo) {
+    if(getDistance(current_state_, p0) < getDistance(current_state_, p1)) {
+      // tf::Quaternion quat;
+      // double corrected_yaw = std::atan2(p1.position.y - p0.position.y, p1.position.x - p0.position.x);
+      // quat.setEuler(0.0, 0.0, corrected_yaw);
+      // tf::quaternionTFToMsg(quat, p0.orientation);
+      // tf::quaternionTFToMsg(quat, best_manhole->pose.orientation);
+      // tf::quaternionTFToMsg(quat, p1.orientation);
+      p0.orientation = corrected_quat;
+      best_manhole->pose.orientation = corrected_quat;
+      p1.orientation = corrected_quat;
+      through_path.push_back(p0);
+      through_path.push_back(best_manhole->pose);
+      through_path.push_back(p1);
+
+    }
+    else {
+      // tf::Quaternion quat;
+      // double corrected_yaw = std::atan2(p0.position.y - p1.position.y, p0.position.x - p1.position.x);
+      // quat.setEuler(0.0, 0.0, corrected_yaw);
+      // tf::quaternionTFToMsg(quat, p0.orientation);
+      // tf::quaternionTFToMsg(quat, best_manhole->pose.orientation);
+      // tf::quaternionTFToMsg(quat, p1.orientation);
+      p0.orientation = corrected_quat;
+      best_manhole->pose.orientation = corrected_quat;
+      p1.orientation = corrected_quat;
+      through_path.push_back(p1);
+      through_path.push_back(best_manhole->pose);
+      through_path.push_back(p0);
+    }
+
+    // ROS_WARN_COND(global_verbosity >= Verbosity::PLANNER_STATUS, "Manhole Traversal Path:");
+    ROS_WARN_COND(true, "Manhole Traversal Path:");
+    if(global_verbosity >= Verbosity::DEBUG) {
+    // if(true) {
+      std::cout << p0.position.x << " " << p0.position.y << " " << p0.position.z << " " << direction << std::endl;
+      std::cout << best_manhole->pose.position.x << " " << best_manhole->pose.position.y << " " << best_manhole->pose.position.z << " " << direction << std::endl;
+      std::cout << p1.position.x << " " << p1.position.y << " " << p1.position.z << " " << direction << std::endl;
+    }
+  }
+  else {
+    first_pose.orientation = corrected_quat;
+    first_pose.position.z += planning_params_.manhole_alignment_z_offset;
+    // std::cout << "First Pose z: " << first_pose.position.z << " offset: " << planning_params_.manhole_alignment_z_offset << std::endl;
+  }
+
+  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Path set 1");
+
+  geometry_msgs::Pose current_pose;
+  tf::Quaternion quat;
+  quat.setEuler(0.0, 0.0, current_state_[3]);
+  tf::Vector3 origin(current_state_[0], current_state_[1], current_state_[2]);
+  tf::Pose poseTF(quat, origin);
+  tf::poseTFToMsg(poseTF, current_pose);
+
+  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Path set 2");
+
+  std::vector<geometry_msgs::Pose> connecting_path;
+  bool success = search(current_pose, first_pose, false, connecting_path);
+  if(success) {
+    // connecting_path.back().orientation = best_manhole->pose.orientation;
+    connecting_path.push_back(first_pose);
+    connecting_path.back().orientation = corrected_quat;
+    through_path.insert(through_path.begin(), connecting_path.begin(), connecting_path.end());
+  }
+  else {
+    ROS_ERROR_COND(global_verbosity >= Verbosity::PLANNER_STATUS, "Connecting path not found");
+    return empty_path;
+  }
+
+  linearlyInterpolateYaw(through_path);
+
+  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Path set 3");
+
+  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "MH Mode (even later): %d", manhole_traversal_status_);
+
+  visualization_->visualizeManholeTraversalPath(through_path);
+
+  if(manhole_traversal_status_ == ManholeTraversalMode::kPathCheck) {
+    return empty_path;
+  } 
+  else if(manhole_traversal_status_ == ManholeTraversalMode::kPassingThrough) {
+    for(int i=0; i<through_path.size(); ++i) {
+      // through_path[i].orientation = best_manhole->pose.orientation;
+      through_path[i].orientation = corrected_quat;
+    }
+    best_manhole->active = false;
+
+    manhole_traversal_status_ = ManholeTraversalMode::kNone;
+    return through_path;
+
+    // while(manhole_passing_approved_ == ManholeApproval::kWaiting) {
+    //   ros::Duration(0.1).sleep();
+    //   ros::spinOnce();
+    // }
+    // manhole_passing_approved_ = ManholeApproval::kApproved;
+    // if(manhole_passing_approved_ == ManholeApproval::kReEvaluate) {
+    //   ROS_WARN("Re evaluate the manhole location");
+    //   manhole_detector_->reEvaluate(manhole_under_execution_);
+    //   // double waiting_time = 0.75;
+    //   // double dt = 0.01;
+    //   // for(double t=0; t<waiting_time; t+=dt) {
+    //   //   ros::Duration(dt).sleep();
+    //   //   ros::spinOnce();
+    //   // }
+    //   ROS_WARN("Re evaluation done");
+    //   std::vector<ManholeDetection> updated_detections;
+    //   manhole_detector_->getStableManholes(updated_detections);
+    //   for(auto new_det : updated_detections) {
+    //     auto it = detected_manholes_.find(new_det.id);
+    //     if(manhole_traversal_status_ == ManholeTraversalMode::kPassingThrough && 
+    //       new_det.id == manhole_under_execution_) {
+    //       manhole_still_exists = true;
+    //     }
+    //     if(it != detected_manholes_.end()) {
+    //       std::shared_ptr<Manhole> mh = detected_manholes_[new_det.id];
+    //       tf::Quaternion quat;
+    //       quat.setEuler(0.0, 0.0, new_det.mean_yaw);
+    //       tf::Vector3 origin(new_det.mean_pos[0], new_det.mean_pos[1], new_det.mean_pos[2]);
+    //       tf::Pose poseTF(quat, origin);
+    //       geometry_msgs::Pose pose;
+    //       tf::poseTFToMsg(poseTF, pose);
+    //       mh->pose = pose;
+    //     }
+    //     else {
+    //       std::shared_ptr<Manhole> mh;
+    //       mh.reset(new Manhole());
+    //       mh->id = new_det.id;
+    //       tf::Quaternion quat;
+    //       quat.setEuler(0.0, 0.0, new_det.mean_yaw);
+    //       tf::Vector3 origin(new_det.mean_pos[0], new_det.mean_pos[1], new_det.mean_pos[2]);
+    //       tf::Pose poseTF(quat, origin);
+    //       geometry_msgs::Pose pose;
+    //       tf::poseTFToMsg(poseTF, pose);
+    //       mh->pose = pose;
+
+    //       detected_manholes_[mh->id] = mh;
+    //     }
+    //   }
+    //   ROS_WARN("Resetting the manhole location");
+    //   best_manhole = detected_manholes_[manhole_under_execution_];
+    //   manhole_passing_approved_ = ManholeApproval::kWaiting;
+    // }
+    // else {
+    //   decision_made = true;
+    //   ROS_WARN("Decision Made: %d", (int)manhole_passing_approved_);
+    // }
+  }
+  else {
+    return through_path;
+  }
+
+  // if(manhole_traversal_status_ == ManholeTraversalMode::kPassingThrough) {
+  //   manhole_traversal_status_ = ManholeTraversalMode::kNone;
+  //   if(manhole_passing_approved_ == ManholeApproval::kApproved) {
+  //     manhole_passing_approved_ = ManholeApproval::kWaiting;
+  //     ROS_WARN("Manhole Traversal Approved");
+  //     best_manhole->active = false;
+  //     return through_path;
+  //   }
+  //   else {
+  //     manhole_passing_approved_ = ManholeApproval::kWaiting;
+  //     return empty_path;
+  //   }
+  // }
+  // else {
+  //   return through_path;
+  // }
+}
+
+std::vector<geometry_msgs::Pose> Rrg::getManholeTraversalPath(ManholeTraversalMode mode, ManholeTraversalStatus &status, int mh_id) {
+	std::vector<geometry_msgs::Pose> through_path;
+
+  std::vector<ManholeDetection> updated_detections;
+  // if(!manhole_detector_->getStableManholes(updated_detections)) {
+  //   return through_path;
+  // }
+  manhole_detector_->getStableManholes(updated_detections);
+
+  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "MH Mode: %d", mode);
+  
+  // if(manhole_traversal_status_ == ManholeTraversalMode::kNone) {
+  //   manhole_traversal_status_ = ManholeTraversalMode::kGoingTo;
+  // }
+  // else if(manhole_traversal_status_ == ManholeTraversalMode::kGoingTo) {
+  //   if(planning_params_.auto_manhole_path_approval) {
+  //   	manhole_traversal_status_ = ManholeTraversalMode::kPassingThrough;
+  //   }
+  //   else{
+  //   	manhole_traversal_status_ = ManholeTraversalMode::kPathCheck;
+  //   }
+  // }
+  // else if(manhole_traversal_status_ == ManholeTraversalMode::kPathCheck) {
+  //   if(planning_params_.auto_manhole_path_approval) {
+  //     manhole_passing_approved_ = ManholeApproval::kApproved;
+  //   }
+  //   if(manhole_passing_approved_ == ManholeApproval::kApproved) {
+  //     ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Manhole Traversal Approved");
+  //     manhole_passing_approved_ = ManholeApproval::kWaiting;
+  //     manhole_traversal_status_ = ManholeTraversalMode::kPassingThrough;
+  //   }
+  //   else if(manhole_passing_approved_ == ManholeApproval::kRejected) {
+  //     ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Manhole Traversal Rejected");
+  //     manhole_traversal_status_ = ManholeTraversalMode::kNone;
+  //     detected_manholes_[manhole_under_execution_]->active = false;
+  //     return through_path;
+  //   }
+  //   else if(manhole_passing_approved_ == ManholeApproval::kReEvaluate) {
+  //     ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Manhole Traversal ReEvaluate");
+  //     manhole_traversal_status_ = ManholeTraversalMode::kPathCheck;
+  //   }
+  // }
+
+  // if(!manhole_detector_->getStableManholes(updated_detections)) {
+  //   return through_path;
+  // }
+  // ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "MH Mode: %d", manhole_traversal_status_);
+  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "MH under exect: %d", manhole_under_execution_);
+
+  manhole_detector_->getStableManholes(updated_detections);
+  bool manhole_still_exists = false;
+  // std::cout << "Dets IDs:" << std::endl;
+  for(auto new_det : updated_detections) {
+    auto it = detected_manholes_.find(new_det.id);
+    // std::cout << new_det.id << std::endl;
+    if((mode == ManholeTraversalMode::kPathCheck) && 
+      new_det.id == manhole_under_execution_) {
+      manhole_still_exists = true;
+    }
+    if(it != detected_manholes_.end()) {
+      std::shared_ptr<Manhole> mh = detected_manholes_[new_det.id];
+      tf::Quaternion quat;
+      quat.setEuler(0.0, 0.0, new_det.mean_yaw);
+      tf::Vector3 origin(new_det.mean_pos[0], new_det.mean_pos[1], new_det.mean_pos[2]);
+      tf::Pose poseTF(quat, origin);
+      geometry_msgs::Pose pose;
+      tf::poseTFToMsg(poseTF, pose);
+      mh->pose = pose;
+    }
+    else {
+      // New manhole
+      if(new_det.mean_pos[2] > config_->system_params.max_mh_height) {
+        // ROS_WARN("Manhole %d too high (%f)", new_det.id, new_det.mean_pos[2]);
+        continue;
+      }
+      std::shared_ptr<Manhole> mh;
+      mh.reset(new Manhole());
+      mh->id = new_det.id;
+      tf::Quaternion quat;
+      quat.setEuler(0.0, 0.0, new_det.mean_yaw);
+      tf::Vector3 origin(new_det.mean_pos[0], new_det.mean_pos[1], new_det.mean_pos[2]);
+      tf::Pose poseTF(quat, origin);
+      geometry_msgs::Pose pose;
+      tf::poseTFToMsg(poseTF, pose);
+      mh->pose = pose;
+
+      detected_manholes_[mh->id] = mh;
+    }
+  }
+
+  if(mode == ManholeTraversalMode::kPathCheck)
+  {
+    if(manhole_still_exists) 
+    {
+      status = ManholeTraversalStatus::OK;
+      return through_path;
+    }
+    else // If after second detection, the manhole is found to be a false detection, reject it and go to the next closest
+    {
+      ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "This MH does not exist");
+      status = ManholeTraversalStatus::MANHOLE_DOUBLE_CHECK_FAILED;
+      return through_path;
+    }
+  }
+  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Detections updated");
+
+
+	if(detected_manholes_.empty()) {
+    ROS_ERROR_COND(global_verbosity >= Verbosity::ERROR, "No Manholes at all");
+    status = ManholeTraversalStatus::NO_MANHOLES;
+		return through_path;
+	}
+
+	std::shared_ptr<Manhole> best_manhole;
+	double closest_distance = std::numeric_limits<double>::max();
+  bool found = false;
+  if(mode == ManholeTraversalMode::kGoingTo) {
+    for(auto it : detected_manholes_)
+    {
+      if(it.second->id == mh_id)
+      {
+        found = true;
+        best_manhole = it.second;
+        manhole_under_execution_ = mh_id;
+      }
+    }
+  }
+  else {
+    best_manhole = detected_manholes_[manhole_under_execution_];
+    found = true;
+  }
+
+  if(!found) {
+    ROS_ERROR_COND(global_verbosity >= Verbosity::ERROR, "No Appropriate Manhole Found");
+    status = ManholeTraversalStatus::NO_MANHOLES;
+    return through_path;
+  }
+
+  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Best mh found: %d", manhole_under_execution_);
+
+  int max_tries = 5;
+  std::vector<geometry_msgs::Pose> empty_path;
+  
+
+  if(global_verbosity >= Verbosity::DEBUG) {
+    std::cout << best_manhole->pose.position.x << " " << best_manhole->pose.position.y << " " << best_manhole->pose.position.z << " | "
+              << best_manhole->pose.orientation.x << " " << best_manhole->pose.orientation.y << " " << best_manhole->pose.orientation.z << " " << best_manhole->pose.orientation.w << std::endl;
+  }
+  
+  double direction = tf::getYaw(best_manhole->pose.orientation);
+  // std::cout << "Direction: " << direction << std::endl;
+  geometry_msgs::Pose p0;
+  p0.position.x = best_manhole->pose.position.x - planning_params_.manhole_traversal_path_edge_length * std::cos(direction);
+  p0.position.y = best_manhole->pose.position.y - planning_params_.manhole_traversal_path_edge_length * std::sin(direction);
+  p0.position.z = best_manhole->pose.position.z;
+  p0.orientation = best_manhole->pose.orientation;
+  // through_path.push_back(p0);
+  // through_path.push_back(best_manhole->pose);
+  geometry_msgs::Pose p1;
+  p1.position.x = best_manhole->pose.position.x + planning_params_.manhole_traversal_path_edge_length * std::cos(direction);
+  p1.position.y = best_manhole->pose.position.y + planning_params_.manhole_traversal_path_edge_length * std::sin(direction);
+  p1.position.z = best_manhole->pose.position.z;
+  p1.orientation = best_manhole->pose.orientation;
+  // through_path.push_back(p1);
+  
+  // best_manhole->active = false;
+  // best_manhole->through_path = through_path;
+
+  geometry_msgs::Pose first_pose;
+  if(getDistance(current_state_, p0) < getDistance(current_state_, p1)) {
+    first_pose = p0;
+  }
+  else {
+    first_pose = p1;
+  }
+
+  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Path direction set");
+  // ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "MH Mode (later): %d", manhole_traversal_status_);
+
+  geometry_msgs::Quaternion corrected_quat = best_manhole->pose.orientation;
+
+  if(getDistance(current_state_, p0) < getDistance(current_state_, p1)) {
+      tf::Quaternion quat;
+      double corrected_yaw = std::atan2(p1.position.y - p0.position.y, p1.position.x - p0.position.x);
+      quat.setEuler(0.0, 0.0, corrected_yaw);
+      tf::quaternionTFToMsg(quat, corrected_quat);
+      tf::quaternionTFToMsg(quat, p0.orientation);
+      tf::quaternionTFToMsg(quat, best_manhole->pose.orientation);
+      tf::quaternionTFToMsg(quat, p1.orientation);
+  }
+  else {
+    tf::Quaternion quat;
+    double corrected_yaw = std::atan2(p0.position.y - p1.position.y, p0.position.x - p1.position.x);
+    quat.setEuler(0.0, 0.0, corrected_yaw);
+    tf::quaternionTFToMsg(quat, corrected_quat);
+    tf::quaternionTFToMsg(quat, p0.orientation);
+    tf::quaternionTFToMsg(quat, best_manhole->pose.orientation);
+    tf::quaternionTFToMsg(quat, p1.orientation);
+  }
+
+  tf::Quaternion corrected_quat_tf;
+  tf::quaternionMsgToTF(corrected_quat, corrected_quat_tf);
+  double corrected_yaw = tf::getYaw(corrected_quat_tf);
+
+  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Corrected quat: %f", corrected_yaw);
+
+  if(mode == ManholeTraversalMode::kPassingThrough) {
+    if(getDistance(current_state_, p0) < getDistance(current_state_, p1)) {
+      p0.orientation = corrected_quat;
+      best_manhole->pose.orientation = corrected_quat;
+      p1.orientation = corrected_quat;
+      through_path.push_back(p0);
+      through_path.push_back(best_manhole->pose);
+      through_path.push_back(p1);
+
+    }
+    else {
+      p0.orientation = corrected_quat;
+      best_manhole->pose.orientation = corrected_quat;
+      p1.orientation = corrected_quat;
+      through_path.push_back(p1);
+      through_path.push_back(best_manhole->pose);
+      through_path.push_back(p0);
+    }
+
+    // ROS_WARN_COND(global_verbosity >= Verbosity::PLANNER_STATUS, "Manhole Traversal Path:");
+    ROS_WARN_COND(true, "Manhole Traversal Path:");
+    if(global_verbosity >= Verbosity::DEBUG) {
+    // if(true) {
+      std::cout << p0.position.x << " " << p0.position.y << " " << p0.position.z << " " << direction << std::endl;
+      std::cout << best_manhole->pose.position.x << " " << best_manhole->pose.position.y << " " << best_manhole->pose.position.z << " " << direction << std::endl;
+      std::cout << p1.position.x << " " << p1.position.y << " " << p1.position.z << " " << direction << std::endl;
+    }
+  }
+  else {
+    first_pose.orientation = corrected_quat;
+    first_pose.position.z += planning_params_.manhole_alignment_z_offset;
+    // std::cout << "First Pose z: " << first_pose.position.z << " offset: " << planning_params_.manhole_alignment_z_offset << std::endl;
+  }
+
+  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Path set 1");
+
+  geometry_msgs::Pose current_pose;
+  tf::Quaternion quat;
+  quat.setEuler(0.0, 0.0, current_state_[3]);
+  tf::Vector3 origin(current_state_[0], current_state_[1], current_state_[2]);
+  tf::Pose poseTF(quat, origin);
+  tf::poseTFToMsg(poseTF, current_pose);
+
+  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Path set 2");
+
+  std::vector<geometry_msgs::Pose> connecting_path;
+  bool success = search(current_pose, first_pose, false, connecting_path);
+  if(success) {
+    // connecting_path.back().orientation = best_manhole->pose.orientation;
+    connecting_path.push_back(first_pose);
+    connecting_path.back().orientation = corrected_quat;
+    through_path.insert(through_path.begin(), connecting_path.begin(), connecting_path.end());
+  }
+  else {
+    ROS_ERROR_COND(global_verbosity >= Verbosity::PLANNER_STATUS, "Connecting path not found");
+    return empty_path;
+  }
+
+  linearlyInterpolateYaw(through_path);
+
+  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Path set 3");
+
+  // ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "MH Mode (even later): %d", manhole_traversal_status_);
+
+  visualization_->visualizeManholeTraversalPath(through_path);
+
+  if(mode == ManholeTraversalMode::kPathCheck) {
+    status = ManholeTraversalStatus::OK;
+    return empty_path;
+  } 
+  else if(mode == ManholeTraversalMode::kPassingThrough) {
+    for(int i=0; i<through_path.size(); ++i) {
+      // through_path[i].orientation = best_manhole->pose.orientation;
+      through_path[i].orientation = corrected_quat;
+    }
+    best_manhole->active = false;
+    status = ManholeTraversalStatus::OK;
+    return through_path;
+  }
+  else {
+    status = ManholeTraversalStatus::OK;
+    return through_path;
+  }
+}
+
+
+std::vector<geometry_msgs::Pose> Rrg::getManholeTraversalPath(ManholeTraversalMode mode, ManholeTraversalStatus &status) {
+	std::vector<geometry_msgs::Pose> through_path;
+
+  std::vector<ManholeDetection> updated_detections;
+  // if(!manhole_detector_->getStableManholes(updated_detections)) {
+  //   return through_path;
+  // }
+  manhole_detector_->getStableManholes(updated_detections);
+
+  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "MH Mode: %d", mode);
+  
+  // if(manhole_traversal_status_ == ManholeTraversalMode::kNone) {
+  //   manhole_traversal_status_ = ManholeTraversalMode::kGoingTo;
+  // }
+  // else if(manhole_traversal_status_ == ManholeTraversalMode::kGoingTo) {
+  //   if(planning_params_.auto_manhole_path_approval) {
+  //   	manhole_traversal_status_ = ManholeTraversalMode::kPassingThrough;
+  //   }
+  //   else{
+  //   	manhole_traversal_status_ = ManholeTraversalMode::kPathCheck;
+  //   }
+  // }
+  // else if(manhole_traversal_status_ == ManholeTraversalMode::kPathCheck) {
+  //   if(planning_params_.auto_manhole_path_approval) {
+  //     manhole_passing_approved_ = ManholeApproval::kApproved;
+  //   }
+  //   if(manhole_passing_approved_ == ManholeApproval::kApproved) {
+  //     ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Manhole Traversal Approved");
+  //     manhole_passing_approved_ = ManholeApproval::kWaiting;
+  //     manhole_traversal_status_ = ManholeTraversalMode::kPassingThrough;
+  //   }
+  //   else if(manhole_passing_approved_ == ManholeApproval::kRejected) {
+  //     ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Manhole Traversal Rejected");
+  //     manhole_traversal_status_ = ManholeTraversalMode::kNone;
+  //     detected_manholes_[manhole_under_execution_]->active = false;
+  //     return through_path;
+  //   }
+  //   else if(manhole_passing_approved_ == ManholeApproval::kReEvaluate) {
+  //     ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Manhole Traversal ReEvaluate");
+  //     manhole_traversal_status_ = ManholeTraversalMode::kPathCheck;
+  //   }
+  // }
+
+  // if(!manhole_detector_->getStableManholes(updated_detections)) {
+  //   return through_path;
+  // }
+  // ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "MH Mode: %d", manhole_traversal_status_);
+  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "MH under exect: %d", manhole_under_execution_);
+
+  manhole_detector_->getStableManholes(updated_detections);
+  bool manhole_still_exists = false;
+  // std::cout << "Dets IDs:" << std::endl;
+  for(auto new_det : updated_detections) {
+    auto it = detected_manholes_.find(new_det.id);
+    // std::cout << new_det.id << std::endl;
+    if((mode == ManholeTraversalMode::kPathCheck) && 
+      new_det.id == manhole_under_execution_) {
+      manhole_still_exists = true;
+    }
+    if(it != detected_manholes_.end()) {
+      std::shared_ptr<Manhole> mh = detected_manholes_[new_det.id];
+      tf::Quaternion quat;
+      quat.setEuler(0.0, 0.0, new_det.mean_yaw);
+      tf::Vector3 origin(new_det.mean_pos[0], new_det.mean_pos[1], new_det.mean_pos[2]);
+      tf::Pose poseTF(quat, origin);
+      geometry_msgs::Pose pose;
+      tf::poseTFToMsg(poseTF, pose);
+      mh->pose = pose;
+    }
+    else {
+      // New manhole
+      if(new_det.mean_pos[2] > planning_params_.max_manhole_height) {
+        ROS_WARN("Manhole %d too high (%f)", new_det.id, new_det.mean_pos[2]);
+        continue;
+      }
+      std::shared_ptr<Manhole> mh;
+      mh.reset(new Manhole());
+      mh->id = new_det.id;
+      tf::Quaternion quat;
+      quat.setEuler(0.0, 0.0, new_det.mean_yaw);
+      tf::Vector3 origin(new_det.mean_pos[0], new_det.mean_pos[1], new_det.mean_pos[2]);
+      tf::Pose poseTF(quat, origin);
+      geometry_msgs::Pose pose;
+      tf::poseTFToMsg(poseTF, pose);
+      mh->pose = pose;
+
+      detected_manholes_[mh->id] = mh;
+    }
+  }
+
+  if(mode == ManholeTraversalMode::kPathCheck)
+  {
+    if(manhole_still_exists) 
+    {
+      status = ManholeTraversalStatus::OK;
+      return through_path;
+    }
+    else // If after second detection, the manhole is found to be a false detection, reject it and go to the next closest
+    {
+      ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "This MH does not exist");
+      status = ManholeTraversalStatus::MANHOLE_DOUBLE_CHECK_FAILED;
+      return through_path;
+    }
+  }
+  ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Detections updated");
+
+
+	if(detected_manholes_.empty()) {
+    ROS_ERROR_COND(global_verbosity >= Verbosity::ERROR, "No Manholes at all");
+    status = ManholeTraversalStatus::NO_MANHOLES;
+		return through_path;
+	}
+
+	std::shared_ptr<Manhole> best_manhole;
+	double closest_distance = std::numeric_limits<double>::max();
+  bool found = false;
+  if(mode == ManholeTraversalMode::kGoingTo) {
+  // if(mode != ManholeTraversalMode::kPassingThrough && mode != ManholeTraversalMode::kPathCheck) {
+    for(auto it : detected_manholes_) {
+      std::shared_ptr<Manhole> current_manhole = it.second;
+      if(!current_manhole->active) {
+        /* TODO: Update active status of all the semantics based on this */
+        continue;
+      }
+      
+      if(planning_params_.exploration_only)  // If exploration only, go to the closest manhole
+      {
+        double mh_robot_dist = (current_state_.head(3) 
+              - Eigen::Vector3d(current_manhole->pose.position.x, 
+                                current_manhole->pose.position.y, 
+                                current_manhole->pose.position.z)).norm();
+        if(mh_robot_dist < closest_distance) {
+          closest_distance = mh_robot_dist;
+          best_manhole = current_manhole;
+          found = true;
+        }
+      }
+      else // If exploration + inspection, find the manhole that leads to the next compartment
+      {
+        double mh_robot_dist = (planning_params_.compartment_centers[next_compartment_index_-1] - Eigen::Vector3d(current_manhole->pose.position.x, current_manhole->pose.position.y, current_manhole->pose.position.z)).norm();
+        Eigen::Vector3d compartment_dim = planning_params_.compartment_dimensions.max_val - planning_params_.compartment_dimensions.min_val;
+        if(mh_robot_dist > compartment_dim.norm()/2.0)
+        {
+          continue;
+        }
+        double dist;
+        if(next_compartment_.x() < std::numeric_limits<double>::max())
+          dist = (next_compartment_ - Eigen::Vector3d(current_manhole->pose.position.x, current_manhole->pose.position.y, current_manhole->pose.position.z)).norm();
+        else
+          dist = (current_state_.head(3) - Eigen::Vector3d(current_manhole->pose.position.x, current_manhole->pose.position.y, current_manhole->pose.position.z)).norm();
+        if(dist < closest_distance) {
+          closest_distance = dist;
+          best_manhole = current_manhole;
+          found = true;
+        }
+      }
+    }
+    if(found)
+      manhole_under_execution_ = best_manhole->id;
+  }
+  else {
+    best_manhole = detected_manholes_[manhole_under_execution_];
+    found = true;
+  }
+
+  if(!found) {
+    ROS_ERROR_COND(global_verbosity >= Verbosity::ERROR, "No Appropriate Manhole Found");
+    status = ManholeTraversalStatus::NO_MANHOLES;
+    return through_path;
+  }
+
+  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Best mh found: %d", manhole_under_execution_);
+
+  int max_tries = 5;
+  std::vector<geometry_msgs::Pose> empty_path;
+  
+
+  if(global_verbosity >= Verbosity::DEBUG) {
+    std::cout << best_manhole->pose.position.x << " " << best_manhole->pose.position.y << " " << best_manhole->pose.position.z << " | "
+              << best_manhole->pose.orientation.x << " " << best_manhole->pose.orientation.y << " " << best_manhole->pose.orientation.z << " " << best_manhole->pose.orientation.w << std::endl;
+  }
+  
+  double direction = tf::getYaw(best_manhole->pose.orientation);
+  // std::cout << "Direction: " << direction << std::endl;
+  geometry_msgs::Pose p0;
+  p0.position.x = best_manhole->pose.position.x - planning_params_.manhole_traversal_path_edge_length * std::cos(direction);
+  p0.position.y = best_manhole->pose.position.y - planning_params_.manhole_traversal_path_edge_length * std::sin(direction);
+  p0.position.z = best_manhole->pose.position.z;
+  p0.orientation = best_manhole->pose.orientation;
+  // through_path.push_back(p0);
+  // through_path.push_back(best_manhole->pose);
+  geometry_msgs::Pose p1;
+  p1.position.x = best_manhole->pose.position.x + planning_params_.manhole_traversal_path_edge_length * std::cos(direction);
+  p1.position.y = best_manhole->pose.position.y + planning_params_.manhole_traversal_path_edge_length * std::sin(direction);
+  p1.position.z = best_manhole->pose.position.z;
+  p1.orientation = best_manhole->pose.orientation;
+  // through_path.push_back(p1);
+  
+  // best_manhole->active = false;
+  // best_manhole->through_path = through_path;
+
+  geometry_msgs::Pose first_pose;
+  if(getDistance(current_state_, p0) < getDistance(current_state_, p1)) {
+    first_pose = p0;
+  }
+  else {
+    first_pose = p1;
+  }
+
+  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Path direction set");
+  // ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "MH Mode (later): %d", manhole_traversal_status_);
+
+  geometry_msgs::Quaternion corrected_quat = best_manhole->pose.orientation;
+
+  if(getDistance(current_state_, p0) < getDistance(current_state_, p1)) {
+      tf::Quaternion quat;
+      double corrected_yaw = std::atan2(p1.position.y - p0.position.y, p1.position.x - p0.position.x);
+      quat.setEuler(0.0, 0.0, corrected_yaw);
+      tf::quaternionTFToMsg(quat, corrected_quat);
+      tf::quaternionTFToMsg(quat, p0.orientation);
+      tf::quaternionTFToMsg(quat, best_manhole->pose.orientation);
+      tf::quaternionTFToMsg(quat, p1.orientation);
+  }
+  else {
+    tf::Quaternion quat;
+    double corrected_yaw = std::atan2(p0.position.y - p1.position.y, p0.position.x - p1.position.x);
+    quat.setEuler(0.0, 0.0, corrected_yaw);
+    tf::quaternionTFToMsg(quat, corrected_quat);
+    tf::quaternionTFToMsg(quat, p0.orientation);
+    tf::quaternionTFToMsg(quat, best_manhole->pose.orientation);
+    tf::quaternionTFToMsg(quat, p1.orientation);
+  }
+
+  tf::Quaternion corrected_quat_tf;
+  tf::quaternionMsgToTF(corrected_quat, corrected_quat_tf);
+  double corrected_yaw = tf::getYaw(corrected_quat_tf);
+
+  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Corrected quat: %f", corrected_yaw);
+
+  if(mode == ManholeTraversalMode::kPassingThrough) {
+    if(getDistance(current_state_, p0) < getDistance(current_state_, p1)) {
+      p0.orientation = corrected_quat;
+      best_manhole->pose.orientation = corrected_quat;
+      p1.orientation = corrected_quat;
+      through_path.push_back(p0);
+      through_path.push_back(best_manhole->pose);
+      through_path.push_back(p1);
+
+    }
+    else {
+      p0.orientation = corrected_quat;
+      best_manhole->pose.orientation = corrected_quat;
+      p1.orientation = corrected_quat;
+      through_path.push_back(p1);
+      through_path.push_back(best_manhole->pose);
+      through_path.push_back(p0);
+    }
+
+    // ROS_WARN_COND(global_verbosity >= Verbosity::PLANNER_STATUS, "Manhole Traversal Path:");
+    ROS_WARN_COND(true, "Manhole Traversal Path:");
+    if(global_verbosity >= Verbosity::DEBUG) {
+    // if(true) {
+      std::cout << p0.position.x << " " << p0.position.y << " " << p0.position.z << " " << direction << std::endl;
+      std::cout << best_manhole->pose.position.x << " " << best_manhole->pose.position.y << " " << best_manhole->pose.position.z << " " << direction << std::endl;
+      std::cout << p1.position.x << " " << p1.position.y << " " << p1.position.z << " " << direction << std::endl;
+    }
+  }
+  else {
+    first_pose.orientation = corrected_quat;
+    first_pose.position.z += planning_params_.manhole_alignment_z_offset;
+    // std::cout << "First Pose z: " << first_pose.position.z << " offset: " << planning_params_.manhole_alignment_z_offset << std::endl;
+  }
+
+  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Path set 1");
+
+  geometry_msgs::Pose current_pose;
+  tf::Quaternion quat;
+  quat.setEuler(0.0, 0.0, current_state_[3]);
+  tf::Vector3 origin(current_state_[0], current_state_[1], current_state_[2]);
+  tf::Pose poseTF(quat, origin);
+  tf::poseTFToMsg(poseTF, current_pose);
+
+  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Path set 2");
+
+  std::vector<geometry_msgs::Pose> connecting_path;
+  bool success = search(current_pose, first_pose, false, connecting_path);
+  if(success) {
+    // connecting_path.back().orientation = best_manhole->pose.orientation;
+    connecting_path.push_back(first_pose);
+    connecting_path.back().orientation = corrected_quat;
+    through_path.insert(through_path.begin(), connecting_path.begin(), connecting_path.end());
+  }
+  else {
+    ROS_ERROR_COND(global_verbosity >= Verbosity::PLANNER_STATUS, "Connecting path not found");
+    return empty_path;
+  }
+
+  linearlyInterpolateYaw(through_path);
+
+  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Path set 3");
+
+  // ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "MH Mode (even later): %d", manhole_traversal_status_);
+
+  visualization_->visualizeManholeTraversalPath(through_path);
+
+  if(mode == ManholeTraversalMode::kPathCheck) {
+    status = ManholeTraversalStatus::OK;
+    return empty_path;
+  } 
+  else if(mode == ManholeTraversalMode::kPassingThrough) {
+    for(int i=0; i<through_path.size(); ++i) {
+      // through_path[i].orientation = best_manhole->pose.orientation;
+      through_path[i].orientation = corrected_quat;
+    }
+    best_manhole->active = false;
+    manholes_traversed_.push_back(best_manhole->id);
+    status = ManholeTraversalStatus::OK;
+    return through_path;
+  }
+  else {
+    status = ManholeTraversalStatus::OK;
+    return through_path;
+  }
+
+  
+
+}
+
+std::vector<geometry_msgs::Pose> Rrg::reRunGlobalPlanner(int &status) {
+  return runGlobalPlanner(current_global_vertex_id_, true, true, status);
 }
 
 std::vector<geometry_msgs::Pose> Rrg::runGlobalPlanner(int vertex_id,
                                                        bool not_check_frontier,
-                                                       bool ignore_time) {
+                                                       bool ignore_time,
+                                                       int &status) {
   // @not_check_frontier: just check if it is feasible (collision-free + time)
   // @ignore_time: don't consider time budget.
+
+  visualization_->visualizeGlobalGraph(global_graph_);
 
   // Check if exists any frontier in the global graph
   // Get the list of current frontiers.
@@ -4851,6 +8195,15 @@ std::vector<geometry_msgs::Pose> Rrg::runGlobalPlanner(int vertex_id,
     ros::Duration(3.0).sleep();  // sleep to unblock the thread to get and
                                  // update all latest pose update.
     ros::spinOnce();
+  }
+  
+  
+  status = planner_msgs::planner_srv::Response::kRepositioning;
+
+  if(!vertex_id && planning_params_.enable_manhole_traversal && planning_params_.exploration_only)  // Don't do manhole traversal if asked to go to a specific vertex
+  {
+    status = -1;
+		return getManholeTraversalPath();	
   }
 
   START_TIMER(ttime);
@@ -4870,7 +8223,7 @@ std::vector<geometry_msgs::Pose> Rrg::runGlobalPlanner(int vertex_id,
   // Check if the vertex id exists
   if ((vertex_id < 0) || (vertex_id >= global_graph_->getNumVertices())) {
     ROS_WARN_COND(global_verbosity >= Verbosity::WARN, 
-        "[GlobalGraph] Vertex ID doesn't exist, plz consider IDs in the range "
+        "[GlobalGraph] GbplannerVertex ID doesn't exist, plz consider IDs in the range "
         "[0-%d].",
         global_graph_->getNumVertices() - 1);
     return ret_path;
@@ -4890,13 +8243,13 @@ std::vector<geometry_msgs::Pose> Rrg::runGlobalPlanner(int vertex_id,
 
   // Check if exists any frontiers in the graph.
   // Re-update all the frontiers based on the volumetric gain.
-  std::vector<Vertex*> global_frontiers;
+  std::vector<GbplannerVertex*> global_frontiers;
   int num_vertices = global_graph_->getNumVertices();
-  ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "Re-check all frontiers.");
+  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Re-check all frontiers.");
   global_frontiers.clear();
   for (int id = 0; id < num_vertices; ++id) {
     if (global_graph_->getVertex(id)->type == VertexType::kFrontier) {
-      Vertex* v = global_graph_->getVertex(id);
+      GbplannerVertex* v = global_graph_->getVertex(id);
       computeVolumetricGainRayModelNoBound(v->state, v->vol_gain);
       if (!v->vol_gain.is_frontier)
         v->type = VertexType::kUnvisited;
@@ -4904,18 +8257,19 @@ std::vector<geometry_msgs::Pose> Rrg::runGlobalPlanner(int vertex_id,
         global_frontiers.push_back(global_graph_->getVertex(id));
     }
   }
-  ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "Currently have %d frontiers in the global graph.",
+  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Currently have %d frontiers in the global graph.",
            (int)global_frontiers.size());
   if ((!not_check_frontier) && (global_frontiers.size() <= 0)) {
-    ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "No frontier exists");
+    ROS_WARN_COND(global_verbosity >= Verbosity::PLANNER_STATUS, "No frontier exists");
     // Keep exploring or go home if no more frontiers
     if (planning_params_.go_home_if_fully_explored) {
-      ROS_WARN_COND(global_verbosity >= Verbosity::WARN, " --> Calling HOMING instead.");
+      ROS_WARN_COND(global_verbosity >= Verbosity::PLANNER_STATUS, " --> Calling HOMING instead.");
       ret_path = getHomingPath(world_frame_);
       homing_engaged_ = true;
     } else {
       num_low_gain_iters_ = 0;
     }
+    status = planner_msgs::planner_srv::Response::kHoming;
     return ret_path;
   }
 
@@ -4928,7 +8282,7 @@ std::vector<geometry_msgs::Pose> Rrg::runGlobalPlanner(int vertex_id,
       current_state_[3];
   cur_state[2] -=
       (planning_params_.robot_height - planning_params_.max_ground_height);
-  Vertex* link_vertex = NULL;
+  GbplannerVertex* link_vertex = NULL;
   const double kRadiusLimit = 1.5;  // 0.5
   bool connected_to_graph =
       connectStateToGraph(global_graph_, cur_state, link_vertex, kRadiusLimit);
@@ -4954,7 +8308,7 @@ std::vector<geometry_msgs::Pose> Rrg::runGlobalPlanner(int vertex_id,
   }
   // Check if the planner should find the best vertex automatically or manually
   double best_gain = -1.0;
-  Vertex* best_frontier = NULL;
+  GbplannerVertex* best_frontier = NULL;
 
   if (vertex_id) {
     // Manual mode
@@ -5002,7 +8356,7 @@ std::vector<geometry_msgs::Pose> Rrg::runGlobalPlanner(int vertex_id,
     ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "[Global Planner] Auto mode");
     // Get list of feasible frontiers by checking remaining time.
     // Leave the check empty for now since it relate to time budget setting.
-    std::vector<Vertex*> feasible_global_frontiers;
+    std::vector<GbplannerVertex*> feasible_global_frontiers;
     for (auto& f : global_frontiers) {
       if (ignore_time)
         feasible_global_frontiers.push_back(f);
@@ -5035,7 +8389,7 @@ std::vector<geometry_msgs::Pose> Rrg::runGlobalPlanner(int vertex_id,
         }
       }
     }
-    ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "Get %d feasible frontiers from global frontiers.",
+    ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Get %d feasible frontiers from global frontiers.",
              (int)feasible_global_frontiers.size());
     if (feasible_global_frontiers.size() <= 0) {
       ROS_INFO_COND(global_verbosity >= Verbosity::INFO, 
@@ -5047,7 +8401,7 @@ std::vector<geometry_msgs::Pose> Rrg::runGlobalPlanner(int vertex_id,
     // Compute exploration gain.
     std::unordered_map<int, double> frontier_exp_gain;
     for (int i = 0; i < feasible_global_frontiers.size(); ++i) {
-      Vertex* f = feasible_global_frontiers[i];
+      GbplannerVertex* f = feasible_global_frontiers[i];
       // get gain.
       std::vector<int> current_to_frontier_path_id;
       std::vector<int> frontier_to_home_path_id;
@@ -5091,7 +8445,7 @@ std::vector<geometry_msgs::Pose> Rrg::runGlobalPlanner(int vertex_id,
     // Sort into descending order.
     std::sort(feasible_global_frontiers.begin(),
               feasible_global_frontiers.end(),
-              [&frontier_exp_gain](const Vertex* a, const Vertex* b) {
+              [&frontier_exp_gain](const GbplannerVertex* a, const GbplannerVertex* b) {
                 return frontier_exp_gain[a->id] > frontier_exp_gain[b->id];
               });
     // Print out
@@ -5181,7 +8535,7 @@ std::vector<geometry_msgs::Pose> Rrg::runGlobalPlanner(int vertex_id,
     ret_path = interp_path;
   }
 
-  visualization_->visualizeGlobalGraph(global_graph_);
+  
   visualization_->visualizeRefPath(ret_path);
   return ret_path;
 }
@@ -5303,8 +8657,10 @@ bool Rrg::searchPathThroughCenterPoint(const StateVec& current_state,
     path.push_back(start_pose);
     path.push_back(end_pose);
     if (isPathCollisionFree(path, robot_size)) {
-      std::cout << "Best voxel to go: " << center << std::endl;
-      std::cout << "With robot size: " << robot_size << std::endl;
+      if(global_verbosity >= Verbosity::INFO) {
+        std::cout << "Best voxel to go: " << center << std::endl;
+        std::cout << "With robot size: " << robot_size << std::endl;
+      }
       return true;
     }
 
@@ -5323,8 +8679,10 @@ bool Rrg::searchPathThroughCenterPoint(const StateVec& current_state,
       path.push_back(start_pose);
       path.push_back(end_pose);
       if (isPathCollisionFree(path, robot_size)) {
-        std::cout << "Best voxel to go: " << center << std::endl;
-        std::cout << "With robot size: " << robot_size << std::endl;
+        if(global_verbosity >= Verbosity::INFO) {
+          std::cout << "Best voxel to go: " << center << std::endl;
+          std::cout << "With robot size: " << robot_size << std::endl;
+        }
         return true;
       }
     }
@@ -5360,12 +8718,16 @@ std::vector<geometry_msgs::Pose> Rrg::searchPathToPassGate() {
                                ros::Time(0), tfW2G);
       tf::Vector3 vec = tfW2G.getOrigin();
       gate_center << vec.x(), vec.y(), vec.z();
-      std::cout << "Darpa gate offset: "
-                << darpa_gate_params_.darpa_frame_offset << std::endl;
+      if(global_verbosity >= Verbosity::INFO) {
+        std::cout << "Darpa gate offset: "
+                  << darpa_gate_params_.darpa_frame_offset << std::endl;
+      }
       gate_center = gate_center + darpa_gate_params_.darpa_frame_offset;
       // don't use heading for now.
       // gate_heading = tf::getYaw(tfW2G.getRotation());
-      std::cout << "Darpa gate center: " << gate_center << std::endl;
+      if(global_verbosity >= Verbosity::INFO) {
+        std::cout << "Darpa gate center: " << gate_center << std::endl;
+      }
     } catch (tf::TransformException ex) {
       ROS_ERROR_COND(global_verbosity >= Verbosity::ERROR, "%s", ex.what());
       ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "Could not look up TF for gate center.");
@@ -5455,12 +8817,12 @@ std::vector<geometry_msgs::Pose> Rrg::searchPathToPassGate() {
     setHomingPos();
     // Add this path to the global graph.
     if (global_graph_->getNumVertices()) {
-      std::vector<Vertex*> vertices_to_add;
+      std::vector<GbplannerVertex*> vertices_to_add;
       for (int i = 0; i < ret_path.size(); ++i) {
         StateVec st(ret_path[i].position.x, ret_path[i].position.y,
                     ret_path[i].position.z, 0);
-        Vertex* ver =
-            new Vertex(i, st);  // temporary id to generate vertex list.
+        GbplannerVertex* ver =
+            new GbplannerVertex(i, st);  // temporary id to generate vertex list.
         ver->is_leaf_vertex = false;
         vertices_to_add.push_back(ver);
       }
@@ -5474,6 +8836,73 @@ std::vector<geometry_msgs::Pose> Rrg::searchPathToPassGate() {
 
   if (ret_path.empty()) ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "Could not find path to go through.");
   return ret_path;
+}
+
+void Rrg::cameraAnnotationTimerCallback(const ros::TimerEvent& event) {
+  if(!planning_params_.annotate_map_with_camera) return;
+
+  // ROS_WARN("Camera annotation enabled");
+
+  for(auto sensor : camera_annotation_params_.sensor_list) {
+    std::vector<Eigen::Vector3d> multiray_endpoints;
+    camera_annotation_params_.sensor[sensor].getFrustumEndpoints(current_state_, multiray_endpoints);
+    // std::cout << "Number of rays: " << multiray_endpoints.size() << std::endl;
+    Eigen::Vector3d current_pos = current_state_.head(3);
+    map_manager_->annotateCameraVoxels(current_pos, multiray_endpoints);
+  }
+}
+
+void Rrg::annotateSemanticPredictions(std::vector<Eigen::Vector3d> points)
+{
+  for(auto pt : points)  map_manager_->annotateVoxel(pt, 1);
+}
+
+void Rrg::annotateSemanticPredictions(std::shared_ptr<SSGManager> predicted_graph)
+{
+  std::vector<Eigen::Vector3d> points_to_annotate;
+  for(auto v_it : predicted_graph->vertices_map_)
+  {
+    if(v_it.second->label == L_LONG)
+    {
+      // LongInstance* l_inst = std::any_cast<LongInstance*>(v_it.second->metadata);
+      Longitudinal l;
+
+      // double min_dist = 999, max_dist = -999;
+      // for(auto pt : l_inst->line.points->points)
+      // {
+      //   Eigen::Vector3d pt_vec(pt.x, pt.y, pt.z);
+      //   pt_vec -= l_inst->line.center;
+      //   double dist = pt_vec.dot(l_inst->line.direction.normalized());
+      //   if(dist > max_dist)
+      //     max_dist = dist;
+      //   if(dist < min_dist)
+      //     min_dist = dist;
+      // }
+      l.center = v_it.second->state.head(3);
+      Eigen::Vector3d direction(std::cos(v_it.second->state[5]), std::sin(v_it.second->state[5]), 0.0);
+      l.end_point1 = l.center - direction * (v_it.second->bbox(0)/2.0 - planning_params_.inspection_pt_dist); // min_dist
+      l.end_point2 = l.center + direction * (v_it.second->bbox(0)/2.0 - planning_params_.inspection_pt_dist); // max_dist
+      // std::cout << "Long " << v_it.first << " c: " << l.center.transpose()
+      //           << " ep1: " << l.end_point1.transpose()
+      //           << " ep2: " << l.end_point2.transpose() << std::endl;
+
+      for(double dx=-semantic_annotation_half_width_; dx<=semantic_annotation_half_width_; dx+=0.2)
+      {
+        for(double dy=-0.2; dy<=0.2; dy+=0.2)
+        {
+          for(double dz=-0.2; dz<=0.2; dz+=0.2)
+          {
+            // points_to_annotate.push_back(l.center + Eigen::Vector3d(dx, dy, dz));
+            points_to_annotate.push_back(l.end_point1 + Eigen::Vector3d(dx, dy, dz));
+            points_to_annotate.push_back(l.end_point2 + Eigen::Vector3d(dx, dy, dz));
+          }
+        }
+      }
+    }
+  }
+  // std::cout << "All longs added processed" << std::endl;
+
+  annotateSemanticPredictions(points_to_annotate);
 }
 
 RobotStateHistory::RobotStateHistory() {
@@ -5543,4 +8972,7 @@ bool RobotStateHistory::getNearestStateInRange(const StateVec* state,
   return true;
 }
 
-}  // namespace explorer
+
+
+
+// }  // namespace explorer

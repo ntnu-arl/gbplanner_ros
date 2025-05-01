@@ -17,7 +17,7 @@ add_definitions(-DEDGE_CHECK_METHOD=1)
 # Ray casting: 
 #   0 - Original
 #   1 - Iterative ray casting
-add_definitions(-DRAY_CAST_METHOD=1)
+add_definitions(-DRAY_CAST_METHOD=0)
 
 # Verify the values of the definitions
 get_directory_property( DirDefs COMPILE_DEFINITIONS ) 
@@ -32,7 +32,6 @@ catkin_simple(ALL_DEPS_REQUIRED)
 
 cs_add_library(${PROJECT_NAME}
   src/graph_manager.cpp
-  src/graph.cpp
   src/params.cpp
   src/trajectory.cpp
   src/random_sampler.cpp

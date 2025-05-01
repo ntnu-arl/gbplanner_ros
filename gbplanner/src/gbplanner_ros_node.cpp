@@ -13,7 +13,8 @@ int main(int argc, char** argv) {
   ros::NodeHandle nh;
   ros::NodeHandle nh_private("~");
 
-  explorer::Gbplanner planner(nh, nh_private);
+  std::shared_ptr<Communicator> comm;
+  Gbplanner planner(nh, nh_private, comm);
 
   ros::spin();
 

@@ -16,6 +16,10 @@ gbplanner_panel::gbplanner_panel(QWidget* parent) : rviz::Panel(parent) {
       "/planner_control_interface/std_srvs/go_to_waypoint");
   planner_client_global_planner =
       nh.serviceClient<planner_msgs::pci_global>("pci_global");
+  planner_client_pause_gazebo =
+      nh.serviceClient<std_srvs::Empty>("/gazebo/pause_physics");
+  planner_client_unpause_gazebo =
+      nh.serviceClient<std_srvs::Empty>("/gazebo/unpause_physics");
 
   QVBoxLayout* v_box_layout = new QVBoxLayout;
 
@@ -25,6 +29,8 @@ gbplanner_panel::gbplanner_panel(QWidget* parent) : rviz::Panel(parent) {
   button_init_motion = new QPushButton;
   button_plan_to_waypoint = new QPushButton;
   button_global_planner = new QPushButton;
+  button_pause_gazebo = new QPushButton;
+  button_unpause_gazebo = new QPushButton;
 
   button_start_planner->setText("Start Planner");
   button_stop_planner->setText("Stop Planner");
@@ -32,12 +38,19 @@ gbplanner_panel::gbplanner_panel(QWidget* parent) : rviz::Panel(parent) {
   button_init_motion->setText("Initialization");
   button_plan_to_waypoint->setText("Plan to Waypoint");
   button_global_planner->setText("Run Global");
+  button_pause_gazebo->setText("PAUSE");
+  button_unpause_gazebo->setText("PLAY");
 
   v_box_layout->addWidget(button_start_planner);
   v_box_layout->addWidget(button_stop_planner);
   v_box_layout->addWidget(button_homing);
   v_box_layout->addWidget(button_init_motion);
   v_box_layout->addWidget(button_plan_to_waypoint);
+
+  QHBoxLayout *hbox_layout = new QHBoxLayout;
+  hbox_layout->addWidget(button_pause_gazebo);
+  hbox_layout->addWidget(button_unpause_gazebo);
+  v_box_layout->addLayout(hbox_layout);
 
   QVBoxLayout* global_vbox_layout = new QVBoxLayout;
   QHBoxLayout* global_hbox_layout = new QHBoxLayout;
@@ -65,6 +78,10 @@ gbplanner_panel::gbplanner_panel(QWidget* parent) : rviz::Panel(parent) {
           SLOT(on_plan_to_waypoint_click()));
   connect(button_global_planner, SIGNAL(clicked()), this,
           SLOT(on_global_planner_click()));
+  connect(button_pause_gazebo, SIGNAL(clicked()), this,
+          SLOT(on_pause_gazebo_click()));
+  connect(button_unpause_gazebo, SIGNAL(clicked()), this,
+          SLOT(on_unpause_gazebo_click()));
 }
 
 void gbplanner_panel::on_start_planner_click() {
@@ -146,6 +163,22 @@ void gbplanner_panel::save(rviz::Config config) const {
 }
 void gbplanner_panel::load(const rviz::Config& config) {
   rviz::Panel::load(config);
+}
+
+void gbplanner_panel::on_pause_gazebo_click() {
+  std_srvs::Empty srv;
+  if (!planner_client_pause_gazebo.call(srv)) {
+    ROS_ERROR("[GBPLANNER-UI] Service call failed: %s",
+              planner_client_pause_gazebo.getService().c_str());
+  }
+}
+
+void gbplanner_panel::on_unpause_gazebo_click() {
+  std_srvs::Empty srv;
+  if (!planner_client_unpause_gazebo.call(srv)) {
+    ROS_ERROR("[GBPLANNER-UI] Service call failed: %s",
+              planner_client_unpause_gazebo.getService().c_str());
+  }
 }
 
 }  // namespace gbplanner_ui

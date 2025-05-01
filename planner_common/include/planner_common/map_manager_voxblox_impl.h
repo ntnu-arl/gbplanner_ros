@@ -144,6 +144,9 @@ class MapManagerVoxblox : MapManager {
 
   float getVoxelDistance(const Eigen::Vector3d& center) const;
   double getPointDistance(const Eigen::Vector3d& point) const;
+  Eigen::Vector3d getPointGradient(const Eigen::Vector3d& point) const;
+
+  bool isPointSeen(const Eigen::Vector3d &point) const;
 
   VoxelStatus getPathStatus(const Eigen::Vector3d& start,
                             const Eigen::Vector3d& end,
@@ -163,6 +166,8 @@ class MapManagerVoxblox : MapManager {
       std::tuple<int, int, int>& gain_log,
       std::vector<std::pair<Eigen::Vector3d, VoxelStatus>>& voxel_log,
       SensorParamsBase& sensor_params);
+
+
 
   void augmentFreeFrustum();
 
@@ -204,6 +209,21 @@ class MapManagerVoxblox : MapManager {
   }
 
   void setRobotRadius(double robot_radius) { robot_radius_ = robot_radius; }
+  void setBoxCheckMethod(int m) { box_status_method_ = m;}
+  void setLineCheckMethod(int m) { line_status_method_ = m;}
+
+  void annotateVoxel(Eigen::Vector3d& pos, int field);
+  void annotateVoxel(Eigen::Vector3d& pos, int field, int val);
+  void annotateCameraVoxels(Eigen::Vector3d& pos, std::vector<Eigen::Vector3d>& multiray_endpoints);
+  void annotateCameraVoxels(Eigen::Vector3d& pos, std::vector<Eigen::Vector3d>& multiray_endpoints, int field);
+  void getCameraScanStatus(Eigen::Vector3d& pos, std::vector<Eigen::Vector3d>& multiray_endpoints,
+    std::tuple<int, int, int>& gain_log,
+    std::vector<std::pair<Eigen::Vector3d, VoxelStatus>>& voxel_log,
+    SensorParamsBase& sensor_params);
+  void getCameraScanStatus(StateVec& state, SensorParamsBase& sensor_params, std::vector<VoxelLog> &out_logs);
+  void getSemanticScanStatus(StateVec& state, SensorParamsBase& sensor_params, std::vector<VoxelLog> &out_logs);
+
+  void voxelAllocationTest(Eigen::Vector3d point);
 
  private:
   VoxelStatus getBoxStatusInVoxels(
@@ -237,6 +257,8 @@ class MapManagerVoxblox : MapManager {
   // than the robot radius to use this method No such restrictions for using
   // ESDF
   double robot_radius_;
+  int box_status_method_;
+  int line_status_method_;
 };
 
 // Helper
