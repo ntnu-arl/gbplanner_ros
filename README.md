@@ -140,5 +140,6 @@ You can contact us for any question:
 * [Angelos Zacharia](mailto:angelos.zacharia@ntnu.no)
 * [Kostas Alexis](mailto:konstantinos.alexis@ntnu.no)
 
-
+## Acknowledgements 
+This work was developed throughout multiple research activities funded by DARPA (under Agreement No. HR00111820045), the Research Council of Norway (Proj. Number: 321435), and Horizon Europe (101070405, 101120732, 101121321, 101119774). The presented content and ideas are solely those of the authors.
 This code is intended for civilian use only. It is provided under the license found in [LICENSE](https://github.com/ntnu-arl/gbplanner_ros/blob/gbplanner3/LICENSE).
