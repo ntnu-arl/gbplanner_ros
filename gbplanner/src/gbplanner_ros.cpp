@@ -60,5 +60,5 @@ void GbplannerRos::registerTree()
 
   std::cout << "TreeNodesMode: " << xml_models << std::endl;
 
-  BT::Groot2Publisher publisher(tree_);
+  // BT::Groot2Publisher publisher(tree_);
 }
