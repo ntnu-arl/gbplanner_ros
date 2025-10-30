@@ -6,6 +6,7 @@
 	<arg name="gazebo_gui_en" default="false"/>
   <arg name="use_sim_time" default="true"/>
   <arg name="rviz_en" default="true" />
+  <arg name="sim_en" default="true" />
   <arg name="launch_prefix" default=""/> <!-- gdb -ex run //args -->
   <param name="use_sim_time" value="$(arg use_sim_time)"/>
 
@@ -18,7 +19,7 @@
 	<arg name="odometry_topic" default="/rmf_obelix/ground_truth/odometry_throttled"/>
 
 	<!-- Simulation -->
-	<include file="$(find arl_gazebo_sim)/gzc/uav_sim/launch/uav_gzc_niosh_exploration.launch">
+	<include file="$(find arl_gazebo_sim)/gzc/uav_sim/launch/uav_gzc_niosh_exploration.launch" if="$(arg sim_en)">
 		<arg name="robot_name" value="$(arg robot_name)"/>
 		<arg name="launch_prefix" value="$(arg launch_prefix)"/>
 		<arg name="gazebo_gui_en" value="$(arg gazebo_gui_en)"/>
@@ -26,7 +27,7 @@
 	<!-- Graph based planning -->
 	<node pkg="gbplanner" type="gbplanner_node" name="gbplanner_node" output="screen" launch-prefix="$(arg launch_prefix)">
 		<remap from="odometry" to="$(arg odometry_topic)" />
-		<remap from="/pointcloud" to="/rmf_obelix/velodyne_points" />
+		<!-- <remap from="/pointcloud" to="/rmf_obelix/velodyne_points" /> -->
 		<remap from="query_point" to="/rmf_obelix/tsdf_query_pt"/>
 		<rosparam command="load" file="$(arg gbplanner_config_file)" />
 		<rosparam command="load" file="$(arg map_config_file)" />
@@ -42,6 +43,9 @@
 		<rosparam command="load" file="$(arg pci_file)" />
 	</node>
 
+	<include file="$(find manhole_detector)/launch/depth_image_publisher.launch">
+			<arg name="point_cloud_topic_name" 	default="/rmf_obelix/velodyne_points"/>
+	</include>
 
 	<!-- Rviz -->
 	<node pkg="rviz" type="rviz" name="gbplanner_ui" output="screen" args="-d $(find gbplanner)/config/$(arg config_folder)/ui.rviz"/>

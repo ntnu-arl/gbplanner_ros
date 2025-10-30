@@ -6,10 +6,10 @@ init_motion_enable: false
 planner_trigger_lead_time: 0.1
 smooth_heading_enable: true
 path_end_dist_thr: 1.5
-path_end_yaw_thr: 0.4
+path_end_yaw_thr: 1.4
 path_progression_dist_thr: 2.0
 path_progression_dist_thr_min: 1.5
-path_progression_pitch_thr: 0.4
+path_progression_pitch_thr: 1.4
 path_progression_yaw_thr: 3.14
 path_progression_yaw_thr_min: 3.14
 interpolate_traj: true

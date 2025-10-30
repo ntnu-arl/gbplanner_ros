@@ -6,6 +6,7 @@
 	<arg name="gazebo_gui_en" default="false"/>
   <arg name="use_sim_time" default="true"/>
   <arg name="rviz_en" default="true" />
+  <arg name="sim_en" default="true" />
   <arg name="launch_prefix" default=""/> <!-- gdb -ex run //args -->
   <param name="use_sim_time" value="$(arg use_sim_time)"/>
 
@@ -18,7 +19,7 @@
 	<arg name="odometry_topic" default="/rmf_obelix/ground_truth/odometry_throttled"/>
 
 	<!-- Simulation -->
-	<include file="$(find arl_gazebo_sim)/gzc/uav_sim/launch/uav_gzc_cave_exploration.launch">
+	<include file="$(find arl_gazebo_sim)/gzc/uav_sim/launch/uav_gzc_cave_exploration.launch" if="$(arg sim_en)">
 		<arg name="robot_name" value="$(arg robot_name)"/>
 		<arg name="launch_prefix" value="$(arg launch_prefix)"/>
 		<arg name="gazebo_gui_en" value="$(arg gazebo_gui_en)"/>
@@ -41,6 +42,10 @@
 		<remap from="odometry" to="$(arg odometry_topic)"/>     
 		<rosparam command="load" file="$(arg pci_file)" />
 	</node>
+
+	<include file="$(find manhole_detector)/launch/depth_image_publisher.launch">
+			<arg name="point_cloud_topic_name" 	default="/rmf_obelix/velodyne_points"/>
+	</include>
 
 
 	<!-- Rviz -->
