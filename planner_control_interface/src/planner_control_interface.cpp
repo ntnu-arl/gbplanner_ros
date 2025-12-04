@@ -863,32 +863,14 @@ void PlannerControlInterface::publishGoToWaypointVisualization(
 }
 
 void PlannerControlInterface::runHoming(bool exe_path) {
-  ROS_WARN_COND(global_verbosity >= Verbosity::PLANNER_STATUS, "Start homing ...");
-  planner_msgs::planner_set_planning_mode planning_mode_srv;
-  planning_mode_srv.request.planning_mode =
-      planner_msgs::planner_set_planning_mode::Request::kManual;
-  planner_set_trigger_mode_client_.call(planning_mode_srv);
-
   planner_msgs::planner_homing plan_srv;
   plan_srv.request.header.stamp = ros::Time::now();
   plan_srv.request.header.seq = planner_iteration_;
   plan_srv.request.header.frame_id = world_frame_id_;
+  trigger_mode_ = PlannerTriggerModeType::kAuto;
   if (planner_homing_client_.call(plan_srv)) {
-    if (!plan_srv.response.path.empty()) {
-      if (exe_path) {
-        std::vector<geometry_msgs::Pose> path_to_be_exe;
-        pci_manager_->executePath(plan_srv.response.path, path_to_be_exe,
-                                  PCIManager::ExecutionPathType::kHomingPath);
-        current_path_ = path_to_be_exe;
-      }
-    } else {
-      ROS_WARN_THROTTLE(1, "Planner Homing returned an empty path");
-    }
-  } else {
-    ROS_WARN_THROTTLE(1, "Planner Homing service failed");
-    ros::Duration(0.5).sleep();
+    runPlanner(exe_path);
   }
-  planner_iteration_++;
 }
 
 void PlannerControlInterface::runInitialization() {
