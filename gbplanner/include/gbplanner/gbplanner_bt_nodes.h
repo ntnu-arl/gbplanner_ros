@@ -36,7 +36,6 @@ private:
   int max_exp_tries_ = 3;
 };
 
-
 /*
 Returns:
   SUCCESS: If gbplanner_->bt_states_.local_exp_exhausted == true
@@ -67,6 +66,80 @@ class LocalExpExhaustedReset : public BT::SyncActionNode
 {
 public:
   LocalExpExhaustedReset(const std::string& name, const BT::NodeConfig& config, std::shared_ptr<Gbplanner> gbplanner)
+        :SyncActionNode(name, config), gbplanner_(std::move(gbplanner)) {}
+
+  BT::NodeStatus tick() override;
+
+  static BT::PortsList providedPorts() 
+  {
+    return {};
+  }
+
+private:
+  std::shared_ptr<Gbplanner> gbplanner_;
+};
+
+
+
+/*
+Returns:
+  SUCCESS: Always
+  The flag gbplanner_->bt_states_.local_navigation_complete is set to true when waypoint is reached
+*/
+class LocalNavigation : public BT::StatefulActionNode
+{
+public:
+  LocalNavigation(const std::string& name, const BT::NodeConfig& config, std::shared_ptr<Gbplanner> gbplanner)
+    :StatefulActionNode(name, config), gbplanner_(std::move(gbplanner))
+  {}
+
+  static BT::PortsList providedPorts() 
+  {
+    return {BT::OutputPort<int>("mode")};
+  }
+
+  BT::NodeStatus onStart() override;
+
+  BT::NodeStatus onRunning() override;
+
+  void onHalted() override;
+
+private:
+  std::shared_ptr<Gbplanner> gbplanner_;
+  int failed_nav_count_ = 0;
+  int max_nav_tries_ = 3;
+};
+
+/*
+Returns:
+  SUCCESS: If gbplanner_->bt_states_.local_navigation_complete == true
+  FAILURE: If gbplanner_->bt_states_.local_navigation_complete == false
+*/
+class LocalNavigationExhaustedCheck : public BT::SyncActionNode
+{
+public:
+  LocalNavigationExhaustedCheck(const std::string& name, const BT::NodeConfig& config, std::shared_ptr<Gbplanner> gbplanner)
+        :SyncActionNode(name, config), gbplanner_(std::move(gbplanner)) {}
+
+  BT::NodeStatus tick() override;
+
+  static BT::PortsList providedPorts() 
+  {
+    return {BT::OutputPort<int>("mode")};
+  }
+
+private:
+  std::shared_ptr<Gbplanner> gbplanner_;
+};
+
+/*
+Returns:
+  SUCCESS: Always
+*/
+class LocalNavigationExhaustedReset : public BT::SyncActionNode
+{
+public:
+  LocalNavigationExhaustedReset(const std::string& name, const BT::NodeConfig& config, std::shared_ptr<Gbplanner> gbplanner)
         :SyncActionNode(name, config), gbplanner_(std::move(gbplanner)) {}
 
   BT::NodeStatus tick() override;
@@ -190,6 +263,57 @@ private:
   int failed_homing_count_ = 0;
   int max_homing_tries_ = 3;
 };
+
+
+/*
+Returns:
+  SUCCESS: Found a path successfully, failed attempts > max attempts
+  FAILURE: Frontier exists in global graph
+*/
+class CalculateHomingPath : public BT::SyncActionNode
+{
+public:
+  CalculateHomingPath(const std::string& name, const BT::NodeConfig& config, std::shared_ptr<Gbplanner> gbplanner)
+        :SyncActionNode(name, config), gbplanner_(std::move(gbplanner)) {}
+
+  BT::NodeStatus tick() override;
+
+  static BT::PortsList providedPorts() 
+  {
+    return {BT::OutputPort<int>("mode")};
+  }
+
+private:
+  std::shared_ptr<Gbplanner> gbplanner_;
+  int failed_homing_count_ = 0;
+  int max_homing_tries_ = 3;
+};
+
+
+/*
+Returns:
+  SUCCESS: Homing path not fully executed
+  FAILURE: Path fully executed
+*/
+class UpdateHomingGoal : public BT::SyncActionNode
+{
+public:
+  UpdateHomingGoal(const std::string& name, const BT::NodeConfig& config, std::shared_ptr<Gbplanner> gbplanner)
+        :SyncActionNode(name, config), gbplanner_(std::move(gbplanner)) {}
+
+  BT::NodeStatus tick() override;
+
+  static BT::PortsList providedPorts() 
+  {
+    return {BT::OutputPort<int>("mode")};
+  }
+
+private:
+  std::shared_ptr<Gbplanner> gbplanner_;
+  int failed_homing_count_ = 0;
+  int max_homing_tries_ = 3;
+};
+
 
 /*
 Checks if homing is needed using set criteria, e.g., mission time is exhausted

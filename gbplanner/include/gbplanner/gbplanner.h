@@ -42,7 +42,10 @@ class Gbplanner {
   struct PlannerBTStates
   {
     bool local_exp_exhausted = false;
+    bool local_navigation_complete = false;
+    bool local_navigation_stuck = false;
     bool homing_triggered = false;
+    bool homing_required = false;
     bool global_exp_exhausted = false;
     bool opening_phase1_failed = false;
   };
@@ -76,12 +79,29 @@ class Gbplanner {
     res = out_srv_res_;
   }
 
+  void clearResPath()
+  {
+    out_srv_res_.path.clear();
+    geometry_msgs::Pose current_pose;
+    tf::Quaternion quat;
+    quat.setEuler(0.0, 0.0, current_state_[3]);
+    tf::Vector3 origin(current_state_[0], current_state_[1], current_state_[2]);
+    tf::Pose poseTF(quat, origin);
+    tf::poseTFToMsg(poseTF, current_pose);
+    out_srv_res_.path.push_back(current_pose);
+  }
+
   Rrg::LocalPlannerStatus getExplorationPath();
+  Rrg::LocalPlannerStatus getLocalNavigationPath();
   Rrg::GlobalPlannerStatus getGlobalExplorationPath();
   bool checkGlobalExplorationStatus();
   bool getInspectionPath();
+  
   bool getHomingPath();
   bool homingRequired();
+  bool calculateHomingPath(); // For active homing
+  bool updateHomingGoal();
+
   void getOpeningTraversalPath(OpeningTraversalMode mode, OpeningTraversalStatus &status);
   bool transitionCompartment();
   bool allCompartmentsInspected();
@@ -113,12 +133,19 @@ class Gbplanner {
   ros::ServiceServer inspection_path_service_;
   ros::ServiceServer force_compartment_transition_service_;
 
+  ros::Publisher homing_local_goal_pub_;
+
   ros::Subscriber pose_subscriber_;
   ros::Subscriber pose_stamped_subscriber_;
   ros::Subscriber odometry_subscriber_;
   ros::Subscriber untraversable_polygon_subscriber_;
   ros::Subscriber robot_status_subcriber_;
+  ros::Subscriber local_nav_goal_subscriber_;
+  ros::Subscriber stop_srv_subscriber_;  
+
   ros::ServiceClient map_save_service_;
+
+  std::vector<geometry_msgs::Pose> active_homing_path_;
 
   StateVec current_state_;
 
@@ -201,6 +228,8 @@ class Gbplanner {
   void processPose(const geometry_msgs::Pose& pose);
   void odometryCallback(const nav_msgs::Odometry& odo);
   void robotStatusCallback(const planner_msgs::RobotStatus& status);
+  void localNavGoalCallback(const geometry_msgs::PoseStamped& goal);
+  void stopMsgCallback(const std_msgs::Bool& msg);
 
   Gbplanner::PlannerStatus getPlannerStatus();
 };

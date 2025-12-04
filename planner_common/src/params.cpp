@@ -1365,6 +1365,24 @@ bool PlanningParams::loadParams(std::string ns) {
     ROSPARAM_WARN(param_name, max_num_low_gain_iters);
   }
 
+   param_name = ns + "/local_navigation_reaching_radius";
+  if (!ros::param::get(param_name, local_navigation_reaching_radius)) {
+    local_navigation_reaching_radius = 5.0;
+    ROSPARAM_WARN(param_name, local_navigation_reaching_radius);
+  }
+
+  param_name = ns + "/local_navigation_max_fail_iters";
+  if (!ros::param::get(param_name, local_navigation_max_fail_iters)) {
+    local_navigation_max_fail_iters = 5;
+    ROSPARAM_WARN(param_name, local_navigation_max_fail_iters);
+  }
+
+  param_name = ns + "/active_homing_update_radius";
+  if (!ros::param::get(param_name, active_homing_update_radius)) {
+    active_homing_update_radius = 10;
+    ROSPARAM_WARN(param_name, active_homing_update_radius);
+  }
+
   
   std::vector<double> param_val;
 

@@ -7,6 +7,7 @@ find_package(catkin_simple REQUIRED)
 find_package(Boost REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(adaptive_obb REQUIRED)
+find_package(behaviortree_cpp REQUIRED)
 
 catkin_simple(ALL_DEPS_REQUIRED)
 

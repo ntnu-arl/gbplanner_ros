@@ -22,5 +22,10 @@
   <depend>adaptive_obb</depend>
   <depend>pcl_ros</depend>
   <depend>behaviortree_cpp</depend>
+  <depend>roslib</depend>
+  <depend>grid_map_core</depend>
+  <depend>grid_map_filters</depend>
+  <depend>grid_map_msgs</depend>
+  <depend>grid_map_ros</depend>
   
 </package>

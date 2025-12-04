@@ -209,6 +209,8 @@ struct Vertex {
   bool is_checked;
   // Semantic
   planner_semantic_msgs::SemanticClass semantic_class;
+  // Edge map
+  std::vector<int> neighbors;
 };
 
 struct SerializeVertex {
