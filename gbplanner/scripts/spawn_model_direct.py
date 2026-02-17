@@ -135,6 +135,12 @@ def spawn_model_direct(base_name, robot_name, x, y, z):
         urdf_xml = urdf_xml.replace('<parent link="' + base_name + '/', '<parent link="' + robot_name + '/')
         urdf_xml = urdf_xml.replace('<child link="' + base_name + '/', '<child link="' + robot_name + '/')
         
+        # 3a. Replace gazebo reference attributes (CRITICAL for velodyne plugin!)
+        # Pattern: <gazebo reference="rmf_obelix/velodyne"> -> <gazebo reference="rmf_obelix_1/velodyne">
+        urdf_xml = urdf_xml.replace('reference="' + base_name + '/', 'reference="' + robot_name + '/')
+        urdf_xml = urdf_xml.replace('reference="' + base_name + '"', 'reference="' + robot_name + '"')
+        rospy.loginfo("Replaced gazebo reference attributes from %s to %s", base_name, robot_name)
+        
         # 3b. Also replace non-namespaced joint names that might be created by macros (e.g., mount_joint)
         # This must happen AFTER we replace the child link names, so we can check for robot_name/velodyne
         # Pattern: <joint name="mount_joint"> with <child link="robot_name/velodyne">
@@ -150,13 +156,16 @@ def spawn_model_direct(base_name, robot_name, x, y, z):
         urdf_xml = urdf_xml.replace('<robot name="' + base_name + '"', '<robot name="' + robot_name + '"')
         
         # 6. Replace in plugin frame references (common patterns in gazebo plugins)
-        urdf_xml = urdf_xml.replace('<frameName>' + base_name + '/', '<frameName>' + robot_name + '/')
-        urdf_xml = urdf_xml.replace('frame_name="' + base_name + '/', 'frame_name="' + robot_name + '/')
-        urdf_xml = urdf_xml.replace('reference_frame="' + base_name + '/', 'reference_frame="' + robot_name + '/')
-        # Also replace frameName that might have been expanded from ${name} variable
-        # Pattern: <frameName>rmf_obelix/velodyne</frameName> -> <frameName>rmf_obelix_1/velodyne</frameName>
+        # IMPORTANT: When using robot_namespace in spawn service, Gazebo automatically prefixes frame names
+        # So we need to use RELATIVE frame names (just "velodyne") not absolute ("robot_name/velodyne")
+        # Pattern: <frameName>rmf_obelix/velodyne</frameName> -> <frameName>velodyne</frameName>
+        # Gazebo's robot_namespace will then make it "robot_name/velodyne"
         urdf_xml = re.sub(r'(<frameName>)' + re.escape(base_name) + r'(/velodyne</frameName>)', 
-                         r'\1' + robot_name + r'\2', urdf_xml)
+                         r'\1velodyne</frameName>', urdf_xml)
+        # Also handle other frameName patterns that might have base_name prefix
+        urdf_xml = urdf_xml.replace('<frameName>' + base_name + '/', '<frameName>')
+        urdf_xml = urdf_xml.replace('frame_name="' + base_name + '/', 'frame_name="')
+        urdf_xml = urdf_xml.replace('reference_frame="' + base_name + '/', 'reference_frame="')
         
         # 7. Replace ${namespace} in plugin configurations (xacro variables that weren't expanded)
         # This is critical for plugins to work correctly - they need the actual namespace, not the variable
@@ -245,14 +254,18 @@ def spawn_model_direct(base_name, robot_name, x, y, z):
                     # Check for lidar plugin
                     if 'libgazebo_ros_lidar' in velodyne_gazebo_xml or 'gazebo_ros_laser_controller' in velodyne_gazebo_xml:
                         rospy.loginfo("Found libgazebo_ros_lidar plugin in velodyne gazebo block")
-                        # Check if frameName is correct
-                        if robot_name + '/velodyne' in velodyne_gazebo_xml:
-                            rospy.loginfo("Plugin frameName is correctly namespaced: %s/velodyne", robot_name)
-                        else:
-                            rospy.logwarn("WARNING: Plugin frameName might not be correctly namespaced!")
-                            frame_match = re.search(r'<frameName>[^<]*</frameName>', velodyne_gazebo_xml, re.IGNORECASE)
-                            if frame_match:
-                                rospy.logwarn("Found frameName: %s (should be %s/velodyne)", frame_match.group(0), robot_name)
+                        # Check if frameName is correct (should be relative "velodyne", not absolute)
+                        # Gazebo's robot_namespace will automatically prefix it to "robot_name/velodyne"
+                        frame_match = re.search(r'<frameName>[^<]*</frameName>', velodyne_gazebo_xml, re.IGNORECASE)
+                        if frame_match:
+                            frame_name = frame_match.group(0)
+                            if frame_name == '<frameName>velodyne</frameName>':
+                                rospy.loginfo("Plugin frameName is correct (relative): velodyne (will be namespaced to %s/velodyne by Gazebo)", robot_name)
+                            elif robot_name + '/velodyne' in frame_name:
+                                rospy.logwarn("WARNING: Plugin frameName is absolute (%s) but should be relative (velodyne)!", frame_name)
+                                rospy.logwarn("Gazebo's robot_namespace will double-prefix this, causing frame errors!")
+                            else:
+                                rospy.logwarn("Found frameName: %s (should be 'velodyne' for relative naming)", frame_name)
                     else:
                         rospy.logwarn("WARNING: libgazebo_ros_lidar plugin not found in velodyne gazebo block!")
                 else:
