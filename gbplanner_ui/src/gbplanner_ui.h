@@ -9,8 +9,11 @@
 #include <std_msgs/ColorRGBA.h>
 #include <std_srvs/Empty.h>
 #include <std_srvs/Trigger.h>
+#include <string>
+#include <vector>
 
 #ifndef Q_MOC_RUN
+#include <QComboBox>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
@@ -39,6 +42,7 @@ class gbplanner_panel : public rviz::Panel {
   void on_init_motion_click();
   void on_plan_to_waypoint_click();
   void on_global_planner_click();
+  void on_robot_selection_changed();
  protected Q_SLOTS:
 
  protected:
@@ -61,7 +65,16 @@ class gbplanner_panel : public rviz::Panel {
   QLineEdit* global_id_line_edit;
   ros::ServiceClient planner_client_global_planner;
 
+  QComboBox* robot_selector;
+  QLabel* robot_label;
+  std::string selected_robot_name_;
+
   ros::NodeHandle nh;
+
+ private:
+  void updateServiceClients();
+  void discoverRobots();
+  std::vector<std::string> available_robots_;
 };
 
 }  // namespace gbplanner_ui

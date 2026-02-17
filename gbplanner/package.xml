@@ -21,5 +21,7 @@
   <depend>planner_semantic_msgs</depend>
   <depend>adaptive_obb</depend>
   <depend>pcl_ros</depend>
+  <depend>rospy</depend>
+  <depend>roslaunch</depend>
   
 </package>

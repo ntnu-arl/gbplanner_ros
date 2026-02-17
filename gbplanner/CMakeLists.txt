@@ -26,5 +26,14 @@ cs_add_library(
 cs_add_executable(gbplanner_node src/gbplanner_ros_node.cpp)
 target_link_libraries(gbplanner_node ${PROJECT_NAME} ${planner_common_LIBRARIES})
 
+# Install Python scripts (standard CMake install, should work with catkin_simple)
+install(PROGRAMS
+  scripts/spawn_robots.py
+  scripts/spawn_model_direct.py
+  scripts/spawn_model_direct_wrapper.py
+  scripts/generate_multi_robot_rviz.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
 cs_install()
 cs_export(LIBRARIES)

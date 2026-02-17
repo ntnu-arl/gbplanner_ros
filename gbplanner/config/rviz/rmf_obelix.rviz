@@ -67,27 +67,35 @@ Visualization Manager:
     - Class: rviz/Group
       Displays:
         - Class: rviz/TF
-          Enabled: false
+          Enabled: true
           Frame Timeout: 15
           Frames:
-            All Enabled: false
+            All Enabled: true
           Marker Alpha: 1
           Marker Scale: 20
           Name: TF
           Show Arrows: true
           Show Axes: true
-          Show Names: false
+          Show Names: true
           Tree:
             {}
           Update Interval: 0
-          Value: false
+          Value: true
         - Alpha: 1
           Class: rviz/Axes
           Enabled: true
           Length: 3
-          Name: BaseLink
+          Name: Robot1_BaseLink
           Radius: 0.20000000298023224
-          Reference Frame: rmf_obelix/base_link
+          Reference Frame: rmf_obelix_1/base_link
+          Value: true
+        - Alpha: 1
+          Class: rviz/Axes
+          Enabled: true
+          Length: 3
+          Name: Robot2_BaseLink
+          Radius: 0.20000000298023224
+          Reference Frame: rmf_obelix_2/base_link
           Value: true
         - Alpha: 1
           Class: rviz/Axes
@@ -131,14 +139,14 @@ Visualization Manager:
         Shaft Length: 1
         Shaft Radius: 0.20000000298023224
         Value: Arrow
-      Topic: /ground_truth/odometry_throttled
+      Topic: /rmf_obelix_1/ground_truth/odometry_throttled
       Unreliable: false
       Value: true
     - Class: rviz/Group
       Displays:
         - Class: rviz/MarkerArray
           Enabled: false
-          Marker Topic: /vis/planning_failed
+          Marker Topic: /rmf_obelix_1/vis/planning_failed
           Name: PlanningFailed
           Namespaces:
             {}
@@ -146,7 +154,7 @@ Visualization Manager:
           Value: false
         - Class: rviz/MarkerArray
           Enabled: false
-          Marker Topic: /vis/volumetric_gains
+          Marker Topic: /rmf_obelix_1/vis/volumetric_gains
           Name: VolumetricGain
           Namespaces:
             {}
@@ -154,7 +162,7 @@ Visualization Manager:
           Value: false
         - Class: rviz/MarkerArray
           Enabled: false
-          Marker Topic: /vis/sensor_fov
+          Marker Topic: /rmf_obelix_1/vis/sensor_fov
           Name: SensorFOV
           Namespaces:
             {}
@@ -162,7 +170,7 @@ Visualization Manager:
           Value: false
         - Class: rviz/MarkerArray
           Enabled: true
-          Marker Topic: /vis/best_planning_paths
+          Marker Topic: /rmf_obelix_1/vis/best_planning_paths
           Name: BestPaths
           Namespaces:
             best_path: true
@@ -171,7 +179,7 @@ Visualization Manager:
           Value: true
         - Class: rviz/MarkerArray
           Enabled: true
-          Marker Topic: /vis/shortest_paths
+          Marker Topic: /rmf_obelix_1/vis/shortest_paths
           Name: ShortestPaths
           Namespaces:
             best_leaf_vertices: false
@@ -185,7 +193,7 @@ Visualization Manager:
           Value: true
         - Class: rviz/MarkerArray
           Enabled: true
-          Marker Topic: /vis/robot_state
+          Marker Topic: /rmf_obelix_1/vis/robot_state
           Name: RobotState
           Namespaces:
             extension: true
@@ -196,7 +204,7 @@ Visualization Manager:
           Value: true
         - Class: rviz/MarkerArray
           Enabled: false
-          Marker Topic: /vis/planning_workspace
+          Marker Topic: /rmf_obelix_1/vis/planning_workspace
           Name: PlanningWorkspace
           Namespaces:
             {}
@@ -204,7 +212,7 @@ Visualization Manager:
           Value: false
         - Class: rviz/MarkerArray
           Enabled: false
-          Marker Topic: /vis/planning_global_graph
+          Marker Topic: /rmf_obelix_1/vis/planning_global_graph
           Name: GlobalGraph
           Namespaces:
             {}
@@ -212,7 +220,7 @@ Visualization Manager:
           Value: false
         - Class: rviz/MarkerArray
           Enabled: false
-          Marker Topic: /vis/planning_homing_path
+          Marker Topic: /rmf_obelix_1/vis/planning_homing_path
           Name: HomingPath
           Namespaces:
             {}
@@ -220,7 +228,7 @@ Visualization Manager:
           Value: false
         - Class: rviz/MarkerArray
           Enabled: true
-          Marker Topic: /vis/planning_graph
+          Marker Topic: /rmf_obelix_1/vis/planning_graph
           Name: PlanningGraph
           Namespaces:
             edges: false
@@ -229,7 +237,7 @@ Visualization Manager:
           Value: true
         - Class: rviz/MarkerArray
           Enabled: false
-          Marker Topic: /vis/sampler
+          Marker Topic: /rmf_obelix_1/vis/sampler
           Name: Sampler
           Namespaces:
             {}
@@ -237,7 +245,7 @@ Visualization Manager:
           Value: false
         - Class: rviz/MarkerArray
           Enabled: true
-          Marker Topic: /vis/ref_path
+          Marker Topic: /rmf_obelix_1/vis/ref_path
           Name: RefPath
           Namespaces:
             ref_path: true
@@ -246,7 +254,7 @@ Visualization Manager:
           Value: true
         - Class: rviz/MarkerArray
           Enabled: false
-          Marker Topic: /vis/ray_casting
+          Marker Topic: /rmf_obelix_1/vis/ray_casting
           Name: RayCasting
           Namespaces:
             {}
@@ -254,7 +262,7 @@ Visualization Manager:
           Value: false
         - Class: rviz/MarkerArray
           Enabled: false
-          Marker Topic: /vis/shortest_path_clustering
+          Marker Topic: /rmf_obelix_1/vis/shortest_path_clustering
           Name: ShortestPathsClustering
           Namespaces:
             {}
@@ -262,7 +270,7 @@ Visualization Manager:
           Value: false
         - Class: rviz/MarkerArray
           Enabled: false
-          Marker Topic: /vis/state_history
+          Marker Topic: /rmf_obelix_1/vis/state_history
           Name: StateHist
           Namespaces:
             {}
@@ -270,7 +278,7 @@ Visualization Manager:
           Value: false
         - Class: rviz/MarkerArray
           Enabled: true
-          Marker Topic: /vis/planning_global_path
+          Marker Topic: /rmf_obelix_1/vis/planning_global_path
           Name: PlanningGlobalPath
           Namespaces:
             {}
@@ -278,7 +286,7 @@ Visualization Manager:
           Value: true
         - Class: rviz/MarkerArray
           Enabled: true
-          Marker Topic: /vis/no_gain_zone
+          Marker Topic: /rmf_obelix_1/vis/no_gain_zone
           Name: NoGainZone
           Namespaces:
             {}
@@ -286,7 +294,7 @@ Visualization Manager:
           Value: true
         - Class: rviz/Marker
           Enabled: true
-          Marker Topic: /gbplanner/go_to_waypoint_pose_visualization
+          Marker Topic: /rmf_obelix_1/gbplanner/go_to_waypoint_pose_visualization
           Name: GoToWaypointVis
           Namespaces:
             {}
@@ -331,12 +339,75 @@ Visualization Manager:
           Size (Pixels): 1
           Size (m): 0.009999999776482582
           Style: Points
-          Topic: /rmf_obelix/velodyne_points
+          Topic: /rmf_obelix_1/velodyne_points
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
           Value: true
-      Enabled: false
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 2.2908499240875244
+            Min Value: -2.061321496963501
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/PointCloud2
+          Color: 255; 255; 255
+          Color Transformer: AxisColor
+          Decay Time: 0
+          Enabled: true
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Min Color: 0; 0; 0
+          Name: Robot2_VLP
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 1
+          Size (m): 0.009999999776482582
+          Style: Points
+          Topic: /rmf_obelix_2/velodyne_points
+          Unreliable: false
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: true
+        - Angle Tolerance: 0.10000000149011612
+          Class: rviz/Odometry
+          Covariance:
+            Orientation:
+              Alpha: 0.5
+              Color: 255; 255; 127
+              Color Style: Unique
+              Frame: Local
+              Offset: 1
+              Scale: 1
+              Value: true
+            Position:
+              Alpha: 0.30000001192092896
+              Color: 204; 51; 204
+              Scale: 1
+              Value: true
+            Value: false
+          Enabled: true
+          Keep: 1
+          Name: Robot2_Odometry
+          Position Tolerance: 0.10000000149011612
+          Queue Size: 10
+          Shape:
+            Alpha: 1
+            Axes Length: 1
+            Axes Radius: 0.10000000149011612
+            Color: 0; 255; 0
+            Head Length: 0.20000000298023224
+            Head Radius: 0.4000000059604645
+            Shaft Length: 1
+            Shaft Radius: 0.20000000298023224
+            Value: Arrow
+          Topic: /rmf_obelix_2/ground_truth/odometry_throttled
+          Unreliable: false
+          Value: true
+      Enabled: true
       Name: Sensors
     - Class: rviz/Group
       Displays:
@@ -344,12 +415,12 @@ Visualization Manager:
           Enabled: false
           Name: VoxbloxMesh
           Queue Size: 10
-          Topic: /gbplanner_node/mesh
+          Topic: /rmf_obelix_1/gbplanner_node/mesh
           Unreliable: false
           Value: false
         - Class: rviz/MarkerArray
           Enabled: false
-          Marker Topic: /gbplanner_node/occupied_nodes
+          Marker Topic: /rmf_obelix_1/gbplanner_node/occupied_nodes
           Name: Occupied
           Namespaces:
             {}
@@ -378,7 +449,7 @@ Visualization Manager:
           Size (Pixels): 3
           Size (m): 0.05000000074505806
           Style: Flat Squares
-          Topic: /gbplanner_node/tsdf_pointcloud
+          Topic: /rmf_obelix_1/gbplanner_node/tsdf_pointcloud
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
@@ -406,7 +477,7 @@ Visualization Manager:
           Size (Pixels): 1
           Size (m): 0.009999999776482582
           Style: Points
-          Topic: /gbplanner_node/surface_pointcloud
+          Topic: /rmf_obelix_1/gbplanner_node/surface_pointcloud
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
@@ -466,7 +537,7 @@ Visualization Manager:
       Name: Current View
       Near Clip Distance: 0.009999999776482582
       Pitch: 0.8697964549064636
-      Target Frame: rmf_obelix/base_link
+      Target Frame: rmf_obelix_1/base_link
       Yaw: 3.615403413772583
     Saved: ~
 Window Geometry:

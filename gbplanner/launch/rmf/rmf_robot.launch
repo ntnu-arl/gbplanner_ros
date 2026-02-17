@@ -1,0 +1,100 @@
+<launch>
+  <!-- Single Robot Launch File (for Multi-Robot Setup)
+       This file launches a single robot instance with proper namespacing.
+       Used by rmf_sim_multi.launch (via spawn_robots.py) to spawn multiple robots.
+       Each robot runs in its own roslaunch subprocess with unique namespace.
+  -->
+  
+  <!-- Required arguments -->
+  <arg name="robot_name" />
+  <arg name="base_name" />
+  <arg name="robot_x" default="0.0"/>
+  <arg name="robot_y" default="0.0"/>
+  <arg name="robot_z" default="0.5"/>
+  <arg name="launch_prefix" default=""/>
+  <arg name="use_sim_time" default="true"/>
+
+  <!-- Config files - use base_name for config directory -->
+  <arg name="gbplanner_config_file" default="$(find gbplanner)/config/$(arg base_name)/gbplanner_config.yaml"/>
+  <arg name="pci_file" default="$(find gbplanner)/config/$(arg base_name)/planner_control_interface_sim_config.yaml"/>
+  <arg name="voxblox_config_file" default="$(find gbplanner)/config/$(arg base_name)/voxblox_sim_config.yaml"/>
+  <arg name="map_config_file" default="$(arg voxblox_config_file)"/>
+
+  <!-- Static TF Publishers - namespaced with robot_name -->
+  <!-- Note: Gazebo publishes world->model_name/base_link automatically when model is spawned -->
+  <!-- However, we need to ensure world frame exists for RViz Fixed Frame -->
+  <!-- The model spawns at (x, y, z) via Gazebo spawn service, and Gazebo handles the TF -->
+  
+  <!-- World frame (only publish once, check if it exists first) -->
+  <!-- This is published in rmf_sim_multi.launch, but adding here as backup -->
+  
+  <node pkg="tf" type="static_transform_publisher" name="$(arg robot_name)_tf_51" args="0.15 0 0.0 0.0 0.261 0.0 $(arg robot_name)/base_link $(arg robot_name)/vi_sensor/base_link 10" />
+  <node pkg="tf" type="static_transform_publisher" name="$(arg robot_name)_tf_1" args="0 0 0 0 0 0 $(arg robot_name)/vi_sensor/base_link $(arg robot_name)/fcu 1" />
+  <node pkg="tf" type="static_transform_publisher" name="$(arg robot_name)_tf_2" args="0.015 0.055 0.0065 -1.57 0.1 -1.57 $(arg robot_name)/fcu $(arg robot_name)/vi_sensor/camera_depth_optical_center_link 1" />
+  <node pkg="tf" type="static_transform_publisher" name="$(arg robot_name)_tf_3" args="0.015 0.055 0.0065 -1.57 0.1 -1.57 $(arg robot_name)/fcu $(arg robot_name)/vi_sensor/camera_left_link 1" />
+  <node pkg="tf" type="static_transform_publisher" name="$(arg robot_name)_tf_4" args="0.015 -0.055 0.0065 -1.57 0.1 -1.57 $(arg robot_name)/fcu $(arg robot_name)/vi_sensor/camera_right_link 1" />
+  <node pkg="tf" type="static_transform_publisher" name="$(arg robot_name)_tf_5" args="0 0 0.05 0.0 0.0 0.0 $(arg robot_name)/base_link $(arg robot_name)/velodyne 10" />
+
+  <!-- Robot-specific group namespace -->
+  <group ns="$(arg robot_name)">
+    <node name="img_throttler" type="throttle" pkg="topic_tools" args="messages vi_sensor/camera_depth/depth/points 5 vi_sensor/camera_depth/depth/points_throttled" />
+    <node name="odo_throttler" type="throttle" pkg="topic_tools" args="messages ground_truth/odometry 100 ground_truth/odometry_throttled" />
+
+    <!-- Spawn model directly with unique name to avoid conflicts -->
+    <!-- This processes the xacro with base_name (for file resolution) but spawns with robot_name (unique) -->
+    <!-- Note: Node is inside group namespace, so full name will be $(robot_name)/$(robot_name)_spawn_model -->
+    <!-- Use wrapper script which calls the actual script from source directory -->
+    <!-- Not required - other nodes will keep launch file alive even if spawn fails initially -->
+    <node name="$(arg robot_name)_spawn_model" 
+          pkg="gbplanner" 
+          type="spawn_model_direct_wrapper.py" 
+          args="$(arg base_name) $(arg robot_name) $(arg robot_x) $(arg robot_y) $(arg robot_z)" 
+          output="screen" 
+          required="false"
+          respawn="true"/>
+    
+    <!-- Note: spawn_mav.launch is NOT included here to avoid model name conflicts -->
+    <!-- The model is spawned directly above with unique name -->
+    <!-- Controllers and other components are launched separately below -->
+
+    <!-- Position controller  -->
+    <node name="lee_position_controller_node" pkg="rotors_control" type="lee_position_controller_node" output="screen" respawn="true">
+      <rosparam command="load" file="$(find rotors_gazebo)/resource/lee_controller_$(arg base_name).yaml" />
+      <rosparam command="load" file="$(find rotors_gazebo)/resource/$(arg base_name).yaml" />
+      <remap from="odometry" to="odometry_sensor1/odometry" />
+    </node>
+  </group>
+
+  <!-- Pose throttler - namespaced -->
+  <arg name="odometry_topic" default="$(arg robot_name)/ground_truth/odometry_throttled"/>
+  <node name="$(arg robot_name)_pose_throttler" type="throttle" pkg="topic_tools" args="messages $(arg robot_name)/ground_truth/pose_with_covariance 10 $(arg robot_name)/msf_core/pose" />
+  
+  <!-- Graph based planning -->
+  <!-- Note: Node is inside namespace group, so services are advertised at $(arg robot_name)/gbplanner/* -->
+  <!-- This matches the single-robot setup where gbplanner_node is in the robot namespace -->
+  <group ns="$(arg robot_name)">
+    <node pkg="gbplanner" type="gbplanner_node" name="gbplanner_node" output="screen" launch-prefix="$(arg launch_prefix)" respawn="true">
+      <remap from="odometry" to="$(arg odometry_topic)" />
+      <remap from="/pointcloud" to="/$(arg robot_name)/velodyne_points" />
+      <!-- Services are automatically namespaced to $(arg robot_name)/gbplanner/* -->
+      <rosparam command="load" file="$(arg gbplanner_config_file)" />
+      <rosparam command="load" file="$(arg map_config_file)" />
+    </node>
+  </group>
+
+  <!-- Planner and Control Interface - namespaced -->
+  <!-- Note: Node is inside namespace group, so services are advertised at $(arg robot_name)/pci_* -->
+  <!-- But we need to remap to absolute paths to match how gbplanner_node advertises services -->
+  <group ns="$(arg robot_name)">
+    <node pkg="pci_general" type="pci_general_ros_node" name="pci_general_ros_node" output="screen" respawn="true">
+      <remap from="command/trajectory" to="command/trajectory" />
+      <remap from="planner_server" to="/$(arg robot_name)/gbplanner" />
+      <remap from="planner_homing_server" to="/$(arg robot_name)/gbplanner/homing" />
+      <remap from="odometry" to="$(arg odometry_topic)"/>
+      <!-- Services are automatically namespaced to $(arg robot_name)/pci_* -->
+      <rosparam command="load" file="$(arg pci_file)" />
+    </node>
+  </group>
+
+</launch>
+

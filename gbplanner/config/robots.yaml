@@ -1,0 +1,34 @@
+# Multi-Robot Configuration File
+# This file defines the robots to be spawned in the simulation.
+# Each robot will run the entire GBPlanner stack independently with proper namespacing.
+#
+# Format:
+#   robots: List of robot configurations
+#     - name: Unique robot name (used for namespacing topics, services, nodes)
+#       base_name: Base name for config directory (e.g., "rmf_obelix" uses config/rmf_obelix/)
+#       x, y, z: Initial spawn position in Gazebo world (meters)
+
+robots:
+  - name: rmf_obelix_1
+    base_name: rmf_obelix
+    x: 0.0
+    y: 0.0
+    z: 0.5
+  
+  - name: rmf_obelix_2
+    base_name: rmf_obelix
+    x: 5.0
+    y: 0.0
+    z: 0.5
+  
+  # Uncomment to add more robots:
+  # - name: rmf_obelix_3
+  #   base_name: rmf_obelix
+  #   x: 10.0
+  #   y: 0.0
+  #   z: 0.5
+
+
+
+
+

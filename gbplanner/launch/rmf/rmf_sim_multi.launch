@@ -1,0 +1,44 @@
+<launch>
+  <!-- Multi-Robot GBPlanner Simulation Launch File
+       Supports multiple robots configured via robots.yaml
+       Usage: roslaunch gbplanner rmf_sim_multi.launch
+  -->
+  
+  <!-- All settings -->
+  <arg name="robots_config_file" default="$(find gbplanner)/config/robots.yaml"/>
+  <arg name="gazebo_gui_en" default="true"/>
+  <arg name="use_sim_time" default="true"/>
+  <arg name="rviz_en" default="true" />
+  <arg name="launch_prefix" default=""/> <!-- gdb -ex run //args -->
+  <arg name="world_file" default="$(find planner_gazebo_sim)/worlds/outdoor_city.world"/>
+  <arg name="rviz_config_file" default="$(find gbplanner)/config/rviz/rmf_obelix.rviz"/>
+  
+  <param name="use_sim_time" value="$(arg use_sim_time)"/>
+
+  <!-- Load robots configuration directly from YAML -->
+  <!-- This will load robots.yaml into /robots_config/robots parameter -->
+  <rosparam file="$(arg robots_config_file)" command="load" ns="robots_config"/>
+
+  <!-- Static TF: world -> navigation (shared across all robots) -->
+  <node pkg="tf" type="static_transform_publisher" name="tf_world_navigation" args="0 0 0 0 0 0 world navigation 100" />
+
+  <!-- ROS Gazebo (shared world) -->
+  <env name="GAZEBO_MODEL_PATH" value="${GAZEBO_MODEL_PATH}:$(find planner_gazebo_sim)/models:$(find subt_cave_sim)/models"/>
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(arg world_file)" />
+    <arg name="gui" value="$(arg gazebo_gui_en)" />
+    <arg name="use_sim_time" value="$(arg use_sim_time)"/>
+    <arg name="paused" value="false" />
+    <arg name="verbose" value="false"/>
+  </include>
+
+  <!-- Spawn robots dynamically -->
+  <node pkg="gbplanner" type="spawn_robots.py" name="spawn_robots" output="screen" required="true">
+    <param name="launch_prefix" value="$(arg launch_prefix)"/>
+  </node>
+
+  <!-- RViz (single instance) - use original static config -->
+  <node pkg="rviz" type="rviz" name="gbplanner_ui" output="screen" args="-d $(arg rviz_config_file)" if="$(arg rviz_en)"/>
+
+</launch>
+
