@@ -74,7 +74,7 @@ PlannerControlInterface::PlannerControlInterface(
 
   planner_set_trigger_mode_client_ =
       nh.serviceClient<planner_msgs::planner_set_planning_mode>(
-          "/gbplanner/set_planning_trigger_mode");
+          "gbplanner/set_planning_trigger_mode");  // Relative path - will be namespaced automatically
 
   pci_search_server_ = nh_.advertiseService(
       "pci_search", &PlannerControlInterface::searchCallback, this);
@@ -155,9 +155,9 @@ PlannerControlInterface::PlannerControlInterface(
     ros::shutdown();
   }
   // pci_manager_->initialize();
-  ROS_WARN_COND(global_verbosity >= Verbosity::WARN,
-                "[PCI]: Starting run() loop");
+  ROS_WARN("[PCI]: ===== CONSTRUCTOR: About to call run() loop =====");
   run();
+  ROS_ERROR("[PCI]: ===== ERROR: run() loop exited - this should never happen! =====");
 }
 
 void PlannerControlInterface::poseGoalCallback(
@@ -368,6 +368,7 @@ bool PlannerControlInterface::stdSrvSetHomingPositionHereCallback(
 bool PlannerControlInterface::initializationCallback(
     planner_msgs::pci_initialization::Request& req,
     planner_msgs::pci_initialization::Response& res) {
+  ROS_WARN("[PCI] Initialization callback called - setting init_request_ = true");
   init_request_ = true;
   res.success = true;
   return true;
@@ -510,8 +511,13 @@ bool PlannerControlInterface::init() {
   // Wait for the system is ready.
   // For example: checking odometry is ready.
   ros::Rate rr(1);
+  int wait_counter = 0;
   while (!pose_is_ready_) {
-    ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Waiting for odometry.");
+    wait_counter++;
+    // Log every 5 seconds (at 1Hz, that's every 5 iterations)
+    if (wait_counter % 5 == 0) {
+      ROS_WARN("[PCI] Still waiting for odometry... (waited %d seconds). Topic: /rmf_obelix_1/ground_truth/odometry_throttled", wait_counter);
+    }
     ros::spinOnce();
     rr.sleep();
   }
@@ -530,10 +536,27 @@ bool PlannerControlInterface::init() {
 }
 
 void PlannerControlInterface::run() {
+  ROS_WARN("[PCI] ===== RUN() LOOP STARTED =====");
   ros::Rate rr(10);  // 10Hz
   bool cont = true;
+  int loop_counter = 0;
   while (cont) {
+    loop_counter++;
     PCIManager::PCIStatus pci_status = pci_manager_->getStatus();
+    
+    // Debug logging every 100 loops (every 10 seconds at 10Hz)
+    if (loop_counter % 100 == 0) {
+      ROS_WARN("[PCI] Run loop: counter=%d, pci_status=%d (0=kReady), init_request_=%s, homing_request_=%s", 
+               loop_counter, (int)pci_status, init_request_ ? "true" : "false", homing_request_ ? "true" : "false");
+    }
+    
+    // Log immediately when init_request_ becomes true (don't wait for counter)
+    static bool last_init_request = false;
+    if (init_request_ && !last_init_request) {
+      ROS_WARN("[PCI] ===== init_request_ just became TRUE! pci_status=%d =====", (int)pci_status);
+    }
+    last_init_request = init_request_;
+    
     // TODO: Fix by prioritizing and sequencing exclusive cases (with bad
     // if/else and flags approach)
     if (pci_status == PCIManager::PCIStatus::kReady) {
@@ -549,8 +572,7 @@ void PlannerControlInterface::run() {
       // Priority 2: Check if require initialization step.
       else if (init_request_) {
         init_request_ = false;
-        ROS_INFO_COND(global_verbosity >= Verbosity::INFO,
-                      "PlannerControlInterface: Running Initialization");
+        ROS_WARN("[PCI] PlannerControlInterface: Running Initialization (init_request_ was true)");
         runInitialization();
         // Priority 3: Stop
       } else if (stop_planner_request_) {
@@ -590,8 +612,20 @@ void PlannerControlInterface::run() {
           runGlobalRepositioning();
       }
     } else if (pci_status == PCIManager::PCIStatus::kError) {
+      // Log error status periodically
+      static int error_log_counter = 0;
+      if (++error_log_counter % 100 == 0) {
+        ROS_ERROR("[PCI] Run loop: pci_status=kError (status=%d). Cannot process requests.", (int)pci_status);
+      }
       // For ANYmal, reset everything to manual then wait for operator.
       resetPlanner();
+    } else {
+      // Log other statuses (kRunning, kNotReady, etc.)
+      static int other_status_log_counter = 0;
+      if (++other_status_log_counter % 100 == 0) {
+        ROS_WARN("[PCI] Run loop: pci_status=%d (not kReady). init_request_=%s", 
+                 (int)pci_status, init_request_ ? "true" : "false");
+      }
     }
     cont = ros::ok();
     ros::spinOnce();
@@ -832,9 +866,18 @@ void PlannerControlInterface::runInitialization() {
   planner_msgs::planner_set_planning_mode planning_mode_srv;
   planning_mode_srv.request.planning_mode =
       planner_msgs::planner_set_planning_mode::Request::kManual;
-  planner_set_trigger_mode_client_.call(planning_mode_srv);
-
+  
+  std::string service_name = planner_set_trigger_mode_client_.getService();
+  ROS_WARN("[PCI] Calling service: %s", service_name.c_str());
+  
+  if (!planner_set_trigger_mode_client_.call(planning_mode_srv)) {
+    ROS_ERROR("[PCI] Failed to call service: %s", service_name.c_str());
+    return;
+  }
+  
+  ROS_WARN("[PCI] Successfully set planning mode to Manual");
   pci_manager_->initMotion();
+  ROS_WARN("[PCI] Initialization complete");
 }
 
 void PlannerControlInterface::runSearch(bool exe_path) {

@@ -26,14 +26,16 @@ def process_xacro_to_urdf(xacro_file, mav_name, namespace=None, enable_mavlink_i
     try:
         # Use xacro to process the file
         # xacro needs mav_name, namespace, and other parameters
-        # If namespace not provided, use mav_name as namespace
+        # IMPORTANT: namespace should be the actual robot namespace (robot_name), not base_name
+        # This ensures plugin robotNamespace is set correctly by xacro
         if namespace is None:
             namespace = mav_name
         # Build xacro command with all required parameters
         # These match what spawn_mav.launch typically passes
+        # Note: namespace is passed to xacro, which expands ${namespace} in plugin XML
         cmd = ['xacro', xacro_file,
                'mav_name:=' + mav_name,
-               'namespace:=' + namespace,
+               'namespace:=' + namespace,  # This will be expanded in plugin robotNamespace
                'enable_mavlink_interface:=' + str(enable_mavlink_interface).lower(),
                'enable_logging:=' + str(enable_logging).lower(),
                'enable_ground_truth:=' + str(enable_ground_truth).lower()]
@@ -98,11 +100,11 @@ def spawn_model_direct(base_name, robot_name, x, y, z):
             return
         
         # Process xacro to URDF
-        # Use base_name for mav_name and namespace (xacro file resolution)
-        # The URDF will be modified later to use robot_name for TF frames
-        # Pass enable_ground_truth=true to match single-robot setup
-        rospy.loginfo("Processing xacro file: %s with mav_name=%s, namespace=%s", model_file, base_name, base_name)
-        urdf_xml = process_xacro_to_urdf(model_file, base_name, namespace=base_name, 
+        # IMPORTANT: Pass robot_name as namespace to xacro so plugin robotNamespace is set correctly
+        # xacro will expand ${namespace} in plugin XML to robot_name
+        # Use base_name for mav_name (for file resolution), but robot_name for namespace
+        rospy.loginfo("Processing xacro file: %s with mav_name=%s, namespace=%s", model_file, base_name, robot_name)
+        urdf_xml = process_xacro_to_urdf(model_file, base_name, namespace=robot_name, 
                                          enable_mavlink_interface=False, 
                                          enable_logging=False, 
                                          enable_ground_truth=True)
@@ -150,32 +152,130 @@ def spawn_model_direct(base_name, robot_name, x, y, z):
             rospy.loginfo("Replaced non-namespaced mount_joint with namespaced version: %s/mount_joint", robot_name)
         
         # 4. Replace frame_id in plugins: frame_id="base_name/..."
+        # This applies to ALL plugins (cameras, IMU, lidar, etc.)
         urdf_xml = urdf_xml.replace('frame_id="' + base_name + '/', 'frame_id="' + robot_name + '/')
         
         # 5. Replace robot name attribute: <robot name="base_name">
         urdf_xml = urdf_xml.replace('<robot name="' + base_name + '"', '<robot name="' + robot_name + '"')
         
         # 6. Replace in plugin frame references (common patterns in gazebo plugins)
-        # IMPORTANT: When using robot_namespace in spawn service, Gazebo automatically prefixes frame names
-        # So we need to use RELATIVE frame names (just "velodyne") not absolute ("robot_name/velodyne")
-        # Pattern: <frameName>rmf_obelix/velodyne</frameName> -> <frameName>velodyne</frameName>
-        # Gazebo's robot_namespace will then make it "robot_name/velodyne"
+        # IMPORTANT: When xacro expands ${namespace}, it might set frameName to "${namespace}/velodyne"
+        # We need to ensure frameName is relative (just "velodyne") not absolute ("robot_name/velodyne")
+        # This applies to ALL plugins that use frameName, frame_name, or reference_frame
+        # Pattern: <frameName>rmf_obelix/velodyne</frameName> or <frameName>rmf_obelix_1/velodyne</frameName> -> <frameName>velodyne</frameName>
+        # Also handle ${namespace}/velodyne patterns
         urdf_xml = re.sub(r'(<frameName>)' + re.escape(base_name) + r'(/velodyne</frameName>)', 
                          r'\1velodyne</frameName>', urdf_xml)
-        # Also handle other frameName patterns that might have base_name prefix
+        urdf_xml = re.sub(r'(<frameName>)' + re.escape(robot_name) + r'(/velodyne</frameName>)', 
+                         r'\1velodyne</frameName>', urdf_xml)
+        # Also handle other frameName patterns that might have base_name or robot_name prefix (cameras, IMU, etc.)
         urdf_xml = urdf_xml.replace('<frameName>' + base_name + '/', '<frameName>')
+        urdf_xml = urdf_xml.replace('<frameName>' + robot_name + '/', '<frameName>')
         urdf_xml = urdf_xml.replace('frame_name="' + base_name + '/', 'frame_name="')
+        urdf_xml = urdf_xml.replace('frame_name="' + robot_name + '/', 'frame_name="')
         urdf_xml = urdf_xml.replace('reference_frame="' + base_name + '/', 'reference_frame="')
+        urdf_xml = urdf_xml.replace('reference_frame="' + robot_name + '/', 'reference_frame="')
+        # Also handle cameraFrameName (used by camera plugins)
+        urdf_xml = urdf_xml.replace('<cameraFrameName>' + base_name + '/', '<cameraFrameName>')
+        urdf_xml = urdf_xml.replace('cameraFrameName="' + base_name + '/', 'cameraFrameName="')
+        # Handle opticalFrameName (used by camera plugins)
+        urdf_xml = urdf_xml.replace('<opticalFrameName>' + base_name + '/', '<opticalFrameName>')
+        urdf_xml = urdf_xml.replace('opticalFrameName="' + base_name + '/', 'opticalFrameName="')
         
         # 7. Replace ${namespace} in plugin configurations (xacro variables that weren't expanded)
         # This is critical for plugins to work correctly - they need the actual namespace, not the variable
-        urdf_xml = urdf_xml.replace('${namespace}', robot_name)
-        rospy.loginfo("Replaced ${namespace} variables with robot_name: %s", robot_name)
+        # IMPORTANT: For ground truth plugin, ${namespace} should be replaced with robot_name
+        # But when using robot_namespace in spawn service, Gazebo will auto-namespace plugin topics
+        # So we need to check if the plugin uses ${namespace} for robotNamespace parameter
+        namespace_replacements = urdf_xml.count('${namespace}')
+        if namespace_replacements > 0:
+            rospy.loginfo("Found %d ${namespace} variables, replacing with robot_name: %s", namespace_replacements, robot_name)
+            urdf_xml = urdf_xml.replace('${namespace}', robot_name)
+            rospy.loginfo("Replaced ${namespace} variables with robot_name: %s", robot_name)
+        else:
+            rospy.loginfo("No ${namespace} variables found in URDF (this is OK if xacro expanded them)")
         
         # 8. DO NOT replace topic names - Gazebo's robot_namespace parameter handles this automatically
         # When robot_namespace is set in spawn_model service, Gazebo automatically prefixes
         # all plugin topics with the namespace. Using absolute topics breaks this mechanism.
         # Keep relative topics like "velodyne_points" and let Gazebo namespace them to "/robot_name/velodyne_points"
+        
+        # Debug: Check for all plugins that might need namespace fixes
+        import re
+        # Find all plugins in URDF
+        all_plugins = re.findall(r'<plugin[^>]*>.*?</plugin>', urdf_xml, re.DOTALL | re.IGNORECASE)
+        rospy.loginfo("Found %d plugin(s) in URDF", len(all_plugins))
+        
+        # Check for specific plugins that need special handling
+        plugin_types = {
+            'librotors_gazebo_ros_interface_plugin': 'Ground truth odometry',
+            'libgazebo_ros_lidar': 'Lidar (velodyne)',
+            'libgazebo_ros_camera': 'Camera',
+            'libgazebo_ros_imu': 'IMU',
+            'libgazebo_ros_openni_kinect': 'Kinect camera',
+            'libgazebo_ros_depth_camera': 'Depth camera',
+            'libgazebo_ros_multicamera': 'Multi-camera',
+            'libgazebo_ros_imu_sensor': 'IMU sensor',
+            'libgazebo_ros_p3d': 'Odometry (p3d)',
+        }
+        
+        for plugin_lib, plugin_name in plugin_types.items():
+            if plugin_lib in urdf_xml:
+                rospy.loginfo("Found %s plugin: %s", plugin_name, plugin_lib)
+                # Extract plugin XML for this type
+                plugin_matches = re.findall(r'<plugin[^>]*filename="[^"]*' + re.escape(plugin_lib) + r'[^"]*"[^>]*>.*?</plugin>', 
+                                           urdf_xml, re.DOTALL | re.IGNORECASE)
+                for i, plugin_xml in enumerate(plugin_matches):
+                    # Check for common issues
+                    if base_name + '/' in plugin_xml:
+                        rospy.logwarn("WARNING: %s plugin #%d still contains base_name '%s' - may need additional fixes!", 
+                                     plugin_name, i+1, base_name)
+                    if '${namespace}' in plugin_xml:
+                        rospy.logwarn("WARNING: %s plugin #%d still contains ${namespace} - should have been replaced!", 
+                                     plugin_name, i+1)
+                    # Check for frameName with base_name (should be relative)
+                    if '<frameName>' + base_name + '/' in plugin_xml:
+                        rospy.logwarn("WARNING: %s plugin #%d has absolute frameName with base_name - should be relative!", 
+                                     plugin_name, i+1)
+        
+        # Specifically check and fix ground truth plugin
+        # IMPORTANT: The rotors_gazebo_ros_interface_plugin needs robotNamespace to be set correctly.
+        # When using robot_namespace in spawn service, we should set robotNamespace to match robot_name
+        # so the plugin publishes to the correct namespaced topics.
+        if 'librotors_gazebo_ros_interface_plugin' in urdf_xml:
+            rospy.loginfo("Found librotors_gazebo_ros_interface_plugin in URDF")
+            plugin_match = re.search(r'<plugin[^>]*name="ros_interface_plugin"[^>]*>.*?</plugin>', urdf_xml, re.DOTALL | re.IGNORECASE)
+            if plugin_match:
+                plugin_xml = plugin_match.group(0)
+                rospy.loginfo("Ground truth plugin XML (before fix): %s", plugin_xml[:800])
+                
+                # Ensure robotNamespace is set to robot_name (not base_name)
+                # The plugin will publish to topics like /robot_name/ground_truth/odometry
+                if '<robotNamespace>' in plugin_xml:
+                    # Replace existing robotNamespace value with robot_name
+                    plugin_xml_fixed = re.sub(
+                        r'<robotNamespace>.*?</robotNamespace>',
+                        '<robotNamespace>' + robot_name + '</robotNamespace>',
+                        plugin_xml,
+                        flags=re.DOTALL | re.IGNORECASE
+                    )
+                    if plugin_xml_fixed != plugin_xml:
+                        urdf_xml = urdf_xml.replace(plugin_xml, plugin_xml_fixed)
+                        rospy.loginfo("Updated robotNamespace to %s in ground truth plugin", robot_name)
+                        rospy.loginfo("Ground truth plugin XML (after fix): %s", plugin_xml_fixed[:800])
+                    else:
+                        rospy.logwarn("WARNING: Failed to update robotNamespace in plugin XML!")
+                else:
+                    # Add robotNamespace if it doesn't exist
+                    if '</plugin>' in plugin_xml:
+                        plugin_xml_fixed = plugin_xml.replace(
+                            '</plugin>',
+                            '<robotNamespace>' + robot_name + '</robotNamespace></plugin>'
+                        )
+                        urdf_xml = urdf_xml.replace(plugin_xml, plugin_xml_fixed)
+                        rospy.loginfo("Added robotNamespace=%s to ground truth plugin", robot_name)
+        else:
+            rospy.logwarn("WARNING: librotors_gazebo_ros_interface_plugin NOT found in URDF! Ground truth odometry will not be published!")
         
         # Debug: Verify replacement worked
         remaining_base_name = urdf_xml.count(base_name)
@@ -254,16 +354,32 @@ def spawn_model_direct(base_name, robot_name, x, y, z):
                     # Check for lidar plugin
                     if 'libgazebo_ros_lidar' in velodyne_gazebo_xml or 'gazebo_ros_laser_controller' in velodyne_gazebo_xml:
                         rospy.loginfo("Found libgazebo_ros_lidar plugin in velodyne gazebo block")
-                        # Check if frameName is correct (should be relative "velodyne", not absolute)
-                        # Gazebo's robot_namespace will automatically prefix it to "robot_name/velodyne"
+                        # Fix frameName if it's absolute - should be relative "velodyne"
+                        # When xacro expands ${namespace}, it might set frameName to "${namespace}/velodyne" = "robot_name/velodyne"
+                        # We need to make it relative so it resolves correctly
+                        if robot_name + '/velodyne' in velodyne_gazebo_xml:
+                            velodyne_gazebo_xml_fixed = velodyne_gazebo_xml.replace(
+                                '<frameName>' + robot_name + '/velodyne</frameName>',
+                                '<frameName>velodyne</frameName>'
+                            )
+                            if velodyne_gazebo_xml_fixed != velodyne_gazebo_xml:
+                                urdf_xml = urdf_xml.replace(velodyne_gazebo_xml, velodyne_gazebo_xml_fixed)
+                                rospy.loginfo("Fixed velodyne plugin frameName: changed from %s/velodyne to velodyne (relative)", robot_name)
+                        # Also check for base_name/velodyne
+                        if base_name + '/velodyne' in velodyne_gazebo_xml:
+                            velodyne_gazebo_xml_fixed = velodyne_gazebo_xml.replace(
+                                '<frameName>' + base_name + '/velodyne</frameName>',
+                                '<frameName>velodyne</frameName>'
+                            )
+                            if velodyne_gazebo_xml_fixed != velodyne_gazebo_xml:
+                                urdf_xml = urdf_xml.replace(velodyne_gazebo_xml, velodyne_gazebo_xml_fixed)
+                                rospy.loginfo("Fixed velodyne plugin frameName: changed from %s/velodyne to velodyne (relative)", base_name)
+                        # Check if frameName is now correct
                         frame_match = re.search(r'<frameName>[^<]*</frameName>', velodyne_gazebo_xml, re.IGNORECASE)
                         if frame_match:
                             frame_name = frame_match.group(0)
                             if frame_name == '<frameName>velodyne</frameName>':
-                                rospy.loginfo("Plugin frameName is correct (relative): velodyne (will be namespaced to %s/velodyne by Gazebo)", robot_name)
-                            elif robot_name + '/velodyne' in frame_name:
-                                rospy.logwarn("WARNING: Plugin frameName is absolute (%s) but should be relative (velodyne)!", frame_name)
-                                rospy.logwarn("Gazebo's robot_namespace will double-prefix this, causing frame errors!")
+                                rospy.loginfo("Plugin frameName is correct (relative): velodyne")
                             else:
                                 rospy.logwarn("Found frameName: %s (should be 'velodyne' for relative naming)", frame_name)
                     else:
@@ -350,14 +466,14 @@ def spawn_model_direct(base_name, robot_name, x, y, z):
         rospy.sleep(0.5)
         
         try:
-            # Spawn with robot_namespace - Gazebo will automatically namespace plugin topics
-            # The URDF links are pre-namespaced for TF frames, but plugin topics should be relative
-            # Gazebo's robot_namespace will prefix plugin topics with the namespace
-            rospy.loginfo("Spawning model with robot_namespace=%s", robot_name)
+            # Spawn model - use robot_namespace for plugins that don't have robotNamespace (like velodyne)
+            # Ground truth plugin has robotNamespace set, so it will use that (takes precedence)
+            # Velodyne plugin doesn't have robotNamespace, so it needs robot_namespace in spawn
+            rospy.loginfo("Spawning model %s with robot_namespace=%s", robot_name, robot_name)
             spawn_resp = spawn_model(
                 model_name=robot_name,
                 model_xml=urdf_xml,
-                robot_namespace=robot_name,  # This namespaces plugin topics automatically
+                robot_namespace=robot_name,  # This namespaces plugins without robotNamespace (like velodyne)
                 initial_pose=pose,
                 reference_frame='world'
             )
@@ -374,21 +490,9 @@ def spawn_model_direct(base_name, robot_name, x, y, z):
         if spawn_resp.success:
             rospy.loginfo("=== Successfully spawned model %s ===", robot_name)
             
-            # Gazebo should publish world->model_name/base_link automatically,
-            # but when using robot_namespace it might not work correctly.
-            # Add a static transform publisher as backup to ensure TF tree is connected
-            import subprocess
-            # static_transform_publisher format: x y z yaw pitch roll frame_id child_frame_id period_in_ms
-            tf_cmd = [
-                'rosrun', 'tf', 'static_transform_publisher',
-                str(x), str(y), str(z),  # translation (x y z)
-                '0', '0', '0',  # rotation (yaw pitch roll in radians)
-                'world', robot_name + '/base_link', '100'
-            ]
-            rospy.loginfo("Publishing static transform: world -> %s/base_link at (%s, %s, %s)", robot_name, x, y, z)
-            # Run in background - this will keep running
-            subprocess.Popen(tf_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            rospy.loginfo("Static transform publisher started for world -> %s/base_link", robot_name)
+            # Gazebo automatically publishes world->model_name/base_link when model is spawned
+            # Do NOT add a static transform publisher as it causes TF_REPEATED_DATA warnings
+            # The transform is published by Gazebo's physics engine automatically
             
             # Verify model exists in Gazebo
             rospy.sleep(0.5)  # Give Gazebo time to register the model

@@ -66,7 +66,11 @@
   </group>
 
   <!-- Pose throttler - namespaced -->
-  <arg name="odometry_topic" default="$(arg robot_name)/ground_truth/odometry_throttled"/>
+  <!-- IMPORTANT: This file runs many nodes inside <group ns="$(arg robot_name)">.
+       If odometry_topic is relative AND already includes $(arg robot_name),
+       it gets double-prefixed (e.g. /rmf_obelix_1/rmf_obelix_1/ground_truth/odometry_throttled).
+       Make it absolute to avoid double namespacing. -->
+  <arg name="odometry_topic" default="/$(arg robot_name)/ground_truth/odometry_throttled"/>
   <node name="$(arg robot_name)_pose_throttler" type="throttle" pkg="topic_tools" args="messages $(arg robot_name)/ground_truth/pose_with_covariance 10 $(arg robot_name)/msf_core/pose" />
   
   <!-- Graph based planning -->
