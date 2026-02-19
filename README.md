@@ -46,8 +46,10 @@ cd ~/gbplanner3_dev_env/gazebo_garden_ws/src
 sudo apt -y install \
   $(sort -u $(find . -iname 'packages-'`lsb_release -cs`'.apt' -o -iname 'packages.apt' | grep -v '/\.git/') | sed '/gz\|sdf/d' | tr '\n' ' ')
 ```
+> **_NOTE:_** Replace the files of the `gz-sim` folder with the files from [this](https://github.com/ntnu-arl/gz-sim/tree/dev/multicopter_control).
 
 #### Build:
+
 ```bash
 cd ~/gbplanner3_dev_env/gazebo_garden_ws
 colcon graph
@@ -56,7 +58,28 @@ colcon build --cmake-args -DBUILD_TESTING=OFF --merge-install
 
 #### Source the workspace:
 ```bash
-. ~/workspace/install/setup.bash
+source ~/gbplanner3_dev_env/gazebo_garden_ws/install/setup.bash
+```
+
+### ROS-GZ Bridge
+#### Create a workspace for gazebo:
+```bash
+cd ~/gbplanner3_dev_env
+mkdir -p ros_gz_bridge_ws/src
+cd ros_gz_bridge_ws/src
+```
+#### Clone the bridge:
+```bash
+git clone git@github.com:ntnu-arl/ros_gz.git -b garden_noetic
+cd ~/ros_gz_bridge_ws
+catkin config --install
+catkin build
+```
+> **_NOTE:_** Make sure `ros_gz_bridge_ws` extends `~/gbplanner3_dev_env/gazebo_garden_ws/install` and `/opt/ros/noetic`.
+
+#### Source the workspace:
+```bash
+source ~/gbplanner3_dev_env/ros_gz_bridge_ws/install/setup.bash
 ```
 
 ## Installing GBPlanner3
@@ -80,7 +103,7 @@ cd ~/gbplanner3_dev_env/gbplanner3_ws/src/exploration
 ```
 #### Clone the planner
 ```bash
-git clone git@github.com:ntnu-arl/gbplanner_ros.git -b gbplanner3  ## THIS WILL BE UPDATED ON RELEASE
+git clone git@github.com:ntnu-arl/gbplanner_ros.git -b gbplanner3
 ```
 
 #### Clone and update the required packages
@@ -93,10 +116,11 @@ git lfs pull
 
 #### Build
 ```bash
-catkin config -DCMAKE_BUILD_TYPE=Release --extend ~/gbplanner3_dev_env/gazebo_garden_ws/install:/opt/ros/noetic
+catkin config -DCMAKE_BUILD_TYPE=Release
 catkin build
 ```
-```
+> **_NOTE:_** Make sure `gbplanner3_ws` extends `~/gbplanner3_dev_env/gazebo_garden_ws/install`, `~/gbplanner3_dev_env/ros_gz_bridge_ws/install` and `/opt/ros/noetic`.
+
 #### Source
 ```bash
 source ~/gbplanner3_dev_env/gbplanner3_ws/devel/setup.sh

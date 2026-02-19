@@ -53,8 +53,8 @@ void Rrg::initializeAttributes() {
   periodic_timer_ =
       nh_.createTimer(ros::Duration(kTimerPeriod), &Rrg::timerCallback, this);
   odometry_ready = false;
-  last_state_marker_ << 0, 0, 0, 0;
-  last_state_marker_global_ << 0, 0, 0, 0;
+  last_state_marker_ << 0, 0, 0, 0, 0;
+  last_state_marker_global_ << 0, 0, 0, 0, 0;
   robot_backtracking_prev_ = NULL;
 
   planner_trigger_mode_ = PlannerTriggerModeType::kManual;

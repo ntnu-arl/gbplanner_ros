@@ -83,10 +83,6 @@ repositories:
     type: git
     url: git@github.com:ntnu-arl/lidar_simulator.git
     version: organized_cloud
-  src/sim/ros_gz:
-    type: git
-    url: git@github.com:ntnu-arl/ros_gz.git
-    version: garden_noetic
   src/sim/rotors_simulator:
     type: git
     url: git@github.com:ntnu-arl/rotors_simulator.git
