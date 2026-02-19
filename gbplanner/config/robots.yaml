@@ -22,11 +22,11 @@ robots:
     z: 0.5
   
   # Uncomment to add more robots:
-  # - name: rmf_obelix_3
-  #   base_name: rmf_obelix
-  #   x: 10.0
-  #   y: 0.0
-  #   z: 0.5
+  - name: rmf_obelix_3
+    base_name: rmf_obelix
+    x: 10.0
+    y: 0.0
+    z: 0.5
 
 
 

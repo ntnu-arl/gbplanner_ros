@@ -67,7 +67,7 @@ Visualization Manager:
     - Class: rviz/Group
       Displays:
         - Class: rviz/TF
-          Enabled: true
+          Enabled: false
           Frame Timeout: 15
           Frames:
             All Enabled: true
@@ -80,7 +80,7 @@ Visualization Manager:
           Tree:
             {}
           Update Interval: 0
-          Value: true
+          Value: false
         - Alpha: 1
           Class: rviz/Axes
           Enabled: true
@@ -96,6 +96,22 @@ Visualization Manager:
           Name: Robot2_BaseLink
           Radius: 0.20000000298023224
           Reference Frame: rmf_obelix_2/base_link
+          Value: true
+        - Alpha: 1
+          Class: rviz/Axes
+          Enabled: true
+          Length: 3
+          Name: Robot3_BaseLink
+          Radius: 0.20000000298023224
+          Reference Frame: rmf_obelix_3/base_link
+          Value: true
+        - Alpha: 1
+          Class: rviz/Axes
+          Enabled: true
+          Length: 3
+          Name: Robot4_BaseLink
+          Radius: 0.20000000298023224
+          Reference Frame: rmf_obelix_4/base_link
           Value: true
         - Alpha: 1
           Class: rviz/Axes
@@ -301,7 +317,487 @@ Visualization Manager:
           Queue Size: 100
           Value: true
       Enabled: true
-      Name: PlannerViz
+      Name: PlannerViz_Robot1
+    - Class: rviz/Group
+      Displays:
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /rmf_obelix_2/vis/planning_failed
+          Name: PlanningFailed
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /rmf_obelix_2/vis/volumetric_gains
+          Name: VolumetricGain
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /rmf_obelix_2/vis/sensor_fov
+          Name: SensorFOV
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /rmf_obelix_2/vis/best_planning_paths
+          Name: BestPaths
+          Namespaces:
+            best_path: true
+            vertices: true
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /rmf_obelix_2/vis/shortest_paths
+          Name: ShortestPaths
+          Namespaces:
+            best_leaf_vertices: false
+            frontiers: true
+            gain: false
+            heading: false
+            leaf_vertices: false
+            shortest_edges: false
+            vertices: false
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /rmf_obelix_2/vis/robot_state
+          Name: RobotState
+          Namespaces:
+            extension: true
+            extension_aligned: true
+            heading: true
+            size: true
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /rmf_obelix_2/vis/planning_workspace
+          Name: PlanningWorkspace
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /rmf_obelix_2/vis/planning_global_graph
+          Name: GlobalGraph
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /rmf_obelix_2/vis/planning_homing_path
+          Name: HomingPath
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /rmf_obelix_2/vis/planning_graph
+          Name: PlanningGraph
+          Namespaces:
+            edges: false
+            vertices: true
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /rmf_obelix_2/vis/sampler
+          Name: Sampler
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /rmf_obelix_2/vis/ref_path
+          Name: RefPath
+          Namespaces:
+            ref_path: true
+            vertices: true
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /rmf_obelix_2/vis/ray_casting
+          Name: RayCasting
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /rmf_obelix_2/vis/shortest_path_clustering
+          Name: ShortestPathsClustering
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /rmf_obelix_2/vis/state_history
+          Name: StateHist
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /rmf_obelix_2/vis/planning_global_path
+          Name: PlanningGlobalPath
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /rmf_obelix_2/vis/no_gain_zone
+          Name: NoGainZone
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: true
+        - Class: rviz/Marker
+          Enabled: true
+          Marker Topic: /rmf_obelix_2/gbplanner/go_to_waypoint_pose_visualization
+          Name: GoToWaypointVis
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: true
+      Enabled: true
+      Name: PlannerViz_Robot2
+    - Class: rviz/Group
+      Displays:
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /rmf_obelix_3/vis/planning_failed
+          Name: PlanningFailed
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /rmf_obelix_3/vis/volumetric_gains
+          Name: VolumetricGain
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /rmf_obelix_3/vis/sensor_fov
+          Name: SensorFOV
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /rmf_obelix_3/vis/best_planning_paths
+          Name: BestPaths
+          Namespaces:
+            best_path: true
+            vertices: true
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /rmf_obelix_3/vis/shortest_paths
+          Name: ShortestPaths
+          Namespaces:
+            best_leaf_vertices: false
+            frontiers: true
+            gain: false
+            heading: false
+            leaf_vertices: false
+            shortest_edges: false
+            vertices: false
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /rmf_obelix_3/vis/robot_state
+          Name: RobotState
+          Namespaces:
+            extension: true
+            extension_aligned: true
+            heading: true
+            size: true
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /rmf_obelix_3/vis/planning_workspace
+          Name: PlanningWorkspace
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /rmf_obelix_3/vis/planning_global_graph
+          Name: GlobalGraph
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /rmf_obelix_3/vis/planning_homing_path
+          Name: HomingPath
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /rmf_obelix_3/vis/planning_graph
+          Name: PlanningGraph
+          Namespaces:
+            edges: false
+            vertices: true
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /rmf_obelix_3/vis/sampler
+          Name: Sampler
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /rmf_obelix_3/vis/ref_path
+          Name: RefPath
+          Namespaces:
+            ref_path: true
+            vertices: true
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /rmf_obelix_3/vis/ray_casting
+          Name: RayCasting
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /rmf_obelix_3/vis/shortest_path_clustering
+          Name: ShortestPathsClustering
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /rmf_obelix_3/vis/state_history
+          Name: StateHist
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /rmf_obelix_3/vis/planning_global_path
+          Name: PlanningGlobalPath
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /rmf_obelix_3/vis/no_gain_zone
+          Name: NoGainZone
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: true
+        - Class: rviz/Marker
+          Enabled: true
+          Marker Topic: /rmf_obelix_3/gbplanner/go_to_waypoint_pose_visualization
+          Name: GoToWaypointVis
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: true
+      Enabled: true
+      Name: PlannerViz_Robot3
+    - Class: rviz/Group
+      Displays:
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /rmf_obelix_4/vis/planning_failed
+          Name: PlanningFailed
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /rmf_obelix_4/vis/volumetric_gains
+          Name: VolumetricGain
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /rmf_obelix_4/vis/sensor_fov
+          Name: SensorFOV
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /rmf_obelix_4/vis/best_planning_paths
+          Name: BestPaths
+          Namespaces:
+            best_path: true
+            vertices: true
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /rmf_obelix_4/vis/shortest_paths
+          Name: ShortestPaths
+          Namespaces:
+            best_leaf_vertices: false
+            frontiers: true
+            gain: false
+            heading: false
+            leaf_vertices: false
+            shortest_edges: false
+            vertices: false
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /rmf_obelix_4/vis/robot_state
+          Name: RobotState
+          Namespaces:
+            extension: true
+            extension_aligned: true
+            heading: true
+            size: true
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /rmf_obelix_4/vis/planning_workspace
+          Name: PlanningWorkspace
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /rmf_obelix_4/vis/planning_global_graph
+          Name: GlobalGraph
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /rmf_obelix_4/vis/planning_homing_path
+          Name: HomingPath
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /rmf_obelix_4/vis/planning_graph
+          Name: PlanningGraph
+          Namespaces:
+            edges: false
+            vertices: true
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /rmf_obelix_4/vis/sampler
+          Name: Sampler
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /rmf_obelix_4/vis/ref_path
+          Name: RefPath
+          Namespaces:
+            ref_path: true
+            vertices: true
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /rmf_obelix_4/vis/ray_casting
+          Name: RayCasting
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /rmf_obelix_4/vis/shortest_path_clustering
+          Name: ShortestPathsClustering
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /rmf_obelix_4/vis/state_history
+          Name: StateHist
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /rmf_obelix_4/vis/planning_global_path
+          Name: PlanningGlobalPath
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /rmf_obelix_4/vis/no_gain_zone
+          Name: NoGainZone
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: true
+        - Class: rviz/Marker
+          Enabled: true
+          Marker Topic: /rmf_obelix_4/gbplanner/go_to_waypoint_pose_visualization
+          Name: GoToWaypointVis
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: true
+      Enabled: true
+      Name: PlannerViz_Robot4
     - Class: rviz/Group
       Displays:
         - Class: rviz/Image
