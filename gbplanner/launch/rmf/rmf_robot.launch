@@ -79,7 +79,10 @@
   <group ns="$(arg robot_name)">
     <node pkg="gbplanner" type="gbplanner_node" name="gbplanner_node" output="screen" launch-prefix="$(arg launch_prefix)" respawn="true">
       <remap from="odometry" to="$(arg odometry_topic)" />
-      <remap from="/pointcloud" to="/$(arg robot_name)/velodyne_points" />
+      <!-- IMPORTANT: Use relative "pointcloud" not absolute "/pointcloud" when inside namespace group -->
+      <!-- Inside namespace, "pointcloud" resolves to /$(arg robot_name)/pointcloud -->
+      <!-- We remap it to the absolute velodyne topic -->
+      <remap from="pointcloud" to="/$(arg robot_name)/velodyne_points" />
       <!-- Services are automatically namespaced to $(arg robot_name)/gbplanner/* -->
       <rosparam command="load" file="$(arg gbplanner_config_file)" />
       <rosparam command="load" file="$(arg map_config_file)" />

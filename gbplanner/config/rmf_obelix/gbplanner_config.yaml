@@ -116,6 +116,7 @@ RandomSamplerParams:
 PlanningParams:
   type:             kBasicExploration #kAdaptiveExploration, kBasicExploration
   rr_mode:          kGraph
+  global_frame_id:  world  # Global frame for visualization and planning (must be "world" for multi-robot)
   exp_sensor_list:  ["OS064"]
   # no_gain_zones_list: ["g1"]
   v_max:            1.0 # max velocity m/s
@@ -137,7 +138,7 @@ PlanningParams:
   exp_gain_voxel_size: 0.8 # used if use_ray_model_for_volumetric_gain is false
   # Gains:
   path_length_penalty: 0.04
-  path_direction_penalty: 0.1
+  path_direction_penalty: 0.05  # Reduced from 0.1 to reduce oscillation (lower = less penalty for non-forward paths)
   occupied_voxel_gain: 0.0
   free_voxel_gain:  0.0 # prefer directions towards more free voxels in case of the dead-end
   unknown_voxel_gain: 60.0
@@ -154,6 +155,7 @@ PlanningParams:
   path_interpolation_distance: 0.5
   
   time_budget_limit: 480 # seconds
+  auto_global_planner_enable: true  # Enable global planner to escape local minima (triggers after 4 consecutive iterations with no frontiers)
   auto_homing_enable: true
   go_home_if_fully_explored: true
 
