@@ -19,10 +19,10 @@ RobotParams:
 #             all follows ROS convention (X-forward, Y-left, Z-Up).
 #-------------------------------------------------------------------------------
 SensorParams:
-  sensor_list:      ["OS064", "Cam", "CamExp"]
+  sensor_list:      ["OS064", "CamF", "Cam", "CamExp"]
   OS064:
     type:           kLidar
-    max_range:      3.5
+    max_range:      1.0
     center_offset:  [0.0, 0.0, 0.0]
     rotations:      [0.0, 0.0, 0.0]
     fov:            [rad(2*pi), rad(90*pi/180)]
@@ -30,6 +30,8 @@ SensorParams:
     frontier_percentage_threshold: 0.005
   CamF:
     type:           kLidar
+    CameraType:     kFixed
+    rot_lims:       [0.0, 0.0]
     max_range:      3.5
     center_offset:  [0.0, 0.0, 0.0]
     rotations:      [0.0, 0.0, 0.0]
@@ -174,8 +176,8 @@ PlanningParams:
   type:             kBasicExploration #kAdaptiveExploration, kBasicExploration
   rr_mode:          kGraph
   graph_building_mode: kBatch
-  exp_sensor_list:  ["CamExp"]
-  inspection_sensor_list:  ["Cam"]
+  exp_sensor_list:  ["OS064"]
+  inspection_sensor_list:  ["CamF"]
   v_max:            1.0 # max velocity m/s
   v_homing_max:     0.9 # max velocity m/s
   yaw_rate_max:     0.9 # max angular velocity rad/s

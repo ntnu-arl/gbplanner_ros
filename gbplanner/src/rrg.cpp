@@ -5520,7 +5520,7 @@ void Rrg::generateGridSamples(std::vector<int> &viewpoint_ids) {
 
   // centroid /= selected_points.size();
   centroid = (max + min) / 2.0;
-  ROS_WARN("Centroid: %f, %f, %f", centroid.x(), centroid.y(), centroid.z());
+  // ROS_WARN("Centroid: %f, %f, %f", centroid.x(), centroid.y(), centroid.z());
 
   viewpoint_ids.clear();
   double edge_len_max_og = planning_params_.edge_length_max;
@@ -5530,6 +5530,7 @@ void Rrg::generateGridSamples(std::vector<int> &viewpoint_ids) {
   planning_params_.nearest_range = max_edge_len;
   int min_ang_mult = (int)((sensor_params_.sensor[planning_params_.inspection_sensor_list[0]].rot_lims[0] - M_PI/8) / M_PI_4);
   int max_ang_mult = (int)((sensor_params_.sensor[planning_params_.inspection_sensor_list[0]].rot_lims[1] + M_PI/8) / M_PI_4);
+  // std::cout << "min_ang_mult: " << min_ang_mult << " max_ang_mult: " << max_ang_mult << std::endl;
   double max_range = planning_params_.inspection_target_viewing_range;
   for(auto sample : selected_points) {
     StateVec new_state;
@@ -6054,17 +6055,23 @@ std::vector<geometry_msgs::Pose> Rrg::connectTSPOrderWithSubvertices(std::vector
     if(tsp_nodes[i].second.size() == 1)
     {
       current_path_segment_vec.back()(3) = current_vertex->orientation_sub_vertices[tsp_nodes[i].second[0]]->state(3);
-      convert(current_path_segment_vec, current_path_segment);
-      linearlyInterpolateYaw(current_path_segment);
-      convert(current_path_segment, current_path_segment_vec);
+      // convert(current_path_segment_vec, current_path_segment);
+      // linearlyInterpolateYaw(current_path_segment);
+      // convert(current_path_segment, current_path_segment_vec);
+      linearlyInterpolateYaw(current_path_segment_vec);
       // std::cout << "Path seg:" << std::endl;
-      for (int j = 1; j < current_path_segment.size() - 1; ++j)
+      for (int j = 1; j < current_path_segment_vec.size() - 1; ++j)
       {
+        current_path_segment_vec[j](4) = current_path_segment_vec[0](4);
+        geometry_msgs::Pose p;
+        convert(current_path_segment_vec[j], p);
+        tsp_path.push_back(p);
         // std::cout << "  " << current_path_segment_vec[j].transpose() << std::endl;
-        tsp_path.push_back(current_path_segment[j]);
+        // tsp_path.push_back(current_path_segment[j]);
       }
       geometry_msgs::Pose p;
       convert(graph->getVertex(tsp_nodes[i].first)->orientation_sub_vertices[tsp_nodes[i].second[0]]->state, p);
+      // std::cout << "   " << graph->getVertex(tsp_nodes[i].first)->orientation_sub_vertices[tsp_nodes[i].second[0]]->state.transpose() << std::endl;
       tsp_path.push_back(p);
       // std::cout << "Final orientations: " << graph->getVertex(tsp_nodes[i].first)->orientation_sub_vertices[tsp_nodes[i].second[0]]->state.transpose() << std::endl;
       prev_yaw = graph->getVertex(tsp_nodes[i].first)->orientation_sub_vertices[tsp_nodes[i].second[0]]->state(3);
@@ -6210,14 +6217,19 @@ std::vector<geometry_msgs::Pose> Rrg::connectTSPOrderWithSubvertices(std::vector
       }
 
       current_path_segment_vec.back()(3) = current_vertex->orientation_sub_vertices[final_ordering[0]]->state(3);
-      convert(current_path_segment_vec, current_path_segment);
-      linearlyInterpolateYaw(current_path_segment);
-      convert(current_path_segment, current_path_segment_vec);
+      // convert(current_path_segment_vec, current_path_segment);
+      // linearlyInterpolateYaw(current_path_segment);
+      // convert(current_path_segment, current_path_segment_vec);
+      linearlyInterpolateYaw(current_path_segment_vec);
       // std::cout << "Path seg:" << std::endl;
-      for (int j = 1; j < current_path_segment.size() - 1; ++j)
+      for (int j = 1; j < current_path_segment_vec.size() - 1; ++j)
       {
         // std::cout << "  " << current_path_segment_vec[j].transpose() << std::endl;
-        tsp_path.push_back(current_path_segment[j]);
+        current_path_segment_vec[j](4) = current_path_segment_vec[0](4);
+        geometry_msgs::Pose p;
+        convert(current_path_segment_vec[j], p);
+        tsp_path.push_back(p);
+        // tsp_path.push_back(current_path_segment[j]);
       }      
       // std::cout << "Final orientations: " << std::endl;
       for(auto subv_id : final_ordering)

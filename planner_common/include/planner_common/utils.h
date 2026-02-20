@@ -29,21 +29,35 @@ public:
 
 inline void convert(const Eigen::Matrix<double, 5, 1> &st, geometry_msgs::Pose &p)
 {
-	tf::Quaternion quat;
-	// quat.setEuler(0.0, st[4], st[3]);
-	Eigen::Matrix3d rot_eigen;
-	rot_eigen = Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitY()) *
-				Eigen::AngleAxisd(st[3], Eigen::Vector3d::UnitZ()) *
-				Eigen::AngleAxisd(0, Eigen::Vector3d::UnitX());
-	rot_eigen = rot_eigen * Eigen::AngleAxisd(st[4], Eigen::Vector3d::UnitY());
-	Eigen::Quaterniond q_eigen(rot_eigen);
-	quat.setX(q_eigen.x());
-	quat.setY(q_eigen.y());
-	quat.setZ(q_eigen.z());
-	quat.setW(q_eigen.w());
-	tf::Vector3 origin(st[0], st[1], st[2]);
-	tf::Pose poseTF(quat, origin);
-	tf::poseTFToMsg(poseTF, p);
+	// tf::Quaternion quat;
+	// // quat.setEuler(0.0, st[4], st[3]);
+	// Eigen::Matrix3d rot_eigen;
+	// rot_eigen = Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitY()) *
+	// 			Eigen::AngleAxisd(st[3], Eigen::Vector3d::UnitZ()) *
+	// 			Eigen::AngleAxisd(0, Eigen::Vector3d::UnitX());
+	// rot_eigen = rot_eigen * Eigen::AngleAxisd(st[4], Eigen::Vector3d::UnitY());
+	// Eigen::Quaterniond q_eigen(rot_eigen);
+	// quat.setX(q_eigen.x());
+	// quat.setY(q_eigen.y());
+	// quat.setZ(q_eigen.z());
+	// quat.setW(q_eigen.w());
+	// tf::Vector3 origin(st[0], st[1], st[2]);
+	// tf::Pose poseTF(quat, origin);
+	// tf::poseTFToMsg(poseTF, p);
+	Eigen::Quaterniond q =
+	Eigen::AngleAxisd(st[3], Eigen::Vector3d::UnitZ()) *
+	Eigen::AngleAxisd(st[4], Eigen::Vector3d::UnitY());
+	q.normalize();
+
+	p.position.x = st[0];
+	p.position.y = st[1];
+	p.position.z = st[2];
+
+	p.orientation.x = q.x();
+	p.orientation.y = q.y();
+	p.orientation.z = q.z();
+	p.orientation.w = q.w();
+
 }
 
 inline void convert(const geometry_msgs::Pose &p, Eigen::Matrix<double, 5, 1> &st)
@@ -160,4 +174,64 @@ inline void linearlyInterpolateYaw(std::vector<geometry_msgs::Pose> &path)  // K
 		convert(new_point, path[i]);
 		prev_yaw = new_yaw;
 	}
+}
+
+inline double getDistance(const Eigen::Matrix<double, 5, 1>& a, const Eigen::Matrix<double, 5, 1>& b)
+{
+  const double dx = a[0] - b[0];
+  const double dy = a[1] - b[1];
+  const double dz = a[2] - b[2];
+  return std::sqrt(dx*dx + dy*dy + dz*dz);
+}
+
+inline double pathLength(const std::vector<Eigen::Matrix<double, 5, 1>>& path)
+{
+  if (path.size() < 2) return 0.0;
+
+  double len = 0.0;
+  for (size_t i = 1; i < path.size(); ++i)
+    len += getDistance(path[i], path[i-1]);
+  return len;
+}
+
+// Keeps yaw same for first and last state, interpolates the rest (linearly by traveled distance)
+inline void linearlyInterpolateYaw(std::vector<Eigen::Matrix<double, 5, 1>>& path)
+{
+  if (path.size() <= 2)
+    return;
+
+  const Eigen::Matrix<double, 5, 1>& first_point = path.front();
+  const Eigen::Matrix<double, 5, 1>& last_point  = path.back();
+
+  int sign_factor = 1;
+  if (last_point[3] > first_point[3])
+  {
+    sign_factor = (std::abs(last_point[3] - first_point[3]) >= M_PI) ? -1 : 1;
+  }
+  else
+  {
+    sign_factor = (std::abs(last_point[3] - first_point[3]) >= M_PI) ?  1 : -1;
+  }
+
+  double delta_theta = last_point[3] - first_point[3];
+  truncateAngle(delta_theta);              // should wrap to e.g. [-pi, pi]
+  delta_theta = std::abs(delta_theta);
+
+  const double total_len = pathLength(path);
+  if (total_len <= 1e-12)                  // avoid divide-by-zero if all points coincide
+    return;
+
+  double prev_yaw = first_point[3];
+
+  for (size_t i = 1; i + 1 < path.size(); ++i)
+  {
+    const double seg_len   = getDistance(path[i], path[i-1]);
+    const double del_theta = delta_theta * (seg_len / total_len);
+
+    double new_yaw = prev_yaw + sign_factor * del_theta;
+    truncateAngle(new_yaw);
+
+    path[i][3] = new_yaw;                  // update yaw only
+    prev_yaw = new_yaw;
+  }
 }
