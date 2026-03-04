@@ -1,6 +1,7 @@
 # GBPlanner3: Universal Exploration and Inspection Path Planning across Robot Morphologies (aka OmniPlanner)
 
 ![swag](img/cerberus_subt_winners.png)
+> **_NOTE:_** In CERBERUS, during the DARPA Subterranean Challenge, an older version - GBPlanner 2.0 - was used.
 
 We present the State-Of-The-Art Graph-Based Exploration and Inspection Path Planner: GBPlanner3. 
 
