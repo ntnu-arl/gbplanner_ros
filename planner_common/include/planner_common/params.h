@@ -360,6 +360,9 @@ struct PlanningParams {
   double global_graph_odom_connect_radius;
   bool allow_sudden_dir_change;
   bool select_closest_frontier;
+  double local_navigation_reaching_radius;
+  int local_navigation_max_fail_iters;
+  double active_homing_update_radius;
   int max_num_low_gain_iters;
 
   bool loadParams(std::string ns);

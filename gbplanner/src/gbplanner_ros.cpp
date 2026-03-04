@@ -6,6 +6,9 @@ GbplannerRos::GbplannerRos(const ros::NodeHandle& nh, const ros::NodeHandle& nh_
   planner_service_ = nh_.advertiseService(
       "gbplanner_ros", &GbplannerRos::plannerServiceCallback, this);
   
+  planner_homing_service_ = nh_.advertiseService(
+      "gbplanner_ros_homing", &GbplannerRos::plannerHomingServiceCallback, this);
+  
   gbplanner_.reset(new Gbplanner(nh_, nh_private_));
 
   registerTree();
@@ -20,6 +23,26 @@ bool GbplannerRos::plannerServiceCallback(planner_msgs::planner_srv::Request& re
 
   gbplanner_->getPlannerSrvRes(res);
   std::cout << "Sending response to PCI: " << res.status << std::endl;
+
+  return true;
+}
+
+bool GbplannerRos::plannerHomingServiceCallback(planner_msgs::planner_homing::Request& req,
+                              planner_msgs::planner_homing::Response& res)
+{
+  ROS_WARN("Homing through BT");
+  gbplanner_->bt_states_.homing_required = true;
+
+  // planner_msgs::planner_srv::Request req_planner;
+  // planner_msgs::planner_srv::Response res_planner;
+  // req_planner.header = req.header;
+  // req_planner.bound_mode = planner_msgs::BoundMode::kExtendedBound;
+
+  // gbplanner_->setPlannerSrvReq(req_planner);
+  // tree_.tickOnce();
+  // gbplanner_->getPlannerSrvRes(res_planner);
+
+  // res.path = res_planner.path;
 
   return true;
 }
@@ -41,6 +64,11 @@ void GbplannerRos::registerTree()
   factory_.registerNodeType<OPENINGP1FailCheck>("OPENINGP1FailCheck", gbplanner_);
   factory_.registerNodeType<SetNextCompartment>("SetNextCompartment", gbplanner_);
   factory_.registerNodeType<AllCompartmentsInspectedCheck>("AllCompartmentsInspectedCheck", gbplanner_);
+  factory_.registerNodeType<LocalNavigation>("LocalNavigation", gbplanner_);
+  factory_.registerNodeType<LocalNavigationExhaustedCheck>("LocalNavigationExhaustedCheck", gbplanner_);
+  factory_.registerNodeType<LocalNavigationExhaustedReset>("LocalNavigationExhaustedReset", gbplanner_);
+  factory_.registerNodeType<CalculateHomingPath>("CalculateHomingPath", gbplanner_);
+  factory_.registerNodeType<UpdateHomingGoal>("UpdateHomingGoal", gbplanner_);
   
   std::string tree_path = ros::package::getPath("gbplanner") + "/config/bt_xml/main_tree.xml";
   if(!ros::param::get(ros::this_node::getName() + "/behavior_tree_path", tree_path))

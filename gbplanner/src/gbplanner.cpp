@@ -91,6 +91,14 @@ void Gbplanner::initializeAttributes() {
       nh_.subscribe("/traversability_estimation/untraversable_polygon", 100,
                     &Gbplanner::untraversablePolygonCallback, this);
 
+  local_nav_goal_subscriber_ = 
+    nh_.subscribe("local_navigation_goal", 100, &Gbplanner::localNavGoalCallback, this);
+
+  stop_srv_subscriber_ =
+      nh_.subscribe("planner_control_interface/stop_request", 5, &Gbplanner::stopMsgCallback, this);
+
+  homing_local_goal_pub_ =
+      nh_.advertise<geometry_msgs::PoseStamped>("gbplanner/homing_local_goal", 10);
 
   std::string ns = ros::this_node::getName();
   planning_params_.loadParams(ns + "/PlanningParams");
@@ -104,6 +112,7 @@ void Gbplanner::initializeAttributes() {
   
   planner_mode_ = PlannerMode::kExploration;
   
+
   BoundedSpaceParams rrg_global_bounds;
   rrg_->getGlobalBoundParams(rrg_global_bounds);
   rrg_->setExplorationAndInspectionBounds(rrg_global_bounds, rrg_global_bounds);
@@ -370,6 +379,111 @@ bool Gbplanner::checkGlobalExplorationStatus()
   }
 
   return false;
+}
+
+Rrg::LocalPlannerStatus Gbplanner::getLocalNavigationPath()
+{
+  // Extract setting from the request.
+  // ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "[GBPlanner]: Planner service called");
+  rrg_->setGlobalFrame(in_srv_req_.header.frame_id);
+  // ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "[GBPlanner]: global frame set");
+  rrg_->setBoundMode(static_cast<BoundModeType>(in_srv_req_.bound_mode));
+  // ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "[GBPlanner]: bound mode set");
+  rrg_->setRootStateForPlanning(in_srv_req_.root_pose);
+  // ROS_INFO_COND(global_verbosity >= Verbosity::INFO, "[GBPlanner]: root state set");
+  ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Root state: %f %f %f, %f", in_srv_req_.root_pose.position.x, in_srv_req_.root_pose.position.y, in_srv_req_.root_pose.position.z, tf::getYaw(in_srv_req_.root_pose.orientation));
+
+  Rrg::GraphStatus status;
+  Rrg::LocalPlannerStatus ret_status;
+
+  // Start the planner.
+  out_srv_res_.path.clear();
+  if (getPlannerStatus() == Gbplanner::PlannerStatus::NOT_READY) {
+    ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "The planner is not ready.");
+    status = Rrg::GraphStatus::NOT_OK;
+    out_srv_res_.status = planner_msgs::planner_srv::Response::kForward;
+    return Rrg::LocalPlannerStatus::L_ERR;
+  }
+
+  rrg_->reset();
+
+  if (planning_params_.graph_building_mode == GraphBuildingModeType::kBasic) {
+    status = rrg_->buildGraph();
+  } else if (planning_params_.graph_building_mode == GraphBuildingModeType::kBatch) {
+    status = rrg_->batchGraph();
+  }
+
+  switch (status) {
+    case Rrg::GraphStatus::OK:
+      ret_status = Rrg::LocalPlannerStatus::L_OK;
+      break;
+    case Rrg::GraphStatus::ERR_KDTREE:
+      ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "[PLANNER_ERROR] An issue occurred with kdtree data.");
+      ret_status = Rrg::LocalPlannerStatus::L_ERR;
+      break;
+    case Rrg::GraphStatus::ERR_NO_FEASIBLE_PATH:
+      ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "[PLANNER_ERROR] No feasible path was found.");
+      ret_status = Rrg::LocalPlannerStatus::L_ERR;
+      break;
+    case Rrg::GraphStatus::NOT_OK:
+      ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "[PLANNER_ERROR] Graph building: Not ok");
+      ret_status = Rrg::LocalPlannerStatus::L_ERR;
+      break;
+    default:
+      ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "[PLANNER_ERROR] Error occurred in building graph.");
+      ret_status = Rrg::LocalPlannerStatus::L_ERR;
+      break;
+  }
+
+  if(status != Rrg::GraphStatus::OK) 
+  {
+    out_srv_res_.status = planner_msgs::planner_srv::Response::kForward;
+    return ret_status;
+  }
+
+  Rrg::LocalPlannerStatus lp_status = rrg_->evaluateLocalNavigationPath();
+  switch (lp_status) {
+    case Rrg::LocalPlannerStatus::L_OK:
+      ret_status = Rrg::LocalPlannerStatus::L_OK;
+      out_srv_res_.status = planner_msgs::planner_srv::Response::kForward;
+      break;
+    case Rrg::LocalPlannerStatus::L_EXHAUSTED:
+      ROS_WARN_COND(global_verbosity >= Verbosity::PLANNER_STATUS, "[GBPLANNER] Reached local navigation goal");
+      ret_status = Rrg::LocalPlannerStatus::L_EXHAUSTED;
+      out_srv_res_.status = planner_msgs::planner_srv::Response::kManualCustomPath;
+      break;
+    case Rrg::LocalPlannerStatus::L_ERR:
+      ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "[PLANNER_ERROR] Error occurred in local navigation.");
+      ret_status = Rrg::LocalPlannerStatus::L_ERR;
+      out_srv_res_.status = planner_msgs::planner_srv::Response::kForward;
+      break;
+    case Rrg::LocalPlannerStatus::L_STUCK:
+      ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "[PLANNER_ERROR] Local navigation stuck.");
+      ret_status = Rrg::LocalPlannerStatus::L_STUCK;
+      out_srv_res_.status = planner_msgs::planner_srv::Response::kManualCustomPath;
+      break;
+    case Rrg::LocalPlannerStatus::L_TIME_LIMIT_REACHED:
+      ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "[PLANNER_ERROR] Homing needed.");
+      ret_status = Rrg::LocalPlannerStatus::L_TIME_LIMIT_REACHED;
+      out_srv_res_.status = planner_msgs::planner_srv::Response::kHoming;
+      break;
+    default:
+      ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "[PLANNER_ERROR] Error occurred in local navigation.");
+      ret_status = Rrg::LocalPlannerStatus::L_ERR;
+      out_srv_res_.status = planner_msgs::planner_srv::Response::kForward;
+      break;
+  }
+  if(lp_status != Rrg::GraphStatus::OK) 
+  { 
+    return ret_status;
+  }
+  else {
+    out_srv_res_.path = rrg_->getBestPathSimplified();
+    out_srv_res_.status = planner_msgs::planner_srv::Response::kForward;
+    ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "[GBPLANNER] Regular Planning");
+    ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "[GBPLANNER] Path status: %d", out_srv_res_.status);
+  }
+  return Rrg::LocalPlannerStatus::L_OK;
 }
 
 Rrg::LocalPlannerStatus Gbplanner::getExplorationPath()
@@ -772,9 +886,90 @@ bool Gbplanner::getHomingPath()
   return true;
 }
 
+bool Gbplanner::calculateHomingPath()
+{
+  if (getPlannerStatus() == Gbplanner::PlannerStatus::NOT_READY) {
+    ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "The planner is not ready.");
+    // out_srv_res_.status = planner_msgs::planner_srv::Response::kForward;
+    return false;
+  }
+
+  rrg_->setBoundMode(static_cast<BoundModeType>(in_srv_req_.bound_mode));
+  active_homing_path_ = rrg_->getHomingPath(in_srv_req_.header.frame_id);
+  if(active_homing_path_.empty())
+  {
+    // out_srv_res_.status = planner_msgs::planner_srv::Response::kForward;
+    return false;  
+  }
+
+  // out_srv_res_.status = planner_msgs::planner_srv::Response::kHoming;
+  return true;
+}
+
+bool Gbplanner::updateHomingGoal()
+{
+  if(active_homing_path_.empty())
+  {
+    ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "No active homing path to update.");
+    return false;  
+  }
+
+  Eigen::Vector3d current_position(current_state_[0], current_state_[1], current_state_[2]);
+  Eigen::Vector3d homing_goal(active_homing_path_.back().position.x,
+                              active_homing_path_.back().position.y,
+                              active_homing_path_.back().position.z);
+  for(size_t i = 0; i < active_homing_path_.size()-1; ++i)
+  {
+    Eigen::Vector3d waypoint(active_homing_path_[i].position.x,
+                             active_homing_path_[i].position.y,
+                             active_homing_path_[i].position.z);
+    double distance = (waypoint - current_position).norm();
+    if(distance < planning_params_.active_homing_update_radius)
+    {
+      // Remove this waypoint
+      if(active_homing_path_.size() > 1)
+      {
+        active_homing_path_.erase(active_homing_path_.begin() + i);
+        --i; // Adjust index after erasure
+      }
+      else
+      {
+        break;
+      }
+    }
+    else 
+    {
+      // Since waypoints are ordered, we can break early
+      homing_goal = waypoint;
+      break;
+    }
+  }
+
+  if(active_homing_path_.empty())
+  {
+    ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "Homing path completed.");
+    return false;  
+  }
+  else
+  {
+    rrg_->setLocalNavGoal(homing_goal);
+    // visualize homing goal
+    geometry_msgs::PoseStamped homing_goal_msg;
+    homing_goal_msg.header.frame_id = planning_params_.global_frame_id;
+    homing_goal_msg.header.stamp = ros::Time::now();
+    homing_goal_msg.pose.position.x = homing_goal[0];
+    homing_goal_msg.pose.position.y = homing_goal[1];
+    homing_goal_msg.pose.position.z = homing_goal[2];
+    homing_goal_msg.pose.orientation = tf::createQuaternionMsgFromYaw(0.0);
+    homing_local_goal_pub_.publish(homing_goal_msg);
+    return true;
+  }
+}
+
 bool Gbplanner::homingServiceCallback(
     planner_msgs::planner_homing::Request& req,
     planner_msgs::planner_homing::Response& res) {
+  ROS_WARN("Homing through direct service call");
   res.path.clear();
   if (getPlannerStatus() == Gbplanner::PlannerStatus::NOT_READY) {
     ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "The planner is not ready.");
@@ -891,6 +1086,21 @@ void Gbplanner::odometryCallback(const nav_msgs::Odometry& odo) {
 
 void Gbplanner::robotStatusCallback(const planner_msgs::RobotStatus& status) {
   rrg_->setTimeRemaining(status.time_remaining);
+}
+
+void Gbplanner::localNavGoalCallback(const geometry_msgs::PoseStamped& goal)
+{
+  Eigen::Vector3d local_nav_goal;
+  local_nav_goal[0] = goal.pose.position.x;
+  local_nav_goal[1] = goal.pose.position.y;
+  local_nav_goal[2] = goal.pose.position.z;
+  rrg_->setLocalNavGoal(local_nav_goal);
+  ROS_WARN("Received local navigation goal: %f, %f, %f", local_nav_goal[0], local_nav_goal[1], local_nav_goal[2]);
+}
+
+void Gbplanner::stopMsgCallback(const std_msgs::Bool& msg)
+{
+  bt_states_.homing_required = false;
 }
 
 Gbplanner::PlannerStatus Gbplanner::getPlannerStatus() {

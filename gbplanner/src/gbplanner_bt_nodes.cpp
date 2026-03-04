@@ -44,6 +44,62 @@ BT::NodeStatus LocalExpExhaustedCheck::tick()
 BT::NodeStatus LocalExpExhaustedReset::tick()
 {
   gbplanner_->bt_states_.local_exp_exhausted = false;
+  gbplanner_->clearResPath();
+
+  return BT::NodeStatus::SUCCESS;
+}
+/*******************************************************/
+
+
+/***************** LocalNavigation **********************/
+BT::NodeStatus LocalNavigation::onStart()
+{
+  std::cout << "[Local Exploration] Triggered." << std::endl;
+  Rrg::LocalPlannerStatus status = gbplanner_->getLocalNavigationPath();
+  if(status == Rrg::LocalPlannerStatus::L_EXHAUSTED)
+  {
+    gbplanner_->bt_states_.local_navigation_complete = true;
+  }
+  else if(status == Rrg::LocalPlannerStatus::L_STUCK)
+  {
+    gbplanner_->bt_states_.local_navigation_stuck = true;
+  }
+  else if(status == Rrg::LocalPlannerStatus::L_TIME_LIMIT_REACHED)
+  {
+    gbplanner_->bt_states_.homing_triggered = true;
+  }
+  return BT::NodeStatus::SUCCESS;
+}
+
+BT::NodeStatus LocalNavigation::onRunning()
+{
+  return BT::NodeStatus::SUCCESS;  // Does nothing for now
+}
+
+void LocalNavigation::onHalted()
+{
+  std::cout << "[Local Exploration] Halted" << std::endl;
+}
+/*******************************************************/
+
+/***************** LocalNavigationExhaustedCheck **************/
+BT::NodeStatus LocalNavigationExhaustedCheck::tick()
+{
+  if(gbplanner_->bt_states_.local_navigation_complete)
+  {
+    ROS_WARN("Local Exp Exhausted");
+    return BT::NodeStatus::SUCCESS;
+  }
+  else
+    return BT::NodeStatus::FAILURE;
+}
+/*******************************************************/
+
+/***************** LocalNavigationExhaustedReset **************/
+BT::NodeStatus LocalNavigationExhaustedReset::tick()
+{
+  gbplanner_->bt_states_.local_navigation_complete = false;
+  gbplanner_->clearResPath();
 
   return BT::NodeStatus::SUCCESS;
 }
@@ -159,6 +215,7 @@ BT::NodeStatus Homing::tick()
   bool success = gbplanner_->getHomingPath();
   if(!success)
   {
+    ROS_WARN("Homing failed");
     ++failed_homing_count_;
     if(failed_homing_count_ > max_homing_tries_)
     {
@@ -172,6 +229,7 @@ BT::NodeStatus Homing::tick()
   }
   else
   {
+    ROS_WARN("Homing Succeeded");
     failed_homing_count_ = 0;
     return BT::NodeStatus::SUCCESS;
   }
@@ -182,6 +240,12 @@ BT::NodeStatus Homing::tick()
 /***************** HomingCheck **************/
 BT::NodeStatus HomingCheck::tick()
 {
+  if(gbplanner_->bt_states_.homing_required)
+  {
+    ROS_WARN("Homing needed");
+    return BT::NodeStatus::SUCCESS;
+  }
+  
   bool homing_reqd = gbplanner_->homingRequired();
   if(homing_reqd)
   {
@@ -195,6 +259,58 @@ BT::NodeStatus HomingCheck::tick()
   }
 }
 /*******************************************************/
+
+
+/***************** CalculateHomingPath **************/
+BT::NodeStatus CalculateHomingPath::tick()
+{
+  ROS_WARN("[CalculateHomingPath node triggered]");
+  gbplanner_->in_srv_req_.bound_mode = std::min(failed_homing_count_, 2);  // TODO: Set the max bound number through param
+
+  bool success = gbplanner_->calculateHomingPath();
+  if(!success)
+  {
+    ROS_WARN("Homing failed");
+    ++failed_homing_count_;
+    if(failed_homing_count_ > max_homing_tries_)
+    {
+      gbplanner_->out_srv_res_.status = planner_msgs::planner_srv::Response::kManualCustomPath;
+      return BT::NodeStatus::SUCCESS;
+    }
+    else
+    {
+      return BT::NodeStatus::FAILURE;
+    }
+  }
+  else
+  {
+    ROS_WARN("Calculated Homing Path Successfully");
+    failed_homing_count_ = 0;
+    return BT::NodeStatus::SUCCESS;
+  }
+}
+/*******************************************************/
+
+
+/***************** UpdateHomingGoal **************/
+BT::NodeStatus UpdateHomingGoal::tick()
+{
+  ROS_WARN("[UpdateHomingGoal node triggered]");
+
+  bool success = gbplanner_->updateHomingGoal();
+  if(!success)
+  {
+    ROS_WARN("Homing Goal Update: Completed");
+    return BT::NodeStatus::FAILURE;
+  }
+  else
+  {
+    ROS_WARN("Homing Goal Update: Continuing");
+    return BT::NodeStatus::SUCCESS;
+  }
+}
+
+
 
 
 /***************** OPENINGPhase1 **********************/

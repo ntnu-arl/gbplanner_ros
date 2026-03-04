@@ -1,0 +1,73 @@
+repositories:
+  src/exploration/BehaviorTree.CPP:
+    type: git
+    url: git@github.com:ntnu-arl/BehaviorTree.CPP.git
+    version: catkin_support
+  src/exploration/adaptive_obb_ros:
+    type: git
+    url: git@github.com:ntnu-arl/adaptive_obb_ros.git
+    version: gbplanner3
+  src/exploration/manhole_detector_ros:
+    type: git
+    url: git@github.com:ntnu-arl/manhole_detector_ros.git
+    version: main
+  src/exploration/pci_general:
+    type: git
+    url: git@github.com:ntnu-arl/pci_general.git
+    version: gbplanner3
+  src/mapping/voxblox:
+    type: git
+    url: git@github.com:ntnu-arl/voxblox.git
+    version: feature/esdf_colorization
+  src/misc/catkin_boost_python_buildtool:
+    type: git
+    url: git@github.com:ethz-asl/catkin_boost_python_buildtool.git
+    version: master
+  src/misc/catkin_simple:
+    type: git
+    url: git@github.com:catkin/catkin_simple.git
+    version: master
+  src/misc/eigen_catkin:
+    type: git
+    url: git@github.com:ethz-asl/eigen_catkin.git
+    version: master
+  src/misc/eigen_checks:
+    type: git
+    url: git@github.com:ethz-asl/eigen_checks.git
+    version: master
+  src/misc/gflags_catkin:
+    type: git
+    url: git@github.com:ethz-asl/gflags_catkin.git
+    version: master
+  src/misc/glog_catkin:
+    type: git
+    url: git@github.com:ethz-asl/glog_catkin.git
+    version: master
+  src/misc/kindr:
+    type: git
+    url: git@github.com:ANYbotics/kindr.git
+    version: master
+  src/misc/mav_comm:
+    type: git
+    url: git@github.com:ethz-asl/mav_comm.git
+    version: master
+  src/misc/minkindr:
+    type: git
+    url: git@github.com:ethz-asl/minkindr.git
+    version: master
+  src/misc/minkindr_ros:
+    type: git
+    url: git@github.com:ethz-asl/minkindr_ros.git
+    version: master
+  src/misc/multi_dof_joint_trajectory_rviz_plugins:
+    type: git
+    url: git@github.com:ntnu-arl/multi_dof_joint_trajectory_rviz_plugins.git
+    version: main
+  src/misc/numpy_eigen:
+    type: git
+    url: git@github.com:ethz-asl/numpy_eigen.git
+    version: master
+  src/misc/protobuf_catkin:
+    type: git
+    url: git@github.com:ethz-asl/protobuf_catkin.git
+    version: master

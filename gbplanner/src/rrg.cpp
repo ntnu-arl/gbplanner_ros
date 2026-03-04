@@ -112,6 +112,9 @@ void Rrg::initializeAttributes() {
   approve_passing_srv_ = nh_.advertiseService("approve_opening_traversal", &Rrg::approvePassingCallback, this);
   reset_map_srv_ = nh_.advertiseService("reset_map", &Rrg::resetMapCallback, this);
   query_srv_ = nh_.advertiseService("query_srv", &Rrg::queryCallback, this);
+  remove_geofence_srv_ = nh_.advertiseService("remove_geofence", &Rrg::removeGeofenceCallback, this);
+
+  ele_map_sub_ = nh_.subscribe("elevation_map", 1, &Rrg::eleMapCallback, this);
 
   listener_ = new tf::TransformListener();
 
@@ -150,8 +153,9 @@ void Rrg::reset() {
   if (robot_params_.type == RobotType::kGroundRobot) {
     VoxelStatus vs;
     Eigen::Vector3d root_pos = root_state.head(3);
-    double ground_height = projectSample(root_pos, vs);
+    double ground_height = projectSampleEleMap(root_pos, vs);
     root_state(2) += (planning_params_.max_ground_height - ground_height);
+    root_state(2) = root_pos(2);
   }
 
   // Create a root vertex and add to the graph.
@@ -402,16 +406,16 @@ bool Rrg::sampleVertex(Vertex& vertex) {
       sample = Eigen::Vector3d(state[0], state[1], state[2]) +
                robot_params_.center_offset;
       VoxelStatus vs;
-      double ground_dist = projectSample(sample, vs);
+      double ground_dist = projectSampleEleMap(sample, vs);
       if (ground_dist < 0.0) continue;
       if (vs == VoxelStatus::kUnknown) {
         hanging = true;
       }
 
-      sample[2] -= (ground_dist - planning_params_.max_ground_height);
+      // sample[2] -= (ground_dist - planning_params_.max_ground_height);
       state[0] = sample[0];
       state[1] = sample[1];
-      state[2] -= (ground_dist - planning_params_.max_ground_height);
+      state[2] = sample[2];
     }
 
     // Check if surrounding area is free.
@@ -428,7 +432,8 @@ bool Rrg::sampleVertex(Vertex& vertex) {
     }
   }
   vertex.state = state;
-  vertex.is_hanging = hanging;
+  // vertex.is_hanging = hanging;
+  vertex.is_hanging = false;
   return found;
 }
 
@@ -453,15 +458,16 @@ bool Rrg::sampleVertex(RandomSampler& random_sampler, StateVec& root_state,
       sample = Eigen::Vector3d(state[0], state[1], state[2]) +
                robot_params_.center_offset;
       VoxelStatus vs;
-      double ground_dist = projectSample(sample, vs);
+      double ground_dist = projectSampleEleMap(sample, vs);
+      if (ground_dist < 0.0) continue;
       if (vs == VoxelStatus::kUnknown) {
         hanging = true;
       }
 
-      sample[2] -= (ground_dist - planning_params_.max_ground_height);
+      // sample[2] -= (ground_dist - planning_params_.max_ground_height);
       state[0] = sample[0];
       state[1] = sample[1];
-      state[2] -= (ground_dist - planning_params_.max_ground_height);
+      state[2] = sample[2];
     }
     // Check if surrounding area is free.
     if (VoxelStatus::kFree ==
@@ -478,7 +484,8 @@ bool Rrg::sampleVertex(RandomSampler& random_sampler, StateVec& root_state,
     }
   }
   vertex.state = state;
-  vertex.is_hanging = hanging;
+  // vertex.is_hanging = hanging;
+  vertex.is_hanging = false;
   return found;
 }
 
@@ -559,6 +566,74 @@ double Rrg::projectSample(Eigen::Vector3d& sample,
 
   voxel_status = VoxelStatus::kFree;
   return -1.0;
+}
+
+double Rrg::projectSampleEleMap(Eigen::Vector3d& sample,
+                       VoxelStatus& voxel_status)
+{
+  std::vector<Eigen::Vector3d> extra_samples(5, Eigen::Vector3d::Zero());
+  extra_samples[0] = Eigen::Vector3d(0.0, 0.0, 0.0);
+  extra_samples[1] = Eigen::Vector3d(robot_box_size_.x()/2.0, robot_box_size_.y()/2.0, 0.0);
+  extra_samples[2] = Eigen::Vector3d(-robot_box_size_.x()/2.0, robot_box_size_.y()/2.0, 0.0);
+  extra_samples[3] = Eigen::Vector3d(robot_box_size_.x()/2.0, -robot_box_size_.y()/2.0, 0.0);
+  extra_samples[4] = Eigen::Vector3d(-robot_box_size_.x()/2.0, -robot_box_size_.y()/2.0, 0.0);
+
+  if (!ele_map_.exists("elevation"))
+  {
+    ROS_WARN("No 'elevation' layer in map.");
+    voxel_status = VoxelStatus::kFree;
+    return -1.0;
+  }
+
+  bool admissible = true;
+
+  double z_center;
+  for(int i = 0; i < extra_samples.size(); ++i) {
+    Eigen::Vector3d sample_to_check = sample + extra_samples[i];
+    grid_map::Position pos(sample_to_check(0), sample_to_check(1));
+    if (!ele_map_.isInside(pos))
+    {
+      admissible = false;
+      break;
+    }
+    grid_map::Index index;
+    if(!ele_map_.getIndex(pos, index))
+    {
+      admissible = false;
+      break;
+    }
+    if(!ele_map_.isValid(index, "elevation"))
+    {
+      admissible = false;
+      break;
+    }
+
+    double z = ele_map_.atPosition("elevation", pos);
+    if(i == 0)
+    {
+      z_center = z;
+      sample.z() = z + planning_params_.max_ground_height;
+    }
+    else
+    {
+      if(std::atan2(std::abs(z - z_center), (sample_to_check.head(2) - sample.head(2)).norm()) > planning_params_.max_inclination)
+      {
+        admissible = false;
+        break;
+      }
+    }
+  }
+
+  if(admissible)
+  {
+    voxel_status = VoxelStatus::kOccupied;
+    return planning_params_.max_ground_height;
+  }
+  else
+  {
+    voxel_status = VoxelStatus::kUnknown;
+    return 0.0;
+  }
 }
 
 ProjectedEdgeStatus Rrg::getProjectedEdgeStatus(
@@ -659,6 +734,118 @@ ProjectedEdgeStatus Rrg::getProjectedEdgeStatus(
   return ProjectedEdgeStatus::kAdmissible;
 }
 
+ProjectedEdgeStatus Rrg::getProjectedEdgeStatusEleMap(
+      const Eigen::Vector3d& start, const Eigen::Vector3d& end,
+      const Eigen::Vector3d& box_size, bool stop_at_unknown_voxel,
+      std::vector<Eigen::Vector3d>& projected_edge, bool)
+{
+  std::vector<Eigen::Vector3d> points_to_project, points_to_check;
+  points_to_project.push_back(start);
+  Eigen::Vector3d ray = end - start;
+  double col_check_interp_factor = 2.0;
+  double proj_res = 0.2, col_check_res = robot_box_size_.norm() / (2.0 * col_check_interp_factor);
+  for(int i=0; i<ray.norm()/proj_res; ++i)
+  {
+    double step = i * proj_res;
+    if(step > ray.norm()) break;
+    Eigen::Vector3d edge_point = start + step * ray.normalized();
+    points_to_project.push_back(edge_point);
+  }
+  points_to_project.push_back(end);
+
+  // Inclination check
+  double max_inclination = planning_params_.max_inclination;
+  
+  // grid_map::Position pos_start(start(0), start(1));
+  // if (!ele_map_.isInside(pos_start)) return ProjectedEdgeStatus::kUnknown;
+  // grid_map::Index index_start;
+  // if(!ele_map_.getIndex(pos_start, index_start)) return ProjectedEdgeStatus::kUnknown;
+  // if(!ele_map_.isValid(index_start, "elevation")) return ProjectedEdgeStatus::kHanging;
+  // double prev_z = ele_map_.atPosition("elevation", pos_start) + planning_params_.max_ground_height;
+  // points_to_check.push_back(Eigen::Vector3d(start(0), start(1), prev_z));
+
+  Eigen::Vector3d start_pt = start;
+  Eigen::Vector3d end_pt = end;
+  double prev_z;
+  VoxelStatus vs;
+  projectSampleEleMap(start_pt, vs);
+  if (vs != VoxelStatus::kOccupied) {
+    return ProjectedEdgeStatus::kHanging;
+  }
+  else
+  {
+    prev_z = start_pt(2);
+    points_to_check.push_back(start_pt);
+  }
+
+  bool admissible = true;
+  for(int i=1; i<points_to_project.size(); ++i)
+  {
+    // grid_map::Position pos(points_to_project[i](0), points_to_project[i](1));
+    // if (!ele_map_.isInside(pos)) return ProjectedEdgeStatus::kUnknown;
+    // grid_map::Index index;
+    // if(!ele_map_.getIndex(pos, index)) return ProjectedEdgeStatus::kUnknown;
+    // if(!ele_map_.isValid(index, "elevation")) return ProjectedEdgeStatus::kHanging;
+
+    // double z = ele_map_.atPosition("elevation", pos) + planning_params_.max_ground_height;
+    double z;
+    VoxelStatus vs;
+    projectSampleEleMap(points_to_project[i], vs);
+    if (vs != VoxelStatus::kOccupied) {
+      return ProjectedEdgeStatus::kHanging;
+    }
+    else
+    {
+      z = points_to_project[i](2);
+    }
+
+    double theta = std::atan2(std::abs(z - prev_z), (points_to_project[i].head(2) - points_to_project[i-1].head(2)).norm());
+    if (std::abs(theta) > max_inclination) {
+      admissible = false;
+      return ProjectedEdgeStatus::kSteep;
+    }
+    prev_z = z;
+    if((points_to_check.back().head(2) - points_to_project[i].head(2)).norm() > col_check_res)
+    {
+      points_to_check.push_back(points_to_project[i]);
+    }
+  }
+
+  // grid_map::Position pos_end(end(0), end(1));
+  // if (!ele_map_.isInside(pos_end)) return ProjectedEdgeStatus::kUnknown;
+  // grid_map::Index index_end;
+  // if(!ele_map_.getIndex(pos_end, index_end)) ProjectedEdgeStatus::kHanging;
+  // if(!ele_map_.isValid(index_end, "elevation")) ProjectedEdgeStatus::kHanging;
+  // double z_end = ele_map_.atPosition("elevation", pos_end) + planning_params_.max_ground_height;
+  VoxelStatus vs_end;
+  projectSampleEleMap(end_pt, vs_end);
+  if (vs_end != VoxelStatus::kOccupied) {
+    return ProjectedEdgeStatus::kHanging;
+  }
+  else {
+    points_to_check.push_back(end_pt);
+  }
+
+  // Collision check
+  for(auto pt : points_to_check)
+  {
+    VoxelStatus vs = map_manager_->getBoxStatus(pt + robot_params_.center_offset, box_size, stop_at_unknown_voxel);
+    if (vs == VoxelStatus::kOccupied) {
+      admissible = false;
+      return ProjectedEdgeStatus::kOccipied;
+    } else if (vs == VoxelStatus::kUnknown && stop_at_unknown_voxel) {
+      admissible = false;
+      return ProjectedEdgeStatus::kUnk;
+    }
+  }
+
+  // Edge is admissible
+  projected_edge = points_to_check;
+
+  return ProjectedEdgeStatus::kAdmissible;
+
+}
+
 void Rrg::expandGraph(std::shared_ptr<GraphManager> graph_manager,
                       StateVec& new_state, ExpandGraphReport& rep,
                       bool allow_short_edge) {
@@ -697,7 +884,7 @@ void Rrg::expandGraph(std::shared_ptr<GraphManager> graph_manager,
     Eigen::Vector3d new_pos;
     new_pos << new_state[0], new_state[1], new_state[2];
     VoxelStatus vs;
-    double ground_height = projectSample(new_pos, vs);
+    double ground_height = projectSampleEleMap(new_pos, vs);
     if (vs == VoxelStatus::kOccupied) {
       new_pos[2] -= (ground_height - planning_params_.max_ground_height);
     } else {
@@ -738,7 +925,7 @@ void Rrg::expandGraph(std::shared_ptr<GraphManager> graph_manager,
     }
   } else if (robot_params_.type == RobotType::kGroundRobot) {
     std::vector<Eigen::Vector3d> projected_edge;
-    ProjectedEdgeStatus es = getProjectedEdgeStatus(
+    ProjectedEdgeStatus es = getProjectedEdgeStatusEleMap(
         start_pos, end_pos, robot_box_size_, true, projected_edge, false);
     if (ProjectedEdgeStatus::kAdmissible == es) {
       admissible_edge = true;
@@ -820,7 +1007,7 @@ void Rrg::expandGraph(std::shared_ptr<GraphManager> graph_manager,
               }
             } else if (robot_params_.type == RobotType::kGroundRobot) {
               std::vector<Eigen::Vector3d> projected_edge;
-              ProjectedEdgeStatus es = getProjectedEdgeStatus(
+              ProjectedEdgeStatus es = getProjectedEdgeStatusEleMap(
                   p_start, p_end, robot_box_size_, true, projected_edge, false);
               if (ProjectedEdgeStatus::kAdmissible == es) {
                 admissible_edge = true;
@@ -905,7 +1092,7 @@ void Rrg::expandGraphEdges(std::shared_ptr<GraphManager> graph_manager,
           admissible_edge = true;
         }
       } else if (robot_params_.type == RobotType::kGroundRobot) {
-        ProjectedEdgeStatus es = getProjectedEdgeStatus(
+        ProjectedEdgeStatus es = getProjectedEdgeStatusEleMap(
             p_start, p_end, robot_box_size_, true, projected_edge, false);
         if (ProjectedEdgeStatus::kAdmissible == es) {
           admissible_edge = true;
@@ -963,7 +1150,7 @@ void Rrg::expandGraph(std::shared_ptr<GraphManager> graph_manager,
     Eigen::Vector3d new_pos;
     new_pos << new_state[0], new_state[1], new_state[2];
     VoxelStatus vs;
-    double ground_height = projectSample(new_pos, vs);
+    double ground_height = projectSampleEleMap(new_pos, vs);
     if (vs == VoxelStatus::kOccupied) {
       new_pos[2] -= (ground_height - planning_params_.max_ground_height);
     } else {
@@ -1004,7 +1191,7 @@ void Rrg::expandGraph(std::shared_ptr<GraphManager> graph_manager,
     }
   } else if (robot_params_.type == RobotType::kGroundRobot) {
     bool is_hanging = nearest_vertex->is_hanging || new_vertex.is_hanging;
-    ProjectedEdgeStatus es = getProjectedEdgeStatus(
+    ProjectedEdgeStatus es = getProjectedEdgeStatusEleMap(
         start_pos, end_pos, robot_box_size_, true, projected_edge, is_hanging);
     if (ProjectedEdgeStatus::kAdmissible == es) {
       admissible_edge = true;
@@ -1114,7 +1301,7 @@ void Rrg::expandGraph(std::shared_ptr<GraphManager> graph_manager,
               bool is_hanging =
                   new_vertex_ptr->is_hanging || nearest_vertices[i]->is_hanging;
               ProjectedEdgeStatus es =
-                  getProjectedEdgeStatus(p_start, p_end, robot_box_size_, true,
+                  getProjectedEdgeStatusEleMap(p_start, p_end, robot_box_size_, true,
                                          projected_edge, is_hanging);
               if (ProjectedEdgeStatus::kAdmissible == es) {
                 admissible_edge = true;
@@ -1744,6 +1931,35 @@ Rrg::GraphStatus Rrg::buildGraph() {
   auto t1 = std::chrono::high_resolution_clock::now();
   auto t2 = t1;
 
+  /////////////////////////////////////////////
+  {
+    std::vector<Eigen::Vector3d> occ_vox, free_vox;
+    auto t1 = std::chrono::high_resolution_clock::now();
+    auto t2 = t1;
+    map_manager_->extractLocalMap(current_state_.head(3) + (local_space_params_.min_val + local_space_params_.max_val)/2.0,
+                                  (local_space_params_.max_val - local_space_params_.min_val),
+                                  occ_vox, free_vox);
+    t2 = std::chrono::high_resolution_clock::now();
+    std::cout << "Extraction time for map of size " 
+              << (local_space_params_.max_val - local_space_params_.min_val).transpose() 
+              << ": " << std::chrono::duration<double, std::milli>(t2 - t1).count() << std::endl;
+    pcl::PointCloud<pcl::PointXYZ> local_free_cloud;
+    for(auto pt_e : free_vox)
+    {
+      pcl::PointXYZ pt;
+      pt.x = pt_e.x();
+      pt.y = pt_e.y();
+      pt.z = pt_e.z();
+      local_free_cloud.points.push_back(pt);
+    }
+    sensor_msgs::PointCloud2 local_free_cloud_msg;
+    pcl::toROSMsg(local_free_cloud, local_free_cloud_msg);
+    local_free_cloud_msg.header.frame_id = world_frame_;
+    local_free_cloud_msg.header.stamp = ros::Time::now();
+    local_free_map_pub_.publish(local_free_cloud_msg);
+  }
+  /////////////////////////////////////////////
+
   bool use_edge_limit = true;
   for(int i=0;i<4;i++){
     if (init_pdf_type[i] == RandomSamplerBase::RandomDistributionType::kNormalUniform){
@@ -2187,29 +2403,29 @@ Rrg::GraphStatus Rrg::evaluateGraph() {
             v_id->vol_gain.gain *
             exp(-v_id->is_hanging * planning_params_.hanging_vertex_penalty);
 
-        if (ind > 0 && robot_params_.type == RobotType::kGroundRobot) {
-          double inclination =
-              edge_inclinations_[path[ind]->id][path[ind - 1]->id];
-          double max_negative_inclination = 0.37;
-          if (inclination > max_negative_inclination) {
-          }
-          Eigen::Vector3d segment =
-              path[ind]->state.head(3) - path[ind - 1]->state.head(3);
-          if ((path[ind]->state(2) - path[ind - 1]->state(2)) <
-              -map_manager_->getResolution()) {
-            // Negative slope
-            if (inclination > max_negative_inclination ||
-                (std::atan2(std::abs(segment(2)), segment.head(2).norm())) >
-                    max_negative_inclination) {
-              path_gain = 0.0;
-              negative_edge_leafs.push_back(leaf_vertices[i]->id);
-              inadmissible_negative_edges.push_back(
-                  path[ind - 1]->state.head(3));
-              inadmissible_negative_edges.push_back(path[ind]->state.head(3));
-              inadmissible_edge = true;
-            }
-          }
-        }
+        // if (ind > 0 && robot_params_.type == RobotType::kGroundRobot) {
+        //   double inclination =
+        //       edge_inclinations_[path[ind]->id][path[ind - 1]->id];
+        //   double max_negative_inclination = 0.37;
+        //   // if (inclination > max_negative_inclination) {
+        //   // }
+        //   Eigen::Vector3d segment =
+        //       path[ind]->state.head(3) - path[ind - 1]->state.head(3);
+        //   if ((path[ind]->state(2) - path[ind - 1]->state(2)) <
+        //       -map_manager_->getResolution()) {
+        //     // Negative slope
+        //     if (inclination > max_negative_inclination ||
+        //         (std::atan2(std::abs(segment(2)), segment.head(2).norm())) >
+        //             max_negative_inclination) {
+        //       path_gain = 0.0;
+        //       negative_edge_leafs.push_back(leaf_vertices[i]->id);
+        //       inadmissible_negative_edges.push_back(
+        //           path[ind - 1]->state.head(3));
+        //       inadmissible_negative_edges.push_back(path[ind]->state.head(3));
+        //       inadmissible_edge = true;
+        //     }
+        //   }
+        // }
         if (!inadmissible_edge) {
           path_gain += vol_gain * exp(-lambda * path_length);
           v_id->vol_gain.accumulative_gain = path_gain;
@@ -2249,9 +2465,9 @@ Rrg::GraphStatus Rrg::evaluateGraph() {
   double dt;
 
   if (planning_params_.auto_global_planner_enable) {
-    if (!frontier_exists) {
+    if (!frontier_exists || best_gain <= 0) {
       ++num_low_gain_iters_;
-      ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "No frontier found in this round. Total rounds: %d",
+      ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "No frontier found in this round. Total rounds: %d",
                num_low_gain_iters_);
     } else {
       if (num_low_gain_iters_ > 0) --num_low_gain_iters_;
@@ -2309,6 +2525,118 @@ Rrg::GraphStatus Rrg::evaluateGraph() {
   publishTimings(stat_chrono_);
 
   return gstatus;
+}
+
+Rrg::LocalPlannerStatus Rrg::evaluateLocalNavigationPath()
+{
+  auto t1 = std::chrono::high_resolution_clock::now();
+  auto t2 = t1;
+  // Dijkstra and mark leaf vertices.
+  local_graph_->findShortestPaths(local_graph_rep_);
+  local_graph_->findLeafVertices(local_graph_rep_);
+  std::vector<Vertex*> leaf_vertices;
+  local_graph_->getLeafVertices(leaf_vertices);
+  stat_->shortest_path_time = GET_ELAPSED_TIME(ttime);
+  t2 = std::chrono::high_resolution_clock::now();
+  stat_chrono_->shortest_path_time =
+      std::chrono::duration<double, std::milli>(t2 - t1).count();
+
+  correctYaw();
+
+  visualization_->visualizeShortestPaths(local_graph_, local_graph_rep_);
+
+  t1 = std::chrono::high_resolution_clock::now();
+  double best_gain = 0;
+  int best_path_id = 0;
+  int num_leaf_vertices = leaf_vertices.size();
+  int path_len_count = 0, path_dir_count = 0;
+  double path_len_time = 0.0, path_dir_time = 0.0;
+  int num_directional_paths = 0;
+
+  if(local_navigation_goal_set_)
+  {
+    double g_2_c = (local_navigation_goal_ - current_state_.head(3)).norm();
+    if(g_2_c <= planning_params_.local_navigation_reaching_radius)
+    {
+      local_goal_distance_reached_ = std::numeric_limits<double>::max();
+      local_navigation_goal_set_ = false;
+      local_goal_progress_fail_iters_ = 0;
+      return Rrg::LocalPlannerStatus::L_EXHAUSTED;
+    }
+
+    if(local_goal_progress_fail_iters_ >= planning_params_.local_navigation_max_fail_iters)
+    {
+      std::cout << "[Local Navigation] Goal progress failed for " << local_goal_progress_fail_iters_ 
+                << " iters. Aborting local navigation." << std::endl;
+      local_goal_distance_reached_ = std::numeric_limits<double>::max();
+      local_navigation_goal_set_ = false;
+      local_goal_progress_fail_iters_ = 0;
+      return Rrg::LocalPlannerStatus::L_STUCK;
+    }
+
+    double dist = (local_navigation_goal_ - current_state_.head(3)).norm();
+    if(dist <= local_goal_distance_reached_)
+    {
+      local_goal_distance_reached_ = dist;
+      std::cout << "------ Closest Distance to WP: " << local_goal_distance_reached_ << std::endl;
+    }
+    else
+    {
+      local_goal_progress_fail_iters_++;
+      std::cout << "------ Local Goal Progress Fail Iters: " << local_goal_progress_fail_iters_ << std::endl;
+    }
+
+    for(int i=0; i< num_leaf_vertices; ++i)
+    {
+      int id = leaf_vertices[i]->id;
+      std::vector<Vertex*> path;
+      local_graph_->getShortestPath(id, local_graph_rep_, true, path);
+
+      double goal_dist = (path.back()->state.head(3) - local_navigation_goal_).norm() + 0.001;
+
+      double path_gain = 1.0 / goal_dist;
+
+      if (path_gain > best_gain) 
+      {
+        best_gain = path_gain;
+        best_path_id = id;
+      }
+    }
+
+    if(best_gain > 0)
+    {
+      // create a branch
+      std::vector<int> path;
+      local_graph_->getShortestPath(best_path_id, local_graph_rep_, false, path);
+      for (int i = 0; i < (path.size() - 1); ++i) {
+        local_graph_->getVertex(path[i])->parent =
+            local_graph_->getVertex(path[i + 1]);
+      }
+      best_vertex_ = local_graph_->getVertex(path[0]);
+      //
+      visualization_->visualizeBestPaths(local_graph_, local_graph_rep_, 10,
+                                          best_path_id);
+
+      std::cout << "[Local Navigation] Best path found with goal distance gain [" << best_gain 
+                << "] and ID [" << best_path_id << "] " << std::endl;
+      t2 = std::chrono::high_resolution_clock::now();
+      stat_chrono_->evaluate_graph_time =
+          std::chrono::duration<double, std::milli>(t2 - t1).count();
+      return Rrg::LocalPlannerStatus::L_OK;
+    }
+    else
+    {
+      t2 = std::chrono::high_resolution_clock::now();
+      stat_chrono_->evaluate_graph_time =
+          std::chrono::duration<double, std::milli>(t2 - t1).count();
+      return Rrg::LocalPlannerStatus::L_ERR;
+    }
+  }
+  else
+  {
+    std::cout << "[Local Navigation] No local navigation goal set." << std::endl;
+    return Rrg::LocalPlannerStatus::L_EXHAUSTED;
+  }
 }
 
 bool Rrg::modifyPath(pcl::PointCloud<pcl::PointXYZ>* obstacle_pcl,
@@ -2756,10 +3084,11 @@ void Rrg::expandGlobalGraphTimerCallback(const ros::TimerEvent& event) {
       if (robot_params_.type == RobotType::kGroundRobot) {
         VoxelStatus vs;
         Eigen::Vector3d new_vertex_pos = new_vertex.state.head(3);
-        double ground_height = projectSample(new_vertex_pos, vs);
+        double ground_height = projectSampleEleMap(new_vertex_pos, vs);
         if (vs == VoxelStatus::kOccupied) {
           new_vertex.state(2) -=
               (ground_height - planning_params_.max_ground_height);
+          new_vertex.state(2) = new_vertex_pos(2);
         }
       }
       // Only expand samples in sparse areas & not yet passed by the robot & not
@@ -3989,9 +4318,10 @@ std::vector<geometry_msgs::Pose> Rrg::searchHomingPath(
   if (robot_params_.type == RobotType::kGroundRobot) {
     VoxelStatus vs;
     Eigen::Vector3d new_vertex_pos = cur_state.head(3);
-    double ground_height = projectSample(new_vertex_pos, vs);
+    double ground_height = projectSampleEleMap(new_vertex_pos, vs);
     if (vs == VoxelStatus::kOccupied) {
       cur_state(2) -= (ground_height - planning_params_.max_ground_height);
+      cur_state(2) = new_vertex_pos(2);
     }
   }
   Vertex* nearest_vertex = NULL;
@@ -4157,9 +4487,10 @@ std::vector<geometry_msgs::Pose> Rrg::getGlobalPath(
   if (robot_params_.type == RobotType::kGroundRobot) {
     VoxelStatus vs;
     Eigen::Vector3d new_vertex_pos = cur_state.head(3);
-    double ground_height = projectSample(new_vertex_pos, vs);
+    double ground_height = projectSampleEleMap(new_vertex_pos, vs);
     if (vs == VoxelStatus::kOccupied) {
       cur_state(2) -= (ground_height - planning_params_.max_ground_height);
+      cur_state(2) = new_vertex_pos(2);
     }
   }
   Vertex* nearest_vertex = NULL;
@@ -5014,12 +5345,12 @@ bool Rrg::improveFreePath(const std::vector<geometry_msgs::Pose>& path_orig,
     } else if (robot_params_.type == RobotType::kGroundRobot) {
       std::vector<Eigen::Vector3d> pr1, pr2;
       ProjectedEdgeStatus e_pr1, e_pr2;
-      e_pr1 = getProjectedEdgeStatus(p0_mod, p1_parallel, robot_box_size_,
+      e_pr1 = getProjectedEdgeStatusEleMap(p0_mod, p1_parallel, robot_box_size_,
                                      false, pr1, false);
       if (ProjectedEdgeStatus::kAdmissible == e_pr1 ||
           ProjectedEdgeStatus::kSteep == e_pr1)
         e1_admissible = true;
-      e_pr2 = getProjectedEdgeStatus(p0_mod, p1, robot_box_size_, false, pr2,
+      e_pr2 = getProjectedEdgeStatusEleMap(p0_mod, p1, robot_box_size_, false, pr2,
                                      false);
       if (ProjectedEdgeStatus::kAdmissible == e_pr2 ||
           ProjectedEdgeStatus::kSteep == e_pr2)
@@ -5075,12 +5406,12 @@ bool Rrg::improveFreePath(const std::vector<geometry_msgs::Pose>& path_orig,
       } else if (robot_params_.type == RobotType::kGroundRobot) {
         std::vector<Eigen::Vector3d> pr1, pr2;
         ProjectedEdgeStatus es1, es2;
-        es1 = getProjectedEdgeStatus(p0_mod, p1_mod, robot_box_size_, false,
+        es1 = getProjectedEdgeStatusEleMap(p0_mod, p1_mod, robot_box_size_, false,
                                      pr1, false);
         if (!(ProjectedEdgeStatus::kAdmissible != es1 &&
               (!relaxed || ProjectedEdgeStatus::kSteep != es1)))
           e1_admissible = true;
-        es2 = getProjectedEdgeStatus(p1_mod, p2, robot_box_size_, false, pr2,
+        es2 = getProjectedEdgeStatusEleMap(p1_mod, p2, robot_box_size_, false, pr2,
                                      false);
         if (!(ProjectedEdgeStatus::kAdmissible != es2 &&
               (!relaxed || ProjectedEdgeStatus::kSteep != es2)))
@@ -7923,6 +8254,20 @@ std::vector<geometry_msgs::Pose> Rrg::runGlobalPlanner(int vertex_id,
   return ret_path;
 }
 
+bool Rrg::removeGeofenceCallback(planner_msgs::planner_set_planning_mode::Request &req, planner_msgs::planner_set_planning_mode::Response &res)
+{
+  geofence_manager_->removeGeofenceAreaWithID(req.planning_mode);
+
+  visualization_->visualizeGeofence(geofence_manager_);
+  return true;
+}
+
+void Rrg::eleMapCallback(const grid_map_msgs::GridMap& msg)
+{
+  grid_map::GridMapRosConverter::fromMessage(msg, ele_map_);
+}
+
+
 void Rrg::addGeofenceAreas(const geometry_msgs::PolygonStamped& polygon_msgs) {
   if ((planning_params_.geofence_checking_enable)) {
     // Check if we need to convert to global coordinate to be compatible
@@ -7964,6 +8309,55 @@ void Rrg::addGeofenceAreas(const geometry_msgs::PolygonStamped& polygon_msgs) {
       }
     }
     visualization_->visualizeGeofence(geofence_manager_);
+
+    Eigen::Vector3d centroid;
+    double geofence_rad = 0.0;
+    for(auto pt : polygon_msgs.polygon.points)
+    {
+      Eigen::Vector3d p_vec(pt.x, pt.y, pt.z);
+      centroid += p_vec;
+    }
+    centroid /= polygon_msgs.polygon.points.size();
+    for(auto pt : polygon_msgs.polygon.points)
+    {
+      Eigen::Vector3d p_vec(pt.x, pt.y, pt.z);
+      double dist = (p_vec - centroid).norm();
+      if(dist > geofence_rad)
+      {
+        geofence_rad = dist;
+      }
+    }
+    // std::cout << "Geofence centroid: " << centroid.transpose() << " radius: " << geofence_rad << std::endl;
+
+    std::vector<Vertex*> nbs;
+    StateVec geofence_state;
+    geofence_state << centroid, 0.0;
+    global_graph_->getNearestVertices(&geofence_state, geofence_rad, &nbs);
+    for(int j=0; j<nbs.size(); ++j)
+    {
+      Vertex *v = nbs[j];
+      if(GeofenceManager::CoordinateStatus::kViolated ==
+        geofence_manager_->getBoxStatus(
+            Eigen::Vector2d(v->state[0] + robot_params_.center_offset[0],
+                            v->state[1] + robot_params_.center_offset[1]),
+            Eigen::Vector2d(robot_box_size_[0], robot_box_size_[1])))
+      {
+        // std::cout << "For vertex: " << v->id << std::endl;
+        std::vector<int> neighbor_ids;
+        for(int i=0; i<v->neighbors.size(); ++i)
+        {
+          neighbor_ids.push_back(v->neighbors[i]);
+          // std::cout << v->neighbors[i] << " ";
+        }
+        // std::cout << std::endl;
+        for(int i=0; i<neighbor_ids.size(); ++i)
+        {
+          int u = neighbor_ids[i];
+          // std::cout << "Removing edge: " << v->id << " - " << u << " : " << v->state.head(3).transpose() << " - " << global_graph_->getVertex(u)->state.head(3).transpose() << std::endl;
+          global_graph_->removeEdge(v, global_graph_->getVertex(u));
+        }
+      }
+    }
   }
 }
 

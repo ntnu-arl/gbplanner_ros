@@ -51,8 +51,11 @@
 #include "planner_msgs/OpeningDetection.h"
 #include "planner_msgs/MultipleOpeningDetections.h"
 #include "planner_msgs/planner_opening_approval.h"
+#include "planner_msgs/planner_set_planning_mode.h"
 
-#include <ros/package.h>
+#include <grid_map_ros/grid_map_ros.hpp>
+#include <grid_map_msgs/GridMap.h>
+#include <grid_map_ros/GridMapRosConverter.hpp>
 
 // #include "opening_detector/opening_detector.hpp"
 // Publish all gbplanner rviz topics or not.
@@ -126,7 +129,8 @@ class Rrg {
     L_OK = 0,                // Everything is OK as expected.
     L_ERR,                   // Any error.
     L_EXHAUSTED,             // Local exploration exhausted
-    L_TIME_LIMIT_REACHED
+    L_TIME_LIMIT_REACHED,
+    L_STUCK
   };
 
   enum GlobalPlannerStatus {
@@ -187,6 +191,9 @@ class Rrg {
 
   // Evaluate gains of all vertices and find the best path.
   GraphStatus evaluateGraph();
+
+  // Evaluate path for local navigation
+  LocalPlannerStatus evaluateLocalNavigationPath();
 
   // Search a path to connect two arbitrary states in the whole map.
   // Build a graph and find Dijkstra shortest path.
@@ -289,6 +296,13 @@ class Rrg {
                        const BoundedSpaceParams& global_space_params,
                        const BoundedSpaceParams& local_space_params);
 
+  void setLocalNavGoal(Eigen::Vector3d goal) {
+    local_navigation_goal_ = goal;
+    local_navigation_goal_set_ = true;
+    local_goal_distance_reached_ = std::numeric_limits<double>::max();
+    local_goal_progress_fail_iters_ = 0;
+  }
+
   std::vector<geometry_msgs::Pose> getInspectionPath();
 
   void generateCostMatrix(std::vector<int> nodes, std::vector<std::vector<int>> &cost_matrix, std::map<int, ShortestPathsReport> &path_rep_map);
@@ -345,7 +359,13 @@ class Rrg {
                     Vertex& vertex);
   double projectSample(Eigen::Vector3d& sample,
                        VoxelStatus& voxel_status);
+  double projectSampleEleMap(Eigen::Vector3d& sample,
+                       VoxelStatus& voxel_status);
   ProjectedEdgeStatus getProjectedEdgeStatus(
+      const Eigen::Vector3d& start, const Eigen::Vector3d& end,
+      const Eigen::Vector3d& box_size, bool stop_at_unknown_voxel,
+      std::vector<Eigen::Vector3d>& projected_edge, bool);
+  ProjectedEdgeStatus getProjectedEdgeStatusEleMap(
       const Eigen::Vector3d& start, const Eigen::Vector3d& end,
       const Eigen::Vector3d& box_size, bool stop_at_unknown_voxel,
       std::vector<Eigen::Vector3d>& projected_edge, bool);
@@ -389,6 +409,7 @@ class Rrg {
   ros::Subscriber opening_detection_sub_;
   ros::Subscriber query_pt_sub_;
   ros::Subscriber cam_pitch_sub_;
+  ros::Subscriber ele_map_sub_;
 
   ros::ServiceClient pci_homing_;
   ros::ServiceClient landing_srv_client_;
@@ -397,16 +418,19 @@ class Rrg {
   ros::ServiceServer approve_passing_srv_;
   ros::ServiceServer reset_map_srv_;
   ros::ServiceServer query_srv_;
+  ros::ServiceServer remove_geofence_srv_;
 
   bool resetTimerCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
   bool getOpeningPathCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
   bool approvePassingCallback(planner_msgs::planner_opening_approval::Request &req, planner_msgs::planner_opening_approval::Response &res);
   bool resetMapCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
   bool queryCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
+  bool removeGeofenceCallback(planner_msgs::planner_set_planning_mode::Request &req, planner_msgs::planner_set_planning_mode::Response &res);
 
   void stopMsgCallback(const std_msgs::Bool& msg);
   void queryPtCallback(const geometry_msgs::PoseStamped& pose);
   void camPitchCallback(const sensor_msgs::JointState &state);
+  void eleMapCallback(const grid_map_msgs::GridMap& msg);
 
   void openingDetectionCallback(const planner_msgs::MultipleOpeningDetections &detections);
 
@@ -419,6 +443,11 @@ class Rrg {
   std::vector<std::vector<double>> edge_inclinations_;
 
   StateVec query_vec_;
+
+  Eigen::Vector3d local_navigation_goal_;
+  bool local_navigation_goal_set_ = false;
+  double local_goal_distance_reached_ = std::numeric_limits<double>::max();
+  int local_goal_progress_fail_iters_ = 0;
 
   // Add a collision-free path to the graph.
   bool addRefPathToGraph(const std::shared_ptr<GraphManager> graph_manager,
@@ -436,10 +465,10 @@ class Rrg {
 
   // Current exploring direction.
   double exploring_direction_;
-  int dir_change_count_ = 0;
   const double kTimerPeriod = 0.25;
   ros::Timer periodic_timer_;
   void timerCallback(const ros::TimerEvent& event);
+  int dir_change_count_ = 0;
 
   std::queue<StateVec> robot_state_queue_;
 
@@ -629,6 +658,8 @@ class Rrg {
   MapManager* map_manager_;
 
   std::shared_ptr<GeofenceManager> geofence_manager_;
+
+  grid_map::GridMap ele_map_;
 
   AdaptiveObb* adaptive_obb_;
 
