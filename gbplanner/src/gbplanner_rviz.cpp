@@ -173,7 +173,7 @@ void Visualization::visualizeWorkspace(StateVec& state,
   local_ws_marker.color.r = 255.0 / 255.0;
   local_ws_marker.color.g = 100.0 / 255.0;
   local_ws_marker.color.b = 255.0 / 255.0;
-  local_ws_marker.color.a = 0.5;
+  local_ws_marker.color.a = 0.25;
   local_ws_marker.lifetime = ros::Duration(ws_lifetime);
   local_ws_marker.frame_locked = false;
   marker_array.markers.push_back(local_ws_marker);

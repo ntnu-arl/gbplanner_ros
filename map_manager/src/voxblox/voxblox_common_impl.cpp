@@ -433,8 +433,9 @@ void MapManagerVoxblox<SDFServerType, SDFVoxelType>::getFreeSpacePointCloud(
   for (auto ep : multiray_endpoints) {
     Eigen::Vector3d ray = (ep - state_vec);
     double ray_length = ray.norm();
-    double voxel_size = 0.1;
+    double voxel_size = sdf_layer_->voxel_size();
     bool hit = false;
+    ray = ray / ray_length;
 
     for (int i = 0; i < (int)(ray_length / voxel_size); i++) {
       Eigen::Vector3d p = i * voxel_size * ray + state_vec;

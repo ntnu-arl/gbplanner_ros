@@ -48,6 +48,7 @@ class Gbplanner {
     bool homing_required = false;
     bool global_exp_exhausted = false;
     bool opening_phase1_failed = false;
+    int operation_mode = 0; // 0: exploration/inspection, 1: local_navigation
   };
    
 
@@ -82,6 +83,7 @@ class Gbplanner {
   void clearResPath()
   {
     out_srv_res_.path.clear();
+    out_srv_res_.status = planner_msgs::planner_srv::Response::kAutoCustomPath;
     geometry_msgs::Pose current_pose;
     tf::Quaternion quat;
     quat.setEuler(0.0, 0.0, current_state_[3]);
@@ -101,10 +103,13 @@ class Gbplanner {
   bool homingRequired();
   bool calculateHomingPath(); // For active homing
   bool updateHomingGoal();
+  bool calculateGlobalPath(); // For active global planner
+  bool updateGlobalGoal();
 
   void getOpeningTraversalPath(OpeningTraversalMode mode, OpeningTraversalStatus &status);
   bool transitionCompartment();
   bool allCompartmentsInspected();
+	bool getCompartmentTransitionPath();
   
   Rrg* rrg_;
   PlannerBTStates bt_states_;
@@ -132,8 +137,9 @@ class Gbplanner {
   ros::ServiceServer planner_stop_service_;
   ros::ServiceServer inspection_path_service_;
   ros::ServiceServer force_compartment_transition_service_;
+  ros::ServiceServer switch_operation_mode_service_;
 
-  ros::Publisher homing_local_goal_pub_;
+  ros::Publisher global_planner_local_goal_pub_;
 
   ros::Subscriber pose_subscriber_;
   ros::Subscriber pose_stamped_subscriber_;
@@ -146,6 +152,7 @@ class Gbplanner {
   ros::ServiceClient map_save_service_;
 
   std::vector<geometry_msgs::Pose> active_homing_path_;
+  std::vector<geometry_msgs::Pose> active_global_path_;
 
   StateVec current_state_;
 
@@ -220,6 +227,10 @@ class Gbplanner {
   bool inspectionServiceCallback(
     planner_msgs::planner_srv::Request& req,
     planner_msgs::planner_srv::Response& res);
+  
+  bool switchOperationModeServiceCallback(
+    std_srvs::SetBool::Request& req,
+    std_srvs::SetBool::Response& res);
 
   void untraversablePolygonCallback(
       const geometry_msgs::PolygonStamped& polygon_msgs);

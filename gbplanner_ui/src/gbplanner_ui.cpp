@@ -18,6 +18,8 @@ gbplanner_panel::gbplanner_panel(QWidget* parent) : rviz::Panel(parent) {
       "/planner_control_interface/std_srvs/go_to_waypoint");
   planner_client_global_planner =
       nh.serviceClient<planner_msgs::pci_global>("pci_global");
+  change_operation_mode_client = nh.serviceClient<std_srvs::SetBool>(
+        "gbplanner/switch_operation_mode");
 
   QVBoxLayout* v_box_layout = new QVBoxLayout;
 
@@ -28,6 +30,7 @@ gbplanner_panel::gbplanner_panel(QWidget* parent) : rviz::Panel(parent) {
   button_init_motion = new QPushButton;
   button_plan_to_waypoint = new QPushButton;
   button_global_planner = new QPushButton;
+  button_change_operation_mode = new QPushButton;
 
   button_start_planner->setText("Start Planner");
   button_start_planner_single->setText("Start Single Planner");
@@ -36,6 +39,7 @@ gbplanner_panel::gbplanner_panel(QWidget* parent) : rviz::Panel(parent) {
   button_init_motion->setText("Initialization");
   button_plan_to_waypoint->setText("Plan to Waypoint");
   button_global_planner->setText("Run Global");
+  button_change_operation_mode->setText("Operation Mode (EXP)");
 
   v_box_layout->addWidget(button_start_planner);
   v_box_layout->addWidget(button_start_planner_single);
@@ -43,6 +47,7 @@ gbplanner_panel::gbplanner_panel(QWidget* parent) : rviz::Panel(parent) {
   v_box_layout->addWidget(button_homing);
   v_box_layout->addWidget(button_init_motion);
   v_box_layout->addWidget(button_plan_to_waypoint);
+  v_box_layout->addWidget(button_change_operation_mode);
 
   QVBoxLayout* global_vbox_layout = new QVBoxLayout;
   QHBoxLayout* global_hbox_layout = new QHBoxLayout;
@@ -72,6 +77,7 @@ gbplanner_panel::gbplanner_panel(QWidget* parent) : rviz::Panel(parent) {
           SLOT(on_plan_to_waypoint_click()));
   connect(button_global_planner, SIGNAL(clicked()), this,
           SLOT(on_global_planner_click()));
+  connect(button_change_operation_mode, SIGNAL(clicked()), this, SLOT(on_change_operation_mode_click()));
 }
 
 void gbplanner_panel::on_start_planner_click() {
@@ -156,6 +162,27 @@ void gbplanner_panel::on_global_planner_click() {
               planner_client_global_planner.getService().c_str());
   }
 }
+
+void gbplanner_panel::on_change_operation_mode_click()
+{
+  std_srvs::SetBool srv;
+  waypoint_nav_mode = !waypoint_nav_mode;
+  srv.request.data = waypoint_nav_mode;
+  if (!change_operation_mode_client.call(srv))
+  {
+    ROS_ERROR("[GBPLANNER UI] Service call failed: %s",
+              change_operation_mode_client.getService().c_str());
+  }
+  if (waypoint_nav_mode)
+  {
+    button_change_operation_mode->setText("Operation mode (WP)");
+  }
+  else
+  {
+    button_change_operation_mode->setText("Operation mode (EXP)");
+  }
+}
+
 void gbplanner_panel::save(rviz::Config config) const {
   rviz::Panel::save(config);
 }

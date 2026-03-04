@@ -107,6 +107,7 @@ class GeofenceManager {
 
  private:
   std::vector<GeofenceArea> geofence_list_;
+  std::vector<BoundedSpaceParams> geofence_3d_list_;
 
  protected:
   int geofence_id_num_;

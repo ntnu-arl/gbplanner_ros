@@ -1,0 +1,24 @@
+
+<!-- When ticked:
+Returns:
+  RUNNING: If needs re-triggering
+  SUCCESS: Homing path calculated successfully (i.e. mission ended)
+-->
+<root BTCPP_format="4">
+  <include path="./lge.xml" />
+  <include path="./homing.xml" />
+  <include path="./active_homing.xml" />
+  <include path="./lge_homing.xml" />
+  <include path="./lge_active.xml" />
+  <BehaviorTree ID="lge_homing_lnav">
+    <ReactiveFallback>
+      <ReactiveSequence>
+        <Inverter>
+          <SwitchToLocalNavigation/>
+        </Inverter>
+        <SubTree ID="lge_active"/>
+      </ReactiveSequence>
+      <SubTree ID="lnav"/>
+    </ReactiveFallback>
+  </BehaviorTree>
+</root>

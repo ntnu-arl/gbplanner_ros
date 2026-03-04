@@ -3,16 +3,19 @@
   <include path="../../../bt_xml/le_insp_opening.xml" />
   <include path="../../../bt_xml/le_opening.xml" />
   <include path="../../../bt_xml/lge_homing.xml" />
+  <include path="../../../bt_xml/active_homing.xml" />
+  <include path="../../../bt_xml/lnav.xml" />
+  <include path="../../../bt_xml/lge_homing_lnav.xml" />
   <BehaviorTree ID="MainTree">
     <Sequence>
       <ReactiveFallback>
         <HomingCheck/>
         <Sequence>
-          <SubTree ID="lge_homing"/>
+          <SubTree ID="lge_homing_lnav"/>
           <AlwaysFailure/>
         </Sequence>
       </ReactiveFallback>
-      <Homing/>
+      <SubTree ID="acthoming"/>
     </Sequence>
   </BehaviorTree>
 </root>

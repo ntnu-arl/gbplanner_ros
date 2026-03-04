@@ -50,11 +50,24 @@ BT::NodeStatus LocalExpExhaustedReset::tick()
 }
 /*******************************************************/
 
+/***************** SwitchToLocalNavigation **************/
+BT::NodeStatus SwitchToLocalNavigation::tick()
+{
+  if(gbplanner_->bt_states_.operation_mode)
+  {
+    ROS_WARN("Using Local Navigation Mode");
+    return BT::NodeStatus::SUCCESS;
+  }
+  else
+    return BT::NodeStatus::FAILURE;
+}
+/*******************************************************/
+
 
 /***************** LocalNavigation **********************/
 BT::NodeStatus LocalNavigation::onStart()
 {
-  std::cout << "[Local Exploration] Triggered." << std::endl;
+  std::cout << "[Local Navigation] Triggered." << std::endl;
   Rrg::LocalPlannerStatus status = gbplanner_->getLocalNavigationPath();
   if(status == Rrg::LocalPlannerStatus::L_EXHAUSTED)
   {
@@ -78,16 +91,17 @@ BT::NodeStatus LocalNavigation::onRunning()
 
 void LocalNavigation::onHalted()
 {
-  std::cout << "[Local Exploration] Halted" << std::endl;
+  std::cout << "[Local Navigation] Halted" << std::endl;
 }
 /*******************************************************/
 
 /***************** LocalNavigationExhaustedCheck **************/
 BT::NodeStatus LocalNavigationExhaustedCheck::tick()
 {
+  std::cout << "[LocalNavigationExhaustedCheck] Triggered." << std::endl;
   if(gbplanner_->bt_states_.local_navigation_complete)
   {
-    ROS_WARN("Local Exp Exhausted");
+    ROS_WARN("Local Navigation Exhausted");
     return BT::NodeStatus::SUCCESS;
   }
   else
@@ -162,7 +176,59 @@ BT::NodeStatus GlobalExpExhaustedCheck::tick()
     ROS_WARN("Global Exp Exhausted");
     return BT::NodeStatus::SUCCESS;
   }
+  gbplanner_->out_srv_res_.status = planner_msgs::planner_srv::Response::kAutoCustomPath;
   return BT::NodeStatus::FAILURE;
+}
+/*******************************************************/
+
+
+/***************** CalculateGlobalPath **************/
+BT::NodeStatus CalculateGlobalPath::tick()
+{
+  ROS_WARN("[CalculateGlobalPath node triggered]");
+  gbplanner_->bt_states_.local_exp_exhausted = false;
+  gbplanner_->in_srv_req_.bound_mode = std::min(failed_global_planner_count_, 2);  // TODO: Set the max bound number through param
+
+  bool success = gbplanner_->calculateGlobalPath();
+  if(!success)
+  {
+    ROS_WARN("Global planner failed");
+    ++failed_global_planner_count_;
+    if(failed_global_planner_count_ > max_global_planner_tries_)
+    {
+      gbplanner_->out_srv_res_.status = planner_msgs::planner_srv::Response::kManualCustomPath;
+      return BT::NodeStatus::SUCCESS;
+    }
+    else
+    {
+      return BT::NodeStatus::FAILURE;
+    }
+  }
+  else
+  {
+    ROS_WARN("Calculated Global Path Successfully");
+    failed_global_planner_count_ = 0;
+    return BT::NodeStatus::SUCCESS;
+  }
+}
+/*******************************************************/
+
+/***************** UpdateGlobalGoal **************/
+BT::NodeStatus UpdateGlobalGoal::tick()
+{
+  ROS_WARN("[UpdateGlobalGoal node triggered]");
+
+  bool success = gbplanner_->updateGlobalGoal();
+  if(!success)
+  {
+    ROS_WARN("Global Goal Update: Completed");
+    return BT::NodeStatus::FAILURE;
+  }
+  else
+  {
+    ROS_WARN("Global Goal Update: Continuing");
+    return BT::NodeStatus::SUCCESS;
+  }
 }
 /*******************************************************/
 
@@ -171,6 +237,7 @@ BT::NodeStatus GlobalExpExhaustedCheck::tick()
 BT::NodeStatus Inspection::onStart()
 {
   ROS_INFO("[Inspection] Triggered.");
+  // std::cout << "[Global Exploration] Triggered." << std::endl;
   gbplanner_->in_srv_req_.bound_mode = std::min(failed_inspection_count_, 2);  // TODO: Set the max bound number through param
 
   bool success = gbplanner_->getInspectionPath();
@@ -202,6 +269,48 @@ BT::NodeStatus Inspection::onRunning()
 void Inspection::onHalted()
 {
   std::cout << "[Inspection] Halted" << std::endl;
+}
+/*******************************************************/
+
+
+/***************** CompartmentTransition **********************/
+BT::NodeStatus CompartmentTransition::onStart()
+{
+  ROS_INFO("[CompartmentTransition] Triggered.");
+  // std::cout << "[Global Exploration] Triggered." << std::endl;
+  gbplanner_->in_srv_req_.bound_mode = std::min(failed_compartment_transition_count_, 2);  // TODO: Set the max bound number through param
+
+  bool success = gbplanner_->getCompartmentTransitionPath();
+  ROS_WARN("Compartment transition returned %d", success);
+  if(!success)
+  {
+    ++failed_compartment_transition_count_;
+    if(failed_compartment_transition_count_ > max_compartment_transition_tries_)
+    {
+      gbplanner_->out_srv_res_.status = planner_msgs::planner_srv::Response::kManualCustomPath;
+      return BT::NodeStatus::SUCCESS;
+    }
+    else
+    {
+      return BT::NodeStatus::FAILURE;
+    }
+  }
+  else
+  {
+    failed_compartment_transition_count_ = 0;
+    return BT::NodeStatus::SUCCESS;
+  }
+}
+
+BT::NodeStatus CompartmentTransition::onRunning()
+{
+  ROS_INFO("[CompartmentTransition] Running.");
+  return BT::NodeStatus::SUCCESS;  // Does nothing for now
+}
+
+void CompartmentTransition::onHalted()
+{
+  std::cout << "[CompartmentTransition] Halted" << std::endl;
 }
 /*******************************************************/
 
@@ -242,14 +351,14 @@ BT::NodeStatus HomingCheck::tick()
 {
   if(gbplanner_->bt_states_.homing_required)
   {
-    ROS_WARN("Homing needed");
+    ROS_WARN("Homing needed 0");
     return BT::NodeStatus::SUCCESS;
   }
   
   bool homing_reqd = gbplanner_->homingRequired();
   if(homing_reqd)
   {
-    ROS_WARN("Homing needed");
+    ROS_WARN("Homing needed 1");
     return BT::NodeStatus::SUCCESS;
   }
   else
@@ -463,6 +572,7 @@ BT::NodeStatus AllCompartmentsInspectedCheck::tick()
 {
   if(gbplanner_->allCompartmentsInspected())
   {
+    ROS_WARN("[AllCompartmentsInspectedCheck]");
     return BT::NodeStatus::SUCCESS;
   }
   else

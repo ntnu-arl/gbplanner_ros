@@ -79,6 +79,13 @@ bool MapManager::augmentFreeBox(const Eigen::Vector3d& position,
   return map_manager_impl_->augmentFreeBox(position, box_size);
 }
 
+void MapManager::getFreeSpacePointCloud(std::vector<Eigen::Vector3d> multiray_endpoints, StateVec state,
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
+{
+  map_manager_impl_->getFreeSpacePointCloud(multiray_endpoints, state,
+    cloud);
+}
+
 void MapManager::getScanStatus(
     Eigen::Vector3d& pos, std::vector<Eigen::Vector3d>& multiray_endpoints,
     std::tuple<int, int, int>& gain_log,

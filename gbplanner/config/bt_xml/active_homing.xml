@@ -4,15 +4,15 @@
 <root BTCPP_format="4">
   <BehaviorTree ID="acthoming">
 		<Sequence>
-			<CalculateHomingPath/> # Todo
+			<CalculateHomingPath/>
 			<Inverter>
 				<KeepRunningUntilFailure>
 					<Sequence>
-						<UpdateHomingGoal/> # Todo
+						<!-- <UpdateHomingGoal/> -->
 						<LocalNavigation/>
-						<Inverter>
+						<!-- <Inverter>
 							<LocalNavigationExhaustedCheck/>
-						</Inverter>
+						</Inverter> -->
 					</Sequence>
 				</KeepRunningUntilFailure>
 			</Inverter>

@@ -23,6 +23,7 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl_ros/point_cloud.h>
 #include <pcl_ros/transforms.h>
+#include <geometry_msgs/PointStamped.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <std_msgs/Bool.h>
 #include <std_msgs/Float32MultiArray.h>
@@ -213,6 +214,8 @@ class Rrg {
   // In case the global planner was to be retrigered while executing the global
   // path
   std::vector<geometry_msgs::Pose> reRunGlobalPlanner(int &status);
+  std::vector<geometry_msgs::Pose> calculateGlobalPath();
+
   // Remove edges violating geofences
   void cleanViolatedEdgesInGraph(std::shared_ptr<GraphManager> graph_manager);
 
@@ -304,6 +307,7 @@ class Rrg {
   }
 
   std::vector<geometry_msgs::Pose> getInspectionPath();
+  std::vector<geometry_msgs::Pose> getInspectionPathBasic();
 
   void generateCostMatrix(std::vector<int> nodes, std::vector<std::vector<int>> &cost_matrix, std::map<int, ShortestPathsReport> &path_rep_map);
   double calculateTourCost(const std::vector<int>& tour, const std::vector<std::vector<double>>& costMatrix);
@@ -314,6 +318,7 @@ class Rrg {
   std::vector<geometry_msgs::Pose> connectTSPOrderWithSubvertices(std::vector<std::pair<int, std::vector<int>>> &tsp_nodes, std::map<int, ShortestPathsReport> &path_rep_map, std::shared_ptr<GraphManager> graph);
 
   void generateGridSamples(std::vector<int> &viewpoint_ids);
+  void generateGridSamplesBasic(std::vector<int> &viewpoint_ids);
 
   bool loadGraph(const std::string& path) {
     global_graph_->loadGraph(path);
@@ -403,6 +408,9 @@ class Rrg {
   ros::Publisher pci_reset_pub_;
   ros::Publisher local_free_map_pub_;
   ros::Publisher path_pub_;
+  ros::Publisher free_cloud_pub_;
+  ros::Publisher entry_point_pub_;
+  ros::Publisher local_target_pub_;
 
   ros::Subscriber semantics_subscriber_;
   ros::Subscriber stop_srv_subscriber_;
@@ -482,6 +490,10 @@ class Rrg {
       const ros::TimerEvent& event);
   ros::Timer camera_annotation_timer_;
   void cameraAnnotationTimerCallback(const ros::TimerEvent& event);
+
+  const double kFreePointCloudUpdatePeriod = 0.5;
+  ros::Timer free_cloud_pub_timer_;
+  void freePointCloudtimerCallback(const ros::TimerEvent& event);
 
   const int backtracking_queue_max_size = 500;
   std::queue<StateVec> robot_backtracking_queue_;
@@ -632,6 +644,7 @@ class Rrg {
   // Params required for planning.
   SensorParams sensor_params_;
   SensorParams camera_annotation_params_;
+  SensorParams free_frustum_params_;
   RobotParams robot_params_;
   BoundedSpaceParams local_space_params_;
   BoundedSpaceParams global_space_params_;

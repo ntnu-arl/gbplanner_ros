@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root BTCPP_format="4">
+  <include path="./le.xml" />
+  <include path="./compartment_transition.xml" />
+  <include path="./homing.xml" />
+  <BehaviorTree ID="le_insp_ct">
+    <Sequence>
+      <SetNextCompartment/>
+      <SubTree ID="le"/>
+      <SubTree ID="inspection"/>
+      <Fallback>
+        <Inverter>
+          <AllCompartmentsInspectedCheck/>
+        </Inverter>
+        <Inverter>
+          <Homing/>
+        </Inverter>
+      </Fallback>
+      <SubTree ID="compartment_transition"/>
+      <LocalExpExhaustedReset/>
+    </Sequence>
+  </BehaviorTree>
+
+  <!-- Description of Node Models (used by Groot) -->
+  <TreeNodesModel/>
+
+</root>

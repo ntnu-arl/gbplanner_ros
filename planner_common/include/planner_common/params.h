@@ -118,6 +118,7 @@ struct SensorParamsBase {
   Eigen::Vector3d rotations;      // Body to sensor; [Y, P, R] (rad).
   Eigen::Vector2d fov;            // [Horizontal, Vertical] angles (rad).
   Eigen::Vector2d resolution;  // Resolution in rad [H x V] for volumetric gain.
+  std::string sensor_frame;
   Eigen::Vector2d rot_lims;    // Min and max rotation limits in rad for camera.
   std::string frame_id;        // Frame id of the sensor
   std::string callback_topic;  // Topic on which sensor data is being published
@@ -197,6 +198,8 @@ struct RobotParams {
   // Recommend this extension to be used in the planner.
   // size_extension must be at least larger than min_size_extension.
   Eigen::Vector3d size_extension;
+  // Robot footprint (ground robot only)
+  Eigen::Vector2d footprint;
   // Offset from the cuboid center to odometry center.
   // Cuboid center = state + center_offset;
   Eigen::Vector3d center_offset;
@@ -345,6 +348,7 @@ struct PlanningParams {
   int inspection_graph_vertices;
   int max_exploration_iterations;
   bool exploration_only;
+  bool basic_inspection_viewpoints;
   BoundedSpaceParams compartment_dimensions;
   std::vector<Eigen::Vector3d> compartment_centers;
   int box_check_method;
@@ -364,6 +368,7 @@ struct PlanningParams {
   int local_navigation_max_fail_iters;
   double active_homing_update_radius;
   int max_num_low_gain_iters;
+  bool freespace_cloud_enable;
 
   bool loadParams(std::string ns);
   void setPlanningMode(PlanningModeType pmode);

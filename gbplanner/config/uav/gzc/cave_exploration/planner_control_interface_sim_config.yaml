@@ -3,29 +3,37 @@ trigger_mode: kManual
 robot_type: kAerial
 output_type: kTopic
 init_motion_enable: false
-planner_trigger_lead_time: 0.1
+planner_trigger_lead_time: 1.3 #0.3
 smooth_heading_enable: true
-path_end_dist_thr: 1.75
-path_end_yaw_thr: 0.4
-path_progression_dist_thr: 2.0
-path_progression_dist_thr_min: 1.75
-path_progression_pitch_thr: 0.4
-path_progression_yaw_thr: 3.14
-path_progression_yaw_thr_min: 3.14
+reconnect_path: false
+set_first_wp_speed: true
+# path_end_dist_thr: 1.2
+# path_end_yaw_thr: 0.6
+# path_progression_dist_thr: 1.5
+# path_progression_yaw_thr: 0.7
+path_end_dist_thr: 2.4 #1.8 # 0.7
+path_end_yaw_thr: 0.7 #0.7 #0.5
+path_progression_dist_thr: 13.2 #2.8 # 1.0
+path_progression_dist_thr_min: 13.2 #2.8 #0.8
+path_progression_yaw_thr: 1.5 #1.5 #0.7
+path_progression_pitch_thr: 3.14
 interpolate_traj: true
 use_time_from_start: true
-set_first_wp_speed: true
-reconnect_path: false
+travel_backward: false
 init_motion:
-  z_takeoff: 1.2
-  z_drop: 0.5
-  x_forward: 0.7
+  z_takeoff: 1.7
+  z_drop: 0.2
+  x_forward: 0.5
+# init_motion:
+#   z_takeoff: 4.0
+#   z_drop: 2.3
+#   x_forward: 0.5
 
 # Group related parameters to be shared between nodes.
 RobotDynamics:
-  v_max: 2.0 # 2.0
-  v_init_max: 1.0
-  v_homing_max: 1.0
-  yaw_rate_max: 0.9 # 0.3
-  dt: 0.25
+  v_max: 1.8 # 1.0
+  v_init_max: 2.0 # 1.0
+  v_homing_max: 2.0 # 1.0
+  yaw_rate_max: 0.8 # 0.3
+  dt: 0.5
   a_max: 4.0 # 0.5

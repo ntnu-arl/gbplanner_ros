@@ -79,6 +79,10 @@ void Gbplanner::initializeAttributes() {
   force_compartment_transition_service_ = nh_.advertiseService(
       "gbplanner/force_compartment_transition",
       &Gbplanner::forceCompartmentChangeServiceCallback, this);
+  
+  switch_operation_mode_service_ = nh_.advertiseService(
+      "gbplanner/switch_operation_mode",
+      &Gbplanner::switchOperationModeServiceCallback, this);
 
   pose_subscriber_ = nh_.subscribe("pose", 100, &Gbplanner::poseCallback, this);
   pose_stamped_subscriber_ =
@@ -97,7 +101,7 @@ void Gbplanner::initializeAttributes() {
   stop_srv_subscriber_ =
       nh_.subscribe("planner_control_interface/stop_request", 5, &Gbplanner::stopMsgCallback, this);
 
-  homing_local_goal_pub_ =
+  global_planner_local_goal_pub_ =
       nh_.advertise<geometry_msgs::PoseStamped>("gbplanner/homing_local_goal", 10);
 
   std::string ns = ros::this_node::getName();
@@ -122,7 +126,11 @@ bool Gbplanner::inspectionServiceCallback(
     planner_msgs::planner_srv::Request& req,
     planner_msgs::planner_srv::Response& res) {
   //
-  res.path = rrg_->getInspectionPath();
+  // res.path = rrg_->getInspectionPath();
+  if(planning_params_.basic_inspection_viewpoints)
+    res.path = rrg_->getInspectionPathBasic();
+  else
+    res.path = rrg_->getInspectionPath();
   return true;
 }
 
@@ -218,6 +226,16 @@ bool Gbplanner::passingGateCallback(
   return true;
 }
 
+bool Gbplanner::switchOperationModeServiceCallback(
+    std_srvs::SetBool::Request& req,
+    std_srvs::SetBool::Response& res)
+{
+  bt_states_.operation_mode = static_cast<int>(req.data);
+  ROS_WARN("Switching operation mode to: %d", bt_states_.operation_mode);
+  res.success = true;
+  return true;
+}
+
 bool Gbplanner::plannerServiceCallback(
     planner_msgs::planner_srv::Request& req,
     planner_msgs::planner_srv::Response& res) {
@@ -307,10 +325,14 @@ bool Gbplanner::plannerServiceCallback(
 
       if(compartment_counter_ >= planning_params_.compartment_centers.size()-1) {
         res.status = planner_msgs::planner_srv::Response::kManualCustomPath;
-        res.path = empty_path;
+        // res.path = empty_path;
         success = true;
         compartment_change_tries_ = 0;
         ROS_WARN("All compartments explored");
+        if(planning_params_.auto_homing_enable)
+          res.path = rrg_->getHomingPath("world");
+        else
+          res.path = empty_path;
         break;
       }
 
@@ -366,6 +388,90 @@ Rrg::GlobalPlannerStatus Gbplanner::getGlobalExplorationPath()
     }
   }
   return Rrg::GlobalPlannerStatus::G_OK;
+}
+
+bool Gbplanner::calculateGlobalPath()
+{
+  if (getPlannerStatus() == Gbplanner::PlannerStatus::NOT_READY) {
+    ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "The planner is not ready.");
+    // out_srv_res_.status = planner_msgs::planner_srv::Response::kForward;
+    return false;
+  }
+
+  rrg_->setBoundMode(static_cast<BoundModeType>(in_srv_req_.bound_mode));
+  active_global_path_ = rrg_->calculateGlobalPath();
+  if(active_global_path_.empty())
+  {
+    // out_srv_res_.status = planner_msgs::planner_srv::Response::kForward;
+    return false;  
+  }
+
+  rrg_->setLocalNavGoal(Eigen::Vector3d(active_global_path_.back().position.x,
+                              active_global_path_.back().position.y,
+                              active_global_path_.back().position.z));
+
+  // out_srv_res_.status = planner_msgs::planner_srv::Response::kHoming;
+  return true;
+}
+
+bool Gbplanner::updateGlobalGoal()
+{
+  if(active_global_path_.empty())
+  {
+    ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "No active global path to update.");
+    return false;  
+  }
+
+  Eigen::Vector3d current_position(current_state_[0], current_state_[1], current_state_[2]);
+  Eigen::Vector3d global_goal(active_global_path_.back().position.x,
+                              active_global_path_.back().position.y,
+                              active_global_path_.back().position.z);
+  for(size_t i = 0; i < active_global_path_.size()-1; ++i)
+  {
+    Eigen::Vector3d waypoint(active_global_path_[i].position.x,
+                             active_global_path_[i].position.y,
+                             active_global_path_[i].position.z);
+    double distance = (waypoint - current_position).norm();
+    if(distance < planning_params_.active_homing_update_radius)
+    {
+      // Remove this waypoint
+      if(active_global_path_.size() > 1)
+      {
+        active_global_path_.erase(active_global_path_.begin() + i);
+        --i; // Adjust index after erasure
+      }
+      else
+      {
+        break;
+      }
+    }
+    else 
+    {
+      // Since waypoints are ordered, we can break early
+      global_goal = waypoint;
+      break;
+    }
+  }
+
+  if(active_global_path_.empty())
+  {
+    ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "Global path completed.");
+    return false;  
+  }
+  else
+  {
+    rrg_->setLocalNavGoal(global_goal);
+    // visualize global goal
+    geometry_msgs::PoseStamped global_goal_msg;
+    global_goal_msg.header.frame_id = planning_params_.global_frame_id;
+    global_goal_msg.header.stamp = ros::Time::now();
+    global_goal_msg.pose.position.x = global_goal[0];
+    global_goal_msg.pose.position.y = global_goal[1];
+    global_goal_msg.pose.position.z = global_goal[2];
+    global_goal_msg.pose.orientation = tf::createQuaternionMsgFromYaw(0.0);
+    global_planner_local_goal_pub_.publish(global_goal_msg);
+    return true;
+  }
 }
 
 bool Gbplanner::checkGlobalExplorationStatus()
@@ -688,7 +794,7 @@ bool Gbplanner::getExplorationPath(planner_msgs::planner_srv::Request& req,
       case Rrg::GraphStatus::NO_GAIN:
         ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "[PLANNER_ERROR] No positive gain was found.");
         break;
-      case Rrg::GraphStatus::NOT_OK:
+      case Rrg::GraphStatus::NOT_OK: case Rrg::GraphStatus::CONSEC_LOW_GAIN:
         ROS_WARN_COND(global_verbosity >= Verbosity::PLANNER_STATUS, "[GBPLANNER] Very low local gain. Triggering global planner");
         int status;
         res.path = rrg_->runGlobalPlanner(0, false, false, status);
@@ -732,7 +838,10 @@ bool Gbplanner::getExplorationPath(planner_msgs::planner_srv::Request& req,
 bool Gbplanner::getInspectionPath()
 {
   rrg_->setBoundMode(static_cast<BoundModeType>(in_srv_req_.bound_mode));
-  out_srv_res_.path = rrg_->getInspectionPath();
+  if(planning_params_.basic_inspection_viewpoints)
+    out_srv_res_.path = rrg_->getInspectionPathBasic();
+  else
+    out_srv_res_.path = rrg_->getInspectionPath();
   out_srv_res_.status = planner_msgs::planner_srv::Response::kAutoCustomPath;
 
   if(out_srv_res_.path.size() > 0)
@@ -744,7 +853,11 @@ bool Gbplanner::getInspectionPath()
 bool Gbplanner::getInspectionPath(planner_msgs::planner_srv::Request& req,
       planner_msgs::planner_srv::Response& res) {
   //
-  res.path = rrg_->getInspectionPath();
+  if(planning_params_.basic_inspection_viewpoints)
+    res.path = rrg_->getInspectionPathBasic();
+  else
+    res.path = rrg_->getInspectionPath();
+
   if(res.path.size() > 0)
     return true;
   else 
@@ -760,6 +873,65 @@ void Gbplanner::getOpeningTraversalPath(OpeningTraversalMode mode, OpeningTraver
   {
     out_srv_res_.path.clear();
   }
+}
+
+bool Gbplanner::getCompartmentTransitionPath() {
+  //
+  rrg_->setBoundMode(static_cast<BoundModeType>(in_srv_req_.bound_mode));
+
+  std::vector<geometry_msgs::Pose> empty_path;
+
+  // ++compartment_counter_;
+  BoundedSpaceParams og_global_bb;
+  rrg_->getGlobalBoundParams(og_global_bb);
+  BoundedSpaceParams translated_bound = planning_params_.compartment_dimensions;
+  Eigen::Vector3d max_val = planning_params_.compartment_dimensions.max_val + planning_params_.compartment_centers[compartment_counter_];
+  Eigen::Vector3d max_extension = planning_params_.compartment_dimensions.max_extension + planning_params_.compartment_centers[compartment_counter_];
+  Eigen::Vector3d min_val = planning_params_.compartment_dimensions.min_val + planning_params_.compartment_centers[compartment_counter_];
+  Eigen::Vector3d min_extension = planning_params_.compartment_dimensions.min_extension + planning_params_.compartment_centers[compartment_counter_];
+  translated_bound.setBound(min_val, max_val);
+  BoundedSpaceParams extended_bound = planning_params_.compartment_dimensions;
+  max_val = planning_params_.compartment_dimensions.max_val * 2.0;
+  max_extension = planning_params_.compartment_dimensions.max_extension * 2.0;
+  min_val = planning_params_.compartment_dimensions.min_val * 2.0;
+  min_extension = planning_params_.compartment_dimensions.min_extension * 2.0;
+  max_val += (planning_params_.compartment_centers[compartment_counter_] + planning_params_.compartment_centers[compartment_counter_-1]) / 2.0;
+  max_extension += (planning_params_.compartment_centers[compartment_counter_] + planning_params_.compartment_centers[compartment_counter_-1]) / 2.0;
+  min_val += (planning_params_.compartment_centers[compartment_counter_] + planning_params_.compartment_centers[compartment_counter_-1]) / 2.0;
+  min_extension += (planning_params_.compartment_centers[compartment_counter_] + planning_params_.compartment_centers[compartment_counter_-1]) / 2.0;
+  extended_bound.setBound(min_val, max_val);
+  rrg_->setExplorationAndInspectionBounds(extended_bound, translated_bound);
+  rrg_->reset();
+
+  // ros::Duration(0.5).sleep();
+
+  geometry_msgs::Pose current_pose;
+  tf::Quaternion quat;
+  quat.setEuler(0.0, 0.0, current_state_[3]);
+  tf::Vector3 origin(current_state_[0], current_state_[1], current_state_[2]);
+  tf::Pose poseTF(quat, origin);
+  tf::poseTFToMsg(poseTF, current_pose);
+
+  geometry_msgs::Pose target_pose;
+  quat.setEuler(0.0, 0.0, 0.0);
+  origin = tf::Vector3(planning_params_.compartment_centers[compartment_counter_][0], planning_params_.compartment_centers[compartment_counter_][1], planning_params_.compartment_centers[compartment_counter_][2]);
+  tf::Pose poseTF_target(quat, origin);
+  tf::poseTFToMsg(poseTF_target, target_pose);
+
+  std::vector<geometry_msgs::Pose> connecting_path;
+  bool search_success = rrg_->search(current_pose, target_pose, true, connecting_path);
+  if(search_success) {
+    rrg_->setExplorationAndInspectionBounds(translated_bound, translated_bound);
+    out_srv_res_.path = connecting_path;
+    out_srv_res_.status = planner_msgs::planner_srv::Response::kAutoCustomPath;
+    ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Compartment counter: %d", compartment_counter_);
+  }
+  else {
+    out_srv_res_.status = planner_msgs::planner_srv::Response::kAutoCustomPath;
+    out_srv_res_.path = empty_path;
+  }
+
+  return search_success;
 }
 
 bool Gbplanner::getCompartmentTransitionPath(planner_msgs::planner_srv::Request& req,
@@ -902,6 +1074,10 @@ bool Gbplanner::calculateHomingPath()
     return false;  
   }
 
+  rrg_->setLocalNavGoal(Eigen::Vector3d(active_homing_path_.back().position.x,
+                              active_homing_path_.back().position.y,
+                              active_homing_path_.back().position.z));
+
   // out_srv_res_.status = planner_msgs::planner_srv::Response::kHoming;
   return true;
 }
@@ -961,7 +1137,7 @@ bool Gbplanner::updateHomingGoal()
     homing_goal_msg.pose.position.y = homing_goal[1];
     homing_goal_msg.pose.position.z = homing_goal[2];
     homing_goal_msg.pose.orientation = tf::createQuaternionMsgFromYaw(0.0);
-    homing_local_goal_pub_.publish(homing_goal_msg);
+    global_planner_local_goal_pub_.publish(homing_goal_msg);
     return true;
   }
 }

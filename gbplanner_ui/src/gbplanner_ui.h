@@ -9,6 +9,7 @@
 #include <std_msgs/ColorRGBA.h>
 #include <std_srvs/Empty.h>
 #include <std_srvs/Trigger.h>
+#include <std_srvs/SetBool.h>
 
 #ifndef Q_MOC_RUN
 #include <QHBoxLayout>
@@ -40,6 +41,7 @@ class gbplanner_panel : public rviz::Panel {
   void on_init_motion_click();
   void on_plan_to_waypoint_click();
   void on_global_planner_click();
+  void on_change_operation_mode_click();
  protected Q_SLOTS:
 
  protected:
@@ -64,6 +66,10 @@ class gbplanner_panel : public rviz::Panel {
   QPushButton* button_global_planner;
   QLineEdit* global_id_line_edit;
   ros::ServiceClient planner_client_global_planner;
+
+  QPushButton *button_change_operation_mode;
+  ros::ServiceClient change_operation_mode_client;
+  bool waypoint_nav_mode = false;
 
   ros::NodeHandle nh;
 };

@@ -1,0 +1,34 @@
+<root BTCPP_format="4">
+  <BehaviorTree ID="lge_active">
+    <Sequence>
+      <Inverter>
+        <KeepRunningUntilFailure>
+          <Sequence>
+            <LocalExploration/>
+            <Inverter>
+              <LocalExpExhaustedCheck/>
+            </Inverter>
+          </Sequence>
+        </KeepRunningUntilFailure>
+      </Inverter>
+			<Sequence>
+				<CalculateGlobalPath/>
+				<Inverter>
+					<KeepRunningUntilFailure>
+						<Sequence>
+							<LocalNavigationExhaustedReset/>
+							<!-- <UpdateGlobalGoal/> -->
+							<LocalNavigation/>
+							<Inverter>
+								<Sequence>
+									<LocalNavigationExhaustedCheck/>
+									<LocalNavigationExhaustedReset/>
+								</Sequence>
+							</Inverter>
+						</Sequence>
+					</KeepRunningUntilFailure>
+				</Inverter>
+			</Sequence>
+    </Sequence>
+  </BehaviorTree>
+</root>

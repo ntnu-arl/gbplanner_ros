@@ -52,6 +52,9 @@ class MapManager {
 
   void augmentFreeFrustum();
 
+  void getFreeSpacePointCloud(std::vector<Eigen::Vector3d>, StateVec,
+                              pcl::PointCloud<pcl::PointXYZ>::Ptr);
+
   void extractLocalMap(const Eigen::Vector3d& center,
                                const Eigen::Vector3d& bounding_box_size,
                                std::vector<Eigen::Vector3d>& occupied_voxels,

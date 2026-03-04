@@ -2,15 +2,16 @@ world_frame: world
 use_tf_transforms: True
 use_freespace_pointcloud: True
 tsdf_voxels_per_side: 16
-tsdf_voxel_size: 0.30
-max_ray_length_m: 15.0
-truncation_distance: 1.0 #1.2
+tsdf_voxel_size: 0.40
+# tsdf_voxel_size: 0.05
+max_ray_length_m: 20.0
+truncation_distance: 0.8 #1.2
 voxel_carving_enabled: True
 use_sparsity_compensation_factor: True
 sparsity_compensation_factor: 100.0 #10.0
 color_mode: "color"
 verbose: False
-update_mesh_every_n_sec: 2.0
+update_mesh_every_n_sec: 0 #2.0
 mesh_min_weight: 1e-4
 slice_level: 1.0
 method: "fast"
@@ -21,6 +22,7 @@ publish_pointclouds: True
 allow_clear: True
 pointcloud_queue_size: 5
 min_time_between_msgs_sec: 0.0
+#max_block_distance_from_body: FLT_MAX
 publish_tsdf_info: False
 publish_slices: False
 publish_traversable: False ###False

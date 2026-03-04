@@ -12,6 +12,8 @@ bool SensorParamsBase::loadParams(std::string ns) {
     type = SensorType::kCamera;
   else if (!parse_str.compare("kLidar"))
     type = SensorType::kLidar;
+  else if (!parse_str.compare("kSpherical"))
+    type = SensorType::kSpherical;
   else {
     ROSPARAM_ERROR(param_name);
     return false;
@@ -115,6 +117,12 @@ bool SensorParamsBase::loadParams(std::string ns) {
   if (!ros::param::get(param_name, frontier_percentage_threshold)) {
     frontier_percentage_threshold = 0.1;
     ROSPARAM_WARN(param_name, frontier_percentage_threshold);
+  }
+
+  param_name = ns + "/sensor_frame";
+  if (!ros::param::get(param_name, sensor_frame)) {
+    sensor_frame = "";
+    ROSPARAM_WARN(param_name, sensor_frame);
   }
 
   param_name = ns + "/frame_id";
@@ -243,6 +251,38 @@ bool SensorParamsBase::loadParams(std::string ns) {
     height = h;
     ROS_INFO_COND(global_verbosity >= Verbosity::INFO, 
         "Computed multiray_endpoints for volumetric gain [kLidar]: [%d] "
+        "points.",
+        frustum_endpoints_B.size());
+  }
+  else if(type == SensorType::kSpherical) {
+    frustum_endpoints.clear();
+    frustum_endpoints_B.clear();
+    int w = 0, h = 0;
+    height = 0;
+    width = 0;
+    double h_lim_2 = fov[0] / 2;
+    double v_lim_2 = fov[1] / 2;
+    for (double dv = -v_lim_2; dv < v_lim_2; dv += v_res) {
+      ++h;
+      for (double dh = -h_lim_2; dh < h_lim_2; dh += h_res) {
+        if (width == 0) {
+          ++w;
+        }
+        double z = max_range * sin(dv);
+        double x = max_range * cos(dv) * cos(dh);
+        double y = max_range * cos(dv) * sin(dh);
+        Eigen::Vector3d ep = Eigen::Vector3d(x, y, z);
+        frustum_endpoints.push_back(ep);
+        Eigen::Vector3d ep_B = rot_B2S * ep + center_offset;
+        frustum_endpoints_B.push_back(ep_B);
+      }
+      if (width == 0) {
+        width = w;
+      }
+    }
+    height = h;
+    ROS_INFO_COND(global_verbosity >= Verbosity::INFO, 
+        "Computed multiray_endpoints for volumetric gain [kSpherical]: [%d] "
         "points.",
         frustum_endpoints_B.size());
   }
@@ -546,6 +586,18 @@ bool RobotParams::loadParams(std::string ns) {
                                   << param_val[2] << "}");
   }
   size_extension << param_val[0], param_val[1], param_val[2];
+
+  param_val.clear();
+  param_name = ns + "/footprint";
+  if ((!ros::param::get(param_name, param_val)) || (param_val.size() != 2)) {
+    footprint.resize(2);
+    footprint[0] = size[0] + size_extension[0];
+    footprint[1] = size[1] + size_extension[1];
+  }
+  else
+  {
+    footprint << param_val[0], param_val[1];
+  }
 
   param_val.clear();
   param_name = ns + "/center_offset";
@@ -1287,6 +1339,12 @@ bool PlanningParams::loadParams(std::string ns) {
     ROSPARAM_WARN(param_name, exploration_only);
   }
 
+  param_name = ns + "/basic_inspection_viewpoints";
+  if (!ros::param::get(param_name, basic_inspection_viewpoints)) {
+    basic_inspection_viewpoints = false;
+    ROSPARAM_WARN(param_name, basic_inspection_viewpoints);
+  }
+
   param_name = ns + "/box_check_method";
   if (!ros::param::get(param_name, box_check_method)) {
     box_check_method = 0;
@@ -1365,7 +1423,7 @@ bool PlanningParams::loadParams(std::string ns) {
     ROSPARAM_WARN(param_name, max_num_low_gain_iters);
   }
 
-   param_name = ns + "/local_navigation_reaching_radius";
+  param_name = ns + "/local_navigation_reaching_radius";
   if (!ros::param::get(param_name, local_navigation_reaching_radius)) {
     local_navigation_reaching_radius = 5.0;
     ROSPARAM_WARN(param_name, local_navigation_reaching_radius);
@@ -1381,6 +1439,18 @@ bool PlanningParams::loadParams(std::string ns) {
   if (!ros::param::get(param_name, active_homing_update_radius)) {
     active_homing_update_radius = 10;
     ROSPARAM_WARN(param_name, active_homing_update_radius);
+  }
+
+  param_name = ns + "/freespace_cloud_enable";
+  if (!ros::param::get(param_name, freespace_cloud_enable)) {
+    freespace_cloud_enable = false;
+    ROSPARAM_WARN(param_name, freespace_cloud_enable);
+  }
+
+  param_name = ns + "/select_closest_frontier";
+  if (!ros::param::get(param_name, select_closest_frontier)) {
+    select_closest_frontier = false;
+    ROSPARAM_WARN(param_name, select_closest_frontier);
   }
 
   

@@ -29,21 +29,6 @@ public:
 
 inline void convert(const Eigen::Matrix<double, 5, 1> &st, geometry_msgs::Pose &p)
 {
-	// tf::Quaternion quat;
-	// // quat.setEuler(0.0, st[4], st[3]);
-	// Eigen::Matrix3d rot_eigen;
-	// rot_eigen = Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitY()) *
-	// 			Eigen::AngleAxisd(st[3], Eigen::Vector3d::UnitZ()) *
-	// 			Eigen::AngleAxisd(0, Eigen::Vector3d::UnitX());
-	// rot_eigen = rot_eigen * Eigen::AngleAxisd(st[4], Eigen::Vector3d::UnitY());
-	// Eigen::Quaterniond q_eigen(rot_eigen);
-	// quat.setX(q_eigen.x());
-	// quat.setY(q_eigen.y());
-	// quat.setZ(q_eigen.z());
-	// quat.setW(q_eigen.w());
-	// tf::Vector3 origin(st[0], st[1], st[2]);
-	// tf::Pose poseTF(quat, origin);
-	// tf::poseTFToMsg(poseTF, p);
 	Eigen::Quaterniond q =
 	Eigen::AngleAxisd(st[3], Eigen::Vector3d::UnitZ()) *
 	Eigen::AngleAxisd(st[4], Eigen::Vector3d::UnitY());

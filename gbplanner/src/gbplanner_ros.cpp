@@ -54,6 +54,7 @@ void GbplannerRos::registerTree()
   factory_.registerNodeType<LocalExpExhaustedCheck>("LocalExpExhaustedCheck", gbplanner_);
   factory_.registerNodeType<GlobalExpExhaustedCheck>("GlobalExpExhaustedCheck", gbplanner_);
   factory_.registerNodeType<Inspection>("Inspection", gbplanner_);
+  factory_.registerNodeType<CompartmentTransition>("CompartmentTransition", gbplanner_);
   factory_.registerNodeType<Homing>("Homing", gbplanner_);
   factory_.registerNodeType<HomingCheck>("HomingCheck", gbplanner_);
   factory_.registerNodeType<OPENINGPhase1>("OPENINGPhase1", gbplanner_);
@@ -69,7 +70,10 @@ void GbplannerRos::registerTree()
   factory_.registerNodeType<LocalNavigationExhaustedReset>("LocalNavigationExhaustedReset", gbplanner_);
   factory_.registerNodeType<CalculateHomingPath>("CalculateHomingPath", gbplanner_);
   factory_.registerNodeType<UpdateHomingGoal>("UpdateHomingGoal", gbplanner_);
-  
+  factory_.registerNodeType<SwitchToLocalNavigation>("SwitchToLocalNavigation", gbplanner_);
+  factory_.registerNodeType<CalculateGlobalPath>("CalculateGlobalPath", gbplanner_);
+  factory_.registerNodeType<UpdateGlobalGoal>("UpdateGlobalGoal", gbplanner_);
+
   std::string tree_path = ros::package::getPath("gbplanner") + "/config/bt_xml/main_tree.xml";
   if(!ros::param::get(ros::this_node::getName() + "/behavior_tree_path", tree_path))
   {
@@ -78,7 +82,7 @@ void GbplannerRos::registerTree()
   std::string trial_tree_path;
   ros::param::get("~tree_path", trial_tree_path);
 
-  ROS_ERROR_STREAM("Tree path: " << tree_path << " Trial Tree Path: " << trial_tree_path);
+  ROS_WARN_STREAM("Tree path: " << tree_path << " Trial Tree Path: " << trial_tree_path);
   
   factory_.registerBehaviorTreeFromFile(tree_path);
   tree_ = factory_.createTree("MainTree");

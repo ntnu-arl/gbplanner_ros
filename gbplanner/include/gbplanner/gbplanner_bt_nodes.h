@@ -80,6 +80,28 @@ private:
 };
 
 
+/*
+Returns:
+  SUCCESS: If gbplanner_->bt_states_.operation_mode == 1
+  FAILURE: If gbplanner_->bt_states_.operation_mode == 0
+*/
+class SwitchToLocalNavigation : public BT::SyncActionNode
+{
+public:
+  SwitchToLocalNavigation(const std::string& name, const BT::NodeConfig& config, std::shared_ptr<Gbplanner> gbplanner)
+        :SyncActionNode(name, config), gbplanner_(std::move(gbplanner)) {}
+
+  BT::NodeStatus tick() override;
+
+  static BT::PortsList providedPorts() 
+  {
+    return {};
+  }
+
+private:
+  std::shared_ptr<Gbplanner> gbplanner_;
+};
+
 
 /*
 Returns:
@@ -205,6 +227,56 @@ private:
   std::shared_ptr<Gbplanner> gbplanner_;
 };
 
+
+/*
+Returns:
+  SUCCESS: Found a path successfully, failed attempts > max attempts
+  FAILURE: Frontier exists in global graph
+*/
+class CalculateGlobalPath : public BT::SyncActionNode
+{
+public:
+  CalculateGlobalPath(const std::string& name, const BT::NodeConfig& config, std::shared_ptr<Gbplanner> gbplanner)
+        :SyncActionNode(name, config), gbplanner_(std::move(gbplanner)) {}
+
+  BT::NodeStatus tick() override;
+
+  static BT::PortsList providedPorts() 
+  {
+    return {BT::OutputPort<int>("mode")};
+  }
+
+private:
+  std::shared_ptr<Gbplanner> gbplanner_;
+  int failed_global_planner_count_ = 0;
+  int max_global_planner_tries_ = 3;
+};
+
+/*
+Returns:
+  SUCCESS: Global path not fully executed
+  FAILURE: Path fully executed
+*/
+class UpdateGlobalGoal : public BT::SyncActionNode
+{
+public:
+  UpdateGlobalGoal(const std::string& name, const BT::NodeConfig& config, std::shared_ptr<Gbplanner> gbplanner)
+        :SyncActionNode(name, config), gbplanner_(std::move(gbplanner)) {}
+
+  BT::NodeStatus tick() override;
+
+  static BT::PortsList providedPorts() 
+  {
+    return {BT::OutputPort<int>("mode")};
+  }
+
+private:
+  std::shared_ptr<Gbplanner> gbplanner_;
+  int failed_global_planner_count_ = 0;
+  int max_global_planner_tries_ = 3;
+};
+
+
 /*
 onStart():
  Returns:
@@ -239,6 +311,34 @@ private:
   int failed_inspection_count_ = 0;
   int max_inspection_tries_ = 3;
 };
+
+
+
+class CompartmentTransition : public BT::StatefulActionNode
+{
+public:
+  CompartmentTransition(const std::string& name, const BT::NodeConfig& config, std::shared_ptr<Gbplanner> gbplanner)
+    :StatefulActionNode(name, config), gbplanner_(std::move(gbplanner))
+  {}
+
+  static BT::PortsList providedPorts() 
+  {
+    return {BT::OutputPort<int>("mode")};
+  }
+
+  BT::NodeStatus onStart() override;
+
+  BT::NodeStatus onRunning() override;
+
+  void onHalted() override;
+
+private:
+  std::shared_ptr<Gbplanner> gbplanner_;
+  int failed_compartment_transition_count_ = 0;
+  int max_compartment_transition_tries_ = 3;
+};
+
+
 
 /*
 Returns:

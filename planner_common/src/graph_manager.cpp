@@ -44,12 +44,103 @@ void GraphManager::addVertex(Vertex* v) {
 
 void GraphManager::addEdge(Vertex* v, Vertex* u, double weight) {
   graph_->addEdge(v->id, u->id, weight);
-  edge_map_[v->id].push_back(std::make_pair(u->id, weight));
-  edge_map_[u->id].push_back(std::make_pair(v->id, weight));
+  auto v_it = std::find_if(edge_map_[v->id].begin(), edge_map_[v->id].end(),
+                      [&u](const std::pair<int, double> a) {
+                        return a.first == u->id;
+                      });
+  if(v_it == edge_map_[v->id].end())
+  {
+    edge_map_[v->id].push_back(std::make_pair(u->id, weight));
+    // std::cout << "Adding " << u->id << " to edge_map_[" << v->id << "]" << std::endl;
+  }
+  // Remove from u's map
+  auto u_it = std::find_if(edge_map_[u->id].begin(), edge_map_[u->id].end(),
+                      [&v](const std::pair<int, double> a) {
+                        return a.first == v->id;
+                      });
+  if(u_it == edge_map_[u->id].end())
+  {
+    edge_map_[u->id].push_back(std::make_pair(v->id, weight));
+    // std::cout << "Adding " << v->id << " to edge_map_[" << u->id << "]" << std::endl;
+  }
+
+  // Remove from v's map
+  auto vn_it = std::find_if(v->neighbors.begin(), v->neighbors.end(),
+                      [&u](const int a) {
+                        return a == u->id;
+                      });
+  if(vn_it == v->neighbors.end())
+  {
+    v->neighbors.push_back(u->id);
+    // std::cout << "Adding " << u->id << " neighbors[" << v->id << "]" << std::endl;
+  }
+  // Remove from u's map
+  auto un_it = std::find_if(u->neighbors.begin(), u->neighbors.end(),
+                      [&v](const int a) {
+                        return a == v->id;
+                      });
+  if(un_it == u->neighbors.end())
+  {
+    u->neighbors.push_back(v->id);
+    // std::cout << "Adding " << v->id << " neighbors[" << u->id << "]" << std::endl;
+  }
 }
 
 void GraphManager::removeEdge(Vertex* v, Vertex* u) {
   graph_->removeEdge(v->id, u->id);
+  // Remove from v's map
+  auto v_it = std::find_if(edge_map_[v->id].begin(), edge_map_[v->id].end(),
+                      [&u](const std::pair<int, double> a) {
+                        return a.first == u->id;
+                      });
+  if(v_it != edge_map_[v->id].end())
+  {
+    edge_map_[v->id].erase(v_it);
+  }
+  else
+  {
+    ROS_WARN("Edge between %d, %d does not exist in edge_map_", v->id, u->id);
+  }
+  // Remove from u's map
+  auto u_it = std::find_if(edge_map_[u->id].begin(), edge_map_[u->id].end(),
+                      [&v](const std::pair<int, double> a) {
+                        return a.first == v->id;
+                      });
+  if(u_it != edge_map_[u->id].end())
+  {
+    edge_map_[u->id].erase(u_it);
+  }
+  else
+  {
+    ROS_WARN("Edge between %d, %d does not exist in edge_map_", v->id, u->id);
+  }
+
+  // Remove from v's map
+  auto vn_it = std::find_if(v->neighbors.begin(), v->neighbors.end(),
+                      [&u](const int a) {
+                        return a == u->id;
+                      });
+  if(vn_it != v->neighbors.end())
+  {
+    v->neighbors.erase(vn_it);
+  }
+  else
+  {
+    ROS_WARN("Edge between %d, %d does not exist in v neighbor map", v->id, u->id);
+  }
+  // Remove from u's map
+  auto un_it = std::find_if(u->neighbors.begin(), u->neighbors.end(),
+                      [&v](const int a) {
+                        return a == v->id;
+                      });
+  if(un_it != u->neighbors.end())
+  {
+    u->neighbors.erase(un_it);
+  }
+  else
+  {
+    ROS_WARN("Edge between %d, %d does not exist in v neighbor map", v->id, u->id);
+  }
 }
 
 bool GraphManager::getNearestVertex(const StateVec* state, Vertex** v_res) {

@@ -759,6 +759,16 @@ void PlannerControlInterface::runPlanner(bool exe_path = false) {
     plan_srv.request.header.frame_id = world_frame_id_;
     plan_srv.request.bound_mode = bound_mode_;
     plan_srv.request.root_pose = getPoseToStart();
+    if(ind > 0)
+    {
+      plan_srv.request.root_pose.position.x = 0.0;
+      plan_srv.request.root_pose.position.y = 0.0;
+      plan_srv.request.root_pose.position.z = 0.0;
+      plan_srv.request.root_pose.orientation.x = 0.0;
+      plan_srv.request.root_pose.orientation.y = 0.0;
+      plan_srv.request.root_pose.orientation.z = 0.0;
+      plan_srv.request.root_pose.orientation.w = 1.0;
+    }
     ROS_WARN_COND(global_verbosity >= Verbosity::ERROR,"[PCI]: Called plan srv");
     if (planner_client_.call(plan_srv)) {
       if (!plan_srv.response.path.empty()) {

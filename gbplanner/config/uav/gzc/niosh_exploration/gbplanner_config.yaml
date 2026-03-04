@@ -11,7 +11,7 @@ RobotParams:
   center_offset:      [-0.0, 0.0, 0.0]
   relax_ratio:        0.5 # Used to define an intermediate size between size_extension_min and size_extension for planning
   bound_mode:         kExtendedBound
-  safety_extension:   [0.5, 2.0, 2.0] # Safety extension outside the bounding box of a path segment used to improve it by pushing it away from obstacles
+  safety_extension:   [1.5, 2.0, 2.0] # Safety extension outside the bounding box of a path segment used to improve it by pushing it away from obstacles
 #-------------------------------------------------------------------------------
 # SENSOR CONFIGURATION
 #  sensor_list: Define a set of sensors relevant to the exploration task.
@@ -191,9 +191,9 @@ PlanningParams:
   use_ray_model_for_volumetric_gain: true # if false, will check voxel by voxel in the sensor frustum 
   exp_gain_voxel_size: 0.8 # used if use_ray_model_for_volumetric_gain is false
   # Gains:
-  path_length_penalty: 0.01 # 0.4
-  path_direction_penalty: 0.25 # 0.01
-  allow_sudden_dir_change: false
+  path_length_penalty: 0.1 # 0.4
+  path_direction_penalty: 0.15 # 0.01
+  allow_sudden_dir_change: true
   occupied_voxel_gain: 0.0
   free_voxel_gain:  0.0 # prefer directions towards more free voxels in case of the dead-end
   unknown_voxel_gain: 60.0
@@ -206,7 +206,7 @@ PlanningParams:
   augment_free_voxels_time: 3
   free_frustum_before_planning: false
   freespace_cloud_enable: false
-  leafs_only_for_volumetric_gain: true # Whether to calculate gain of the entire path or only the leaf nodes
+  leafs_only_for_volumetric_gain: false # Whether to calculate gain of the entire path or only the leaf nodes
   cluster_vertices_for_gain: false
   clustering_radius: 0.5
   path_interpolation_distance: -1.0 # 0.5
@@ -248,7 +248,7 @@ PlanningParams:
 
   max_surface_distance: 1.5
   limit_vertices_to_surface: false
-  min_occ_surface: 0.0
+  min_occ_surface: -10.0
 
   max_exploration_iterations: 5
   exploration_only: false

@@ -92,8 +92,11 @@ void GeofenceManager::addGeofenceArea(Polygon2d& poly, bool merge) {
 
 void GeofenceManager::removeGeofenceAreaWithID(int id) {
   for (auto it = geofence_list_.begin(); it != geofence_list_.end(); ++it) {
-    geofence_list_.erase(it);
-    break;
+    if(it->id == id)
+    {
+      geofence_list_.erase(it);
+      break;
+    }
   }
 }
 
@@ -284,7 +287,8 @@ bool GeofenceManager::loadParams(std::string ns) {
   std::vector<std::string> geofence_init_list;
   param_name = ns + "/AreaList";
   if (!ros::param::get(param_name, geofence_init_list)) {
-    return true;
+    // return true;
+    ROSPARAM_WARN(param_name, "No 2D geofence areas defined.");
   } else {
     for (auto& s : geofence_init_list) {
       Eigen::Vector3d g_center;
