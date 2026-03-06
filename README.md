@@ -4,6 +4,7 @@
 > **_NOTE:_** In CERBERUS, during the DARPA Subterranean Challenge, an older version - GBPlanner 2.0 - was used.
 
 We present the State-Of-The-Art Graph-Based Exploration and Inspection Path Planner: GBPlanner3. 
+> **_NOTE:_** The full OmniPlanner codebase, along with usage examples, will be provided.
 
 For an extensive documentation, installation instructions, and demos please visit the documentation page of the repository here: [**Documetation**](https://github.com/ntnu-arl/gbplanner3_wiki/wiki).
 
@@ -157,6 +158,17 @@ If you use this work in your research, please cite the following publications:
   number={},
   pages={3306-3313},
   doi={10.1109/ICRA46639.2022.9812401}}
+```
+
+**OmniPlanner: Universal Exploration and Inspection Path Planning across Robot Morphologies**
+```
+@article{zacharia2026omniplanner,
+  title   = {OmniPlanner: Universal Exploration and Inspection Path Planning across Robot Morphologies},
+  author  = {Zacharia, Angelos and Dharmadhikari, Mihir and Singh, Mohit and Alexis, Kostas},
+  journal = {arXiv preprint arXiv:2603.04284},
+  year    = {2026},
+  url     = {https://arxiv.org/abs/2603.04284}
+}
 ```
 
 You can contact us for any question:
