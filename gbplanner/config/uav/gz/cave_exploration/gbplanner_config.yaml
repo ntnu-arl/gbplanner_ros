@@ -248,6 +248,8 @@ PlanningParams:
   max_surface_distance: 1.5
   limit_vertices_to_surface: false
   min_occ_surface: 0.0
+  
+  local_navigation_reaching_radius: 2.0
 
   max_exploration_iterations: 5
   exploration_only: false

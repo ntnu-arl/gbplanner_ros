@@ -4,10 +4,10 @@
 	<arg name="robot_name" default="smb"/>
 	<arg name="config_folder" default="ugv/gzc/urban_exploration"/>
 	<arg name="gazebo_gui_en" default="false"/>
-  <arg name="use_sim_time" default="true"/>
-  <arg name="rviz_en" default="true" />
-  <arg name="launch_prefix" default=""/> <!-- gdb -ex run //args -->
-  <param name="use_sim_time" value="$(arg use_sim_time)"/>
+	<arg name="use_sim_time" default="true"/>
+	<arg name="rviz_en" default="true" />
+	<arg name="launch_prefix" default=""/> <!-- gdb -ex run //args -->
+	<param name="use_sim_time" value="$(arg use_sim_time)"/>
 
 	<!-- Config files -->
 	<arg name="gbplanner_config_file" default="$(find gbplanner)/config/$(arg config_folder)/gbplanner_config.yaml"/>
@@ -23,12 +23,14 @@
 		<arg name="launch_prefix" value="$(arg launch_prefix)"/>
 		<arg name="gazebo_gui_en" value="$(arg gazebo_gui_en)"/>
 	</include>
+
 	<!-- Graph based planning -->
 	<node pkg="gbplanner" type="gbplanner_node" name="gbplanner_node" output="screen" launch-prefix="$(arg launch_prefix)">
 		<remap from="odometry" to="$(arg odometry_topic)" />
 		<remap from="/pointcloud" to="/input_pointcloud" />
 		<rosparam command="load" file="$(arg gbplanner_config_file)" />
 		<rosparam command="load" file="$(arg map_config_file)" />
+		<remap from="local_navigation_goal" to="/move_base_simple/goal"/>
 		<param name="behavior_tree_path" value="$(find gbplanner)/config/$(arg config_folder)/main_tree.xml"/>
 	</node>
 

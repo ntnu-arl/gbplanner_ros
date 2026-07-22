@@ -4,7 +4,7 @@
   # ROBOT CONFIGURATION
   #-------------------------------------------------------------------------------
 RobotParams:
-  type:               kGroundRobot
+  type:               kAerialRobot
   # size:               [0.4, 0.0, 0.0] # Actual size of the robot in meters [x, y, z]
   size:               [1.0, 1.0, 0.4] # Actual size of the robot in meters [x, y, z]
   size_extension_min: [0.0, 0.0, 0.0] # minimum extension outside of robot size allowed to operate
@@ -133,8 +133,11 @@ RandomSamplerParams:
       pdf_type:       kUniform
       sample_mode:    kLocal
     Z:
-      pdf_type:       kUniform
-      sample_mode:    kLocal
+      pdf_type:       kConst
+      sample_mode:    kManual
+      const_val:      0.0
+      # pdf_type:       kUniform
+      # sample_mode:    kLocal
     Heading:
       pdf_type:       kUniform
       sample_mode:    kManual
@@ -156,8 +159,11 @@ RandomSamplerParams:
       pdf_type:       kUniform
       sample_mode:    kLocal
     Z:
-      pdf_type:       kUniform
-      sample_mode:    kLocal
+      pdf_type:       kConst
+      sample_mode:    kManual
+      const_val:      0.0
+      # pdf_type:       kUniform
+      # sample_mode:    kLocal
     Heading:
       pdf_type:       kUniform
       sample_mode:    kManual
@@ -179,8 +185,11 @@ RandomSamplerParams:
       pdf_type:       kUniform
       sample_mode:    kLocal
     Z:
-      pdf_type:       kUniform
-      sample_mode:    kLocal
+      pdf_type:       kConst
+      sample_mode:    kManual
+      const_val:      0.0
+      # pdf_type:       kUniform
+      # sample_mode:    kLocal
     Heading:
       pdf_type:       kUniform
       sample_mode:    kManual
@@ -246,8 +255,8 @@ PlanningParams:
   clustering_radius: 0.5
   path_interpolation_distance: -1.0 # 0.5
 
-  max_ground_height: 1.0 # All points will be projected to this height from ground
-  robot_height: 0.75  # Height of robot's base frame from ground
+  max_ground_height: 0.5 # All points will be projected to this height from ground
+  robot_height: 0.5  # Height of robot's base frame from ground
   max_inclination: rad(20.0*pi/180)
   
   time_budget_limit: 5000 # seconds
@@ -288,6 +297,8 @@ PlanningParams:
   max_surface_distance: 1.5
   limit_vertices_to_surface: false
   min_occ_surface: 0.0
+
+  local_navigation_reaching_radius: 2.0
 
   max_exploration_iterations: 5
   exploration_only: false

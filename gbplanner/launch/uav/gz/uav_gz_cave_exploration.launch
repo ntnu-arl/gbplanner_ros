@@ -24,6 +24,7 @@
         <remap from="pcl_in" to="/rmf_owl/lidar/points" />
         <rosparam command="load" file="$(arg gbplanner_config_file)" />
         <rosparam command="load" file="$(arg map_config_file)" />
+        <remap from="local_navigation_goal" to="/move_base_simple/goal"/>
         <param name="behavior_tree_path" value="$(find gbplanner)/config/$(arg config_folder)/main_tree.xml"/>
     </node>
 
