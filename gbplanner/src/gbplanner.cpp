@@ -1,6 +1,24 @@
 #include "gbplanner/gbplanner.h"
 
 #include <nav_msgs/Path.h>
+#include <XmlRpcValue.h>
+
+namespace {
+
+// Extract yaw and pitch from the same, canonical RPY decomposition.  Mixing
+// tf::getYaw() with Eigen::eulerAngles(2, 1, 0) is unsafe because Eigen may
+// represent a level pose at negative yaw as [yaw + pi, pi, pi].  Keeping only
+// Eigen's pitch from that equivalent triplet flips the free-space rays.
+void getYawAndPitch(const geometry_msgs::Quaternion& orientation,
+                    double& yaw, double& pitch) {
+  tf::Quaternion quaternion;
+  tf::quaternionMsgToTF(orientation, quaternion);
+
+  double roll;
+  tf::Matrix3x3(quaternion).getRPY(roll, pitch, yaw);
+}
+
+}  // namespace
 
 // namespace explorer {
 
@@ -103,9 +121,14 @@ void Gbplanner::initializeAttributes() {
 
   global_planner_local_goal_pub_ =
       nh_.advertise<geometry_msgs::PoseStamped>("gbplanner/homing_local_goal", 10);
+  local_navigation_goals_pub_ =
+      nh_.advertise<visualization_msgs::MarkerArray>(
+          "vis/local_navigation_goals", 1, true);
 
   std::string ns = ros::this_node::getName();
   planning_params_.loadParams(ns + "/PlanningParams");
+  loadLocalNavigationGoalSequence();
+  publishLocalNavigationGoals();
 
   ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Compartment Centers:");
   if(global_verbosity >= Verbosity::DEBUG) {
@@ -230,10 +253,232 @@ bool Gbplanner::switchOperationModeServiceCallback(
     std_srvs::SetBool::Request& req,
     std_srvs::SetBool::Response& res)
 {
+  if (req.data && local_navigation_goal_sequence_enable_ &&
+      !startLocalNavigationGoalSequence()) {
+    res.success = false;
+    res.message = "Local-navigation goal sequence is enabled but contains no valid goals.";
+    ROS_ERROR("%s", res.message.c_str());
+    return true;
+  }
+
   bt_states_.operation_mode = static_cast<int>(req.data);
+  bt_states_.local_navigation_complete = false;
+  bt_states_.local_navigation_stuck = false;
+  if (!req.data && local_navigation_goal_sequence_active_) {
+    local_navigation_goal_sequence_active_ = false;
+    publishLocalNavigationGoals();
+  }
   ROS_WARN("Switching operation mode to: %d", bt_states_.operation_mode);
   res.success = true;
+  res.message = req.data ? "Local navigation mode enabled."
+                         : "Exploration mode enabled.";
   return true;
+}
+
+void Gbplanner::loadLocalNavigationGoalSequence()
+{
+  nh_private_.param("LocalNavigationGoalSequence/enable",
+                    local_navigation_goal_sequence_enable_, false);
+
+  XmlRpc::XmlRpcValue goals_param;
+  if (!nh_private_.getParam("LocalNavigationGoalSequence/goals", goals_param)) {
+    ROS_WARN_COND(local_navigation_goal_sequence_enable_,
+                  "Local-navigation goal sequence is enabled, but no goals are configured.");
+    return;
+  }
+
+  if (goals_param.getType() != XmlRpc::XmlRpcValue::TypeArray) {
+    ROS_ERROR("LocalNavigationGoalSequence/goals must be a YAML list of [x, y, z] lists.");
+    return;
+  }
+
+  auto read_number = [](const XmlRpc::XmlRpcValue& value, double& result) {
+    if (value.getType() == XmlRpc::XmlRpcValue::TypeDouble) {
+      result = static_cast<double>(value);
+      return true;
+    }
+    if (value.getType() == XmlRpc::XmlRpcValue::TypeInt) {
+      result = static_cast<int>(value);
+      return true;
+    }
+    return false;
+  };
+
+  for (int goal_index = 0; goal_index < goals_param.size(); ++goal_index) {
+    const XmlRpc::XmlRpcValue& goal = goals_param[goal_index];
+    if (goal.getType() != XmlRpc::XmlRpcValue::TypeArray || goal.size() != 3) {
+      ROS_ERROR("LocalNavigationGoalSequence/goals[%d] must contain exactly [x, y, z].",
+                goal_index);
+      continue;
+    }
+
+    Eigen::Vector3d parsed_goal;
+    bool valid = true;
+    for (int coordinate = 0; coordinate < 3; ++coordinate) {
+      double value = 0.0;
+      if (!read_number(goal[coordinate], value)) {
+        valid = false;
+        break;
+      }
+      parsed_goal[coordinate] = value;
+    }
+
+    if (!valid) {
+      ROS_ERROR("LocalNavigationGoalSequence/goals[%d] contains a non-numeric coordinate.",
+                goal_index);
+      continue;
+    }
+    local_navigation_goals_.push_back(parsed_goal);
+  }
+
+  ROS_INFO("Loaded %zu ordered local-navigation goal(s); sequence mode is %s.",
+           local_navigation_goals_.size(),
+           local_navigation_goal_sequence_enable_ ? "enabled" : "disabled");
+  local_navigation_goals_reached_.assign(local_navigation_goals_.size(),
+                                         false);
+}
+
+bool Gbplanner::startLocalNavigationGoalSequence()
+{
+  if (local_navigation_goals_.empty()) {
+    local_navigation_goal_sequence_active_ = false;
+    publishLocalNavigationGoals();
+    return false;
+  }
+
+  current_local_navigation_goal_index_ = 0;
+  local_navigation_goal_sequence_active_ = true;
+  local_navigation_goals_reached_.assign(local_navigation_goals_.size(),
+                                         false);
+  rrg_->setLocalNavGoal(local_navigation_goals_.front());
+  publishLocalNavigationGoals();
+  ROS_WARN("Starting local-navigation goal sequence at goal 1/%zu: [%f, %f, %f]",
+           local_navigation_goals_.size(), local_navigation_goals_.front().x(),
+           local_navigation_goals_.front().y(), local_navigation_goals_.front().z());
+  return true;
+}
+
+bool Gbplanner::advanceLocalNavigationGoalSequence(
+    Rrg::LocalPlannerStatus terminal_status)
+{
+  if (!local_navigation_goal_sequence_enable_ ||
+      !local_navigation_goal_sequence_active_) {
+    return false;
+  }
+
+  const bool reached = terminal_status == Rrg::LocalPlannerStatus::L_EXHAUSTED;
+  if (current_local_navigation_goal_index_ <
+      local_navigation_goals_reached_.size()) {
+    local_navigation_goals_reached_[current_local_navigation_goal_index_] =
+        reached;
+  }
+  ROS_WARN("Local-navigation sequence goal %zu/%zu %s.",
+           current_local_navigation_goal_index_ + 1,
+           local_navigation_goals_.size(), reached ? "reached" : "failed");
+
+  ++current_local_navigation_goal_index_;
+  if (current_local_navigation_goal_index_ >= local_navigation_goals_.size()) {
+    local_navigation_goal_sequence_active_ = false;
+    publishLocalNavigationGoals();
+    ROS_WARN("Local-navigation goal sequence complete.");
+    return false;
+  }
+
+  const Eigen::Vector3d& next_goal =
+      local_navigation_goals_[current_local_navigation_goal_index_];
+  rrg_->setLocalNavGoal(next_goal);
+  bt_states_.local_navigation_complete = false;
+  bt_states_.local_navigation_stuck = false;
+  publishLocalNavigationGoals();
+  ROS_WARN("Advancing to local-navigation sequence goal %zu/%zu: [%f, %f, %f]",
+           current_local_navigation_goal_index_ + 1,
+           local_navigation_goals_.size(), next_goal.x(), next_goal.y(),
+           next_goal.z());
+  return true;
+}
+
+void Gbplanner::publishLocalNavigationGoals()
+{
+  visualization_msgs::MarkerArray markers;
+  visualization_msgs::Marker clear_marker;
+  clear_marker.action = visualization_msgs::Marker::DELETEALL;
+  markers.markers.push_back(clear_marker);
+
+  if (!local_navigation_goal_sequence_enable_) {
+    local_navigation_goals_pub_.publish(markers);
+    return;
+  }
+
+  const ros::Time stamp = ros::Time::now();
+  for (size_t goal_index = 0; goal_index < local_navigation_goals_.size();
+       ++goal_index) {
+    const bool active = local_navigation_goal_sequence_active_ &&
+                        goal_index == current_local_navigation_goal_index_;
+    const bool reached = goal_index < local_navigation_goals_reached_.size() &&
+                         local_navigation_goals_reached_[goal_index];
+    const Eigen::Vector3d& goal = local_navigation_goals_[goal_index];
+
+    // Current: orange, reached: green, unreached/failed: red.
+    const float marker_r = active ? 1.0f : (reached ? 0.1f : 1.0f);
+    const float marker_g = active ? 0.45f : (reached ? 1.0f : 0.1f);
+    const float marker_b = 0.0f;
+
+    visualization_msgs::Marker sphere;
+    sphere.header.frame_id = planning_params_.global_frame_id;
+    sphere.header.stamp = stamp;
+    sphere.ns = "local_navigation_goal_spheres";
+    sphere.id = static_cast<int>(goal_index);
+    sphere.type = visualization_msgs::Marker::SPHERE;
+    sphere.action = visualization_msgs::Marker::ADD;
+    sphere.pose.position.x = goal.x();
+    sphere.pose.position.y = goal.y();
+    sphere.pose.position.z = goal.z();
+    sphere.pose.orientation.w = 1.0;
+    sphere.scale.x = active ? 2.0 : 1.5;
+    sphere.scale.y = active ? 2.0 : 1.5;
+    sphere.scale.z = active ? 2.0 : 1.5;
+    sphere.color.r = marker_r;
+    sphere.color.g = marker_g;
+    sphere.color.b = marker_b;
+    sphere.color.a = 0.9;
+    markers.markers.push_back(sphere);
+
+    visualization_msgs::Marker label;
+    label.header.frame_id = planning_params_.global_frame_id;
+    label.header.stamp = stamp;
+    label.ns = "local_navigation_goal_order";
+    label.id = static_cast<int>(goal_index);
+    label.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
+    label.action = visualization_msgs::Marker::ADD;
+    label.pose.position.x = goal.x();
+    label.pose.position.y = goal.y();
+    label.pose.position.z = goal.z() + 1.4;
+    label.pose.orientation.w = 1.0;
+    label.scale.z = active ? 1.6 : 1.3;
+    label.color.r = 1.0;
+    label.color.g = 1.0;
+    label.color.b = 1.0;
+    label.color.a = 1.0;
+    label.text = std::to_string(goal_index + 1);
+    markers.markers.push_back(label);
+
+    // visualization_msgs/Marker has no font-weight property. Overlay a few
+    // tightly offset copies to give the white order number a bold appearance.
+    constexpr double kBoldOffset = 0.025;
+    const double bold_offsets[4][2] = {
+        {-kBoldOffset, 0.0}, {kBoldOffset, 0.0},
+        {0.0, -kBoldOffset}, {0.0, kBoldOffset}};
+    for (int layer = 0; layer < 4; ++layer) {
+      visualization_msgs::Marker bold_label = label;
+      bold_label.ns = "local_navigation_goal_order_bold";
+      bold_label.id = static_cast<int>(goal_index * 4 + layer);
+      bold_label.pose.position.x += bold_offsets[layer][0];
+      bold_label.pose.position.y += bold_offsets[layer][1];
+      markers.markers.push_back(bold_label);
+    }
+  }
+
+  local_navigation_goals_pub_.publish(markers);
 }
 
 bool Gbplanner::plannerServiceCallback(
@@ -548,6 +793,16 @@ Rrg::LocalPlannerStatus Gbplanner::getLocalNavigationPath()
   }
 
   Rrg::LocalPlannerStatus lp_status = rrg_->evaluateLocalNavigationPath();
+  if ((lp_status == Rrg::LocalPlannerStatus::L_EXHAUSTED ||
+       lp_status == Rrg::LocalPlannerStatus::L_STUCK) &&
+      advanceLocalNavigationGoalSequence(lp_status)) {
+    // Keep planning active between configured goals. A one-pose hold path
+    // finishes the current iteration without making the PCI retry at a smaller
+    // local bound; its next automatic iteration uses the new sequence goal.
+    clearResPath();
+    out_srv_res_.status = planner_msgs::planner_srv::Response::kAutoCustomPath;
+    return Rrg::LocalPlannerStatus::L_OK;
+  }
   switch (lp_status) {
     case Rrg::LocalPlannerStatus::L_OK:
       ret_status = Rrg::LocalPlannerStatus::L_OK;
@@ -579,7 +834,7 @@ Rrg::LocalPlannerStatus Gbplanner::getLocalNavigationPath()
       out_srv_res_.status = planner_msgs::planner_srv::Response::kForward;
       break;
   }
-  if(lp_status != Rrg::GraphStatus::OK) 
+  if(lp_status != Rrg::LocalPlannerStatus::L_OK)
   { 
     return ret_status;
   }
@@ -1082,6 +1337,41 @@ bool Gbplanner::calculateHomingPath()
   return true;
 }
 
+void Gbplanner::requestHomingOverride()
+{
+  bt_states_.homing_required = true;
+  bt_states_.homing_triggered = false;
+  bt_states_.local_exp_exhausted = false;
+  bt_states_.global_exp_exhausted = false;
+  bt_states_.opening_phase1_failed = false;
+  bt_states_.local_navigation_complete = false;
+  bt_states_.local_navigation_stuck = false;
+  bt_states_.operation_mode = 0;
+
+  local_navigation_goal_sequence_active_ = false;
+  active_homing_path_.clear();
+  rrg_->clearLocalNavGoal();
+  publishLocalNavigationGoals();
+
+  ROS_WARN("Homing override requested: active BT homing has priority over all other behaviors.");
+}
+
+void Gbplanner::finishHomingOverride()
+{
+  bt_states_.homing_required = false;
+  bt_states_.homing_triggered = false;
+  bt_states_.local_navigation_complete = false;
+  bt_states_.local_navigation_stuck = false;
+  bt_states_.operation_mode = 0;
+
+  local_navigation_goal_sequence_active_ = false;
+  active_homing_path_.clear();
+  rrg_->clearLocalNavGoal();
+  publishLocalNavigationGoals();
+
+  ROS_WARN("Active BT homing finished; planner returned to manual exploration mode.");
+}
+
 bool Gbplanner::updateHomingGoal()
 {
   if(active_homing_path_.empty())
@@ -1245,7 +1535,7 @@ void Gbplanner::processPose(const geometry_msgs::Pose& pose) {
   state[0] = pose.position.x;
   state[1] = pose.position.y;
   state[2] = pose.position.z;
-  state[3] = tf::getYaw(pose.orientation);
+  getYawAndPitch(pose.orientation, state[3], state[4]);
   rrg_->setState(state);
   current_state_ = state;
 }
@@ -1255,7 +1545,7 @@ void Gbplanner::odometryCallback(const nav_msgs::Odometry& odo) {
   state[0] = odo.pose.pose.position.x;
   state[1] = odo.pose.pose.position.y;
   state[2] = odo.pose.pose.position.z;
-  state[3] = tf::getYaw(odo.pose.pose.orientation);
+  getYawAndPitch(odo.pose.pose.orientation, state[3], state[4]);
   rrg_->setState(state);
   current_state_ = state;
 }
@@ -1266,6 +1556,12 @@ void Gbplanner::robotStatusCallback(const planner_msgs::RobotStatus& status) {
 
 void Gbplanner::localNavGoalCallback(const geometry_msgs::PoseStamped& goal)
 {
+  if (local_navigation_goal_sequence_enable_) {
+    ROS_WARN_THROTTLE(5.0,
+                      "Ignoring RViz 2D Nav Goal because LocalNavigationGoalSequence is enabled.");
+    return;
+  }
+
   Eigen::Vector3d local_nav_goal;
   local_nav_goal[0] = goal.pose.position.x;
   local_nav_goal[1] = goal.pose.position.y;

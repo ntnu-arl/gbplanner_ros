@@ -397,7 +397,23 @@ bool PlannerControlInterface::homingCallback(
     planner_msgs::pci_homing_trigger::Request& req,
     planner_msgs::pci_homing_trigger::Response& res) {
   exe_path_en_ = !req.not_exe_path;
+
+  // Home supersedes every queued behavior, but deliberately does not stop the
+  // path currently being executed. The run loop consumes this request as soon
+  // as PCIManager reports kReady.
+  trigger_mode_ = PlannerTriggerModeType::kManual;
+  run_en_ = false;
+  search_request_ = false;
+  init_request_ = false;
+  global_request_ = false;
+  stop_planner_request_ = false;
+  passing_gate_request_ = false;
+  go_to_waypoint_request_ = false;
+  go_to_waypoint_with_checking_ = false;
+  inspection_srv_request_ = false;
   homing_request_ = true;
+
+  ROS_WARN("Go Home queued; the current path will finish before active BT homing starts.");
   res.success = true;
   return true;
 }
@@ -880,6 +896,9 @@ void PlannerControlInterface::runHoming(bool exe_path) {
   trigger_mode_ = PlannerTriggerModeType::kAuto;
   if (planner_homing_client_.call(plan_srv)) {
     runPlanner(exe_path);
+  } else {
+    trigger_mode_ = PlannerTriggerModeType::kManual;
+    ROS_ERROR("Could not request active BT homing; planner remains in manual mode.");
   }
 }
 

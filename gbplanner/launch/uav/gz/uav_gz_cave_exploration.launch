@@ -7,6 +7,14 @@
     <arg name="verbosity" default="0"/>
     <arg name="launch_prefix" default=""/>
 
+    <param name="use_sim_time" value="true"/>
+
+    <node pkg="ros_ign_bridge"
+      type="parameter_bridge"
+      name="ros_gz_bridge_clock"
+      output="screen"
+      args="/clock@rosgraph_msgs/Clock[gz.msgs.Clock"/>
+
     <!-- Config files -->
     <arg name="gbplanner_config_file" default="$(find gbplanner)/config/$(arg config_folder)/gbplanner_config.yaml"/>
     <arg name="pci_file" default="$(find gbplanner)/config/$(arg config_folder)/planner_control_interface_sim_config.yaml"/>
@@ -32,7 +40,7 @@
     <node pkg="pci_general" type="pci_general_ros_node" name="pci_general_ros_node" output="screen">
         <remap from="command/trajectory" to="$(arg uav_name)/command/trajectory" />
         <remap from="planner_server" to="gbplanner_ros" />
-        <remap from="planner_homing_server" to="gbplanner/homing" />
+        <remap from="planner_homing_server" to="gbplanner_ros_homing" />
         <remap from="odometry" to="$(arg odometry_topic)"/>
         <rosparam command="load" file="$(arg pci_file)" />
     </node>

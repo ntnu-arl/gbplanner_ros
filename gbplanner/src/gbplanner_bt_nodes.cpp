@@ -99,9 +99,17 @@ void LocalNavigation::onHalted()
 BT::NodeStatus LocalNavigationExhaustedCheck::tick()
 {
   std::cout << "[LocalNavigationExhaustedCheck] Triggered." << std::endl;
-  if(gbplanner_->bt_states_.local_navigation_complete)
+  const bool navigation_complete =
+      gbplanner_->bt_states_.local_navigation_complete;
+  const bool navigation_stuck = gbplanner_->bt_states_.local_navigation_stuck;
+  if(navigation_complete || navigation_stuck)
   {
-    ROS_WARN("Local Navigation Exhausted");
+    ROS_WARN("Local Navigation %s",
+             navigation_complete ? "Completed" : "Stuck");
+    if(gbplanner_->bt_states_.homing_required)
+    {
+      gbplanner_->finishHomingOverride();
+    }
     return BT::NodeStatus::SUCCESS;
   }
   else
@@ -113,6 +121,7 @@ BT::NodeStatus LocalNavigationExhaustedCheck::tick()
 BT::NodeStatus LocalNavigationExhaustedReset::tick()
 {
   gbplanner_->bt_states_.local_navigation_complete = false;
+  gbplanner_->bt_states_.local_navigation_stuck = false;
   gbplanner_->clearResPath();
 
   return BT::NodeStatus::SUCCESS;
@@ -359,6 +368,7 @@ BT::NodeStatus HomingCheck::tick()
   if(homing_reqd)
   {
     ROS_WARN("Homing needed 1");
+    gbplanner_->requestHomingOverride();
     return BT::NodeStatus::SUCCESS;
   }
   else
@@ -380,16 +390,20 @@ BT::NodeStatus CalculateHomingPath::tick()
   if(!success)
   {
     ROS_WARN("Homing failed");
+    gbplanner_->out_srv_res_.path.clear();
+    gbplanner_->out_srv_res_.status =
+        planner_msgs::planner_srv::Response::kForward;
     ++failed_homing_count_;
     if(failed_homing_count_ > max_homing_tries_)
     {
-      gbplanner_->out_srv_res_.status = planner_msgs::planner_srv::Response::kManualCustomPath;
-      return BT::NodeStatus::SUCCESS;
+      ROS_ERROR("Active homing failed after %d attempts.",
+                failed_homing_count_);
+      failed_homing_count_ = 0;
+      gbplanner_->out_srv_res_.status =
+          planner_msgs::planner_srv::Response::kManualCustomPath;
+      gbplanner_->finishHomingOverride();
     }
-    else
-    {
-      return BT::NodeStatus::FAILURE;
-    }
+    return BT::NodeStatus::FAILURE;
   }
   else
   {
@@ -591,4 +605,3 @@ BT::NodeStatus Idle::tick()
   return BT::NodeStatus::FAILURE;
 }
 /*******************************************************/
-

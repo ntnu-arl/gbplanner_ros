@@ -60,6 +60,22 @@ CameraAnnotationParams:
     fov:            [rad(84*pi/180.0), rad(64*pi/180.0)]
     resolution:     [rad(2.0*pi/180), rad(2.0*pi/180)]
     frontier_percentage_threshold: 0.01
+
+# Virtual spherical sensor used only to generate max-range free-space rays.
+# The cloud is published in the rmf_owl model frame, whose origin coincides
+# with the planner odometry origin. Voxblox caps integration at 15 m according
+# to max_ray_length_m in voxblox_sim_config.yaml.
+FreeFrustumParams:
+  sensor_list:      ["OS064Free"]
+  OS064Free:
+    type:           kSpherical
+    max_range:      20.0
+    center_offset:  [0.0, 0.0, 0.05]
+    rotations:      [0.0, 0.0, 0.0]
+    fov:            [rad(2*pi), rad(90*pi/180)]
+    resolution:     [rad(2.0*pi/180), rad(2.0*pi/180)]
+    frontier_percentage_threshold: 0.1
+    frame_id:       "rmf_obelix/rmf_obelix/velodyne"
 #-------------------------------------------------------------------------------
 # SAMPLING SPACE CONFIGURATION
 #   Global: Strictly defined bounds for the whole environment.
@@ -201,7 +217,7 @@ PlanningParams:
   path_safety_enhance_enable: true
   augment_free_voxels_time: 3
   free_frustum_before_planning: false
-  freespace_cloud_enable: false
+  freespace_cloud_enable: true
   leafs_only_for_volumetric_gain: false # Whether to calculate gain of the entire path or only the leaf nodes
   cluster_vertices_for_gain: false
   clustering_radius: 0.5
@@ -246,7 +262,8 @@ PlanningParams:
   limit_vertices_to_surface: false
   min_occ_surface: -10.0
 
-  local_navigation_reaching_radius: 2.0
+  local_navigation_reaching_radius: 4.0
+  local_navigation_max_fail_iters: 2
   
   max_exploration_iterations: 3
   exploration_only: true
@@ -285,3 +302,16 @@ AdaptiveObbParams:
   type: kPca
   local_pointcloud_range: 50.0
   bounding_box_size_max: 35
+
+LocalNavigationGoalSequence:
+  enable: false
+  goals:
+    - [70.0, 0.0, 0.0]
+    - [100.0, -50.0, 0.0]
+    - [140.0, 0.0, 0.0]
+    - [185.0, 25.0, 0.0]
+  # Example:
+  # goals:
+  #   - [10.0, 0.0, 2.0]
+  #   - [20.0, 5.0, 2.0]
+  #   - [30.0, 0.0, 2.0]

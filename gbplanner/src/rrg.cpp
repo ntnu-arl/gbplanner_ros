@@ -96,6 +96,13 @@ void Rrg::initializeAttributes() {
   
   camera_annotation_timer_ = nh_.createTimer(ros::Duration(0.1), &Rrg::cameraAnnotationTimerCallback, this);
 
+  // Publish synthetic max-range endpoints for Voxblox to integrate as
+  // clearing rays. The callback remains idle unless freespace_cloud_enable is
+  // set and odometry has been received.
+  free_cloud_pub_timer_ = nh_.createTimer(
+      ros::Duration(kFreePointCloudUpdatePeriod),
+      &Rrg::freePointCloudtimerCallback, this);
+
   semantics_subscriber_ =
       nh_.subscribe("semantic_location", 100, &Rrg::semanticsCallback, this);
 
@@ -7531,31 +7538,37 @@ void Rrg::freePointCloudtimerCallback(const ros::TimerEvent& event) {
   if (!planning_params_.freespace_cloud_enable) return;
   if(!odometry_ready) return;
 
-  auto t1 = std::chrono::high_resolution_clock::now();
+  // StateVec contains x, y, z, yaw, and pitch. Copy all five entries so that
+  // the free-space frustum is never rotated by an uninitialized pitch value.
+  StateVec state = current_state_;
 
-  pcl::PointCloud<pcl::PointXYZ>::Ptr free_cloud_body(
-      new pcl::PointCloud<pcl::PointXYZ>);
+  for (const auto& sensor_name : free_frustum_params_.sensor_list) {
+    pcl::PointCloud<pcl::PointXYZ>::Ptr free_cloud_body(
+        new pcl::PointCloud<pcl::PointXYZ>);
+    std::vector<Eigen::Vector3d> multiray_endpoints_body;
 
-  std::vector<Eigen::Vector3d> multiray_endpoints_body;
-  for (auto sensor_name : free_frustum_params_.sensor_list) {
-    StateVec state;
-    state[0] = current_state_[0];
-    state[1] = current_state_[1];
-    state[2] = current_state_[2];
-    state[3] = current_state_[3];
     // get frustum endpoints (They are in world frame)
     free_frustum_params_.sensor[sensor_name].getFrustumEndpoints(
         state, multiray_endpoints_body);
-    std::vector<Eigen::Vector3d> multiray_endpoints;
+
     // Check it the full ray till max range is free(for voxblox only, for
     // octomap just convert to world frame)
     map_manager_->getFreeSpacePointCloud(multiray_endpoints_body, state,
                                          free_cloud_body);
+
+    free_cloud_body->width = free_cloud_body->points.size();
+    free_cloud_body->height = 1;
+    free_cloud_body->is_dense = true;
+
     // convert the endpoint to sensor frame
     pcl::PointCloud<pcl::PointXYZ>::Ptr free_cloud(
         new pcl::PointCloud<pcl::PointXYZ>);
     free_frustum_params_.sensor[sensor_name].convertBodyToSensor(
         free_cloud_body, free_cloud);
+
+    free_cloud->width = free_cloud->points.size();
+    free_cloud->height = 1;
+    free_cloud->is_dense = true;
 
     sensor_msgs::PointCloud2 out_cloud;
     pcl::toROSMsg(*free_cloud.get(), out_cloud);
@@ -7564,10 +7577,6 @@ void Rrg::freePointCloudtimerCallback(const ros::TimerEvent& event) {
     out_cloud.header.stamp = ros::Time::now();
     free_cloud_pub_.publish(out_cloud);
   }
-
-  auto t2 = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed = t2 - t1;
-  // ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "Free cloud time: %f s", elapsed.count());
 }
 
 void Rrg::timerCallback(const ros::TimerEvent& event) {

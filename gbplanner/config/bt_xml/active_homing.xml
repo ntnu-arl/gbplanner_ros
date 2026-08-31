@@ -10,9 +10,9 @@
 					<Sequence>
 						<!-- <UpdateHomingGoal/> -->
 						<LocalNavigation/>
-						<!-- <Inverter>
+						<Inverter>
 							<LocalNavigationExhaustedCheck/>
-						</Inverter> -->
+						</Inverter>
 					</Sequence>
 				</KeepRunningUntilFailure>
 			</Inverter>

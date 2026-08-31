@@ -31,7 +31,8 @@ bool GbplannerRos::plannerHomingServiceCallback(planner_msgs::planner_homing::Re
                               planner_msgs::planner_homing::Response& res)
 {
   ROS_WARN("Homing through BT");
-  gbplanner_->bt_states_.homing_required = true;
+  tree_.haltTree();
+  gbplanner_->requestHomingOverride();
 
   // planner_msgs::planner_srv::Request req_planner;
   // planner_msgs::planner_srv::Response res_planner;

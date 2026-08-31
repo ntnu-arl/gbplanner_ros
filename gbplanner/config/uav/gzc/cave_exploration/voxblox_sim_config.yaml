@@ -11,7 +11,7 @@ use_sparsity_compensation_factor: True
 sparsity_compensation_factor: 100.0 #10.0
 color_mode: "color"
 verbose: False
-update_mesh_every_n_sec: 0 #2.0
+update_mesh_every_n_sec: 0.5 #2.0
 mesh_min_weight: 1e-4
 slice_level: 1.0
 method: "fast"

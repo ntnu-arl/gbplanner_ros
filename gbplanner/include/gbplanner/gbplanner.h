@@ -3,6 +3,7 @@
 #include <ros/ros.h>
 #include <std_srvs/SetBool.h>
 #include <std_srvs/Trigger.h>
+#include <visualization_msgs/MarkerArray.h>
 
 #include "gbplanner/gbplanner_rviz.h"
 #include "gbplanner/rrg.h"
@@ -103,6 +104,8 @@ class Gbplanner {
   bool homingRequired();
   bool calculateHomingPath(); // For active homing
   bool updateHomingGoal();
+  void requestHomingOverride();
+  void finishHomingOverride();
   bool calculateGlobalPath(); // For active global planner
   bool updateGlobalGoal();
 
@@ -140,6 +143,7 @@ class Gbplanner {
   ros::ServiceServer switch_operation_mode_service_;
 
   ros::Publisher global_planner_local_goal_pub_;
+  ros::Publisher local_navigation_goals_pub_;
 
   ros::Subscriber pose_subscriber_;
   ros::Subscriber pose_stamped_subscriber_;
@@ -175,6 +179,18 @@ class Gbplanner {
   bool opening_traversal_ongoing_ = false;
   bool opening_traversal_requested_ = false;
   bool inspection_requested_ = false;  // Temp
+
+  bool local_navigation_goal_sequence_enable_ = false;
+  bool local_navigation_goal_sequence_active_ = false;
+  size_t current_local_navigation_goal_index_ = 0;
+  std::vector<Eigen::Vector3d> local_navigation_goals_;
+  std::vector<bool> local_navigation_goals_reached_;
+
+  void loadLocalNavigationGoalSequence();
+  bool startLocalNavigationGoalSequence();
+  bool advanceLocalNavigationGoalSequence(
+      Rrg::LocalPlannerStatus terminal_status);
+  void publishLocalNavigationGoals();
 
   bool homingServiceCallback(planner_msgs::planner_homing::Request& req,
                              planner_msgs::planner_homing::Response& res);

@@ -109,7 +109,16 @@ void gbplanner_panel::on_homing_click() {
   if (!planner_client_homing.call(srv)) {
     ROS_ERROR("[GBPLANNER-UI] Service call failed: %s",
               planner_client_homing.getService().c_str());
+    return;
   }
+  if (!srv.response.success) {
+    ROS_ERROR("[GBPLANNER-UI] Go Home request was rejected: %s",
+              srv.response.message.c_str());
+    return;
+  }
+
+  waypoint_nav_mode = false;
+  button_change_operation_mode->setText("Operation mode (EXP)");
 }
 
 void gbplanner_panel::on_init_motion_click() {
@@ -166,13 +175,22 @@ void gbplanner_panel::on_global_planner_click() {
 void gbplanner_panel::on_change_operation_mode_click()
 {
   std_srvs::SetBool srv;
-  waypoint_nav_mode = !waypoint_nav_mode;
-  srv.request.data = waypoint_nav_mode;
+  const bool requested_waypoint_nav_mode = !waypoint_nav_mode;
+  srv.request.data = requested_waypoint_nav_mode;
   if (!change_operation_mode_client.call(srv))
   {
     ROS_ERROR("[GBPLANNER UI] Service call failed: %s",
               change_operation_mode_client.getService().c_str());
+    return;
   }
+  if (!srv.response.success)
+  {
+    ROS_ERROR("[GBPLANNER UI] Could not change operation mode: %s",
+              srv.response.message.c_str());
+    return;
+  }
+
+  waypoint_nav_mode = requested_waypoint_nav_mode;
   if (waypoint_nav_mode)
   {
     button_change_operation_mode->setText("Operation mode (WP)");

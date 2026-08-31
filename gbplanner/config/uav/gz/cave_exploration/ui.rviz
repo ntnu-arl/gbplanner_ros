@@ -12,13 +12,13 @@ Panels:
         - /PlannerViz1/ShortestPaths1/Namespaces1
         - /PlannerViz1/RobotState1/Namespaces1
         - /PlannerViz1/PlanningWorkspace1/Namespaces1
+        - /PlannerViz1/GlobalGraph1/Namespaces1
         - /PlannerViz1/PlanningGraph1/Namespaces1
         - /PlannerViz1/Sampler1/Namespaces1
         - /PlannerViz1/ShortestPathsClustering1/Namespaces1
-        - /Sensors1/VLP1/Autocompute Value Bounds1
         - /CommandTraj1/Namespaces1
-      Splitter Ratio: 0.7235293984413147
-    Tree Height: 1880
+      Splitter Ratio: 0.508474588394165
+    Tree Height: 1308
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz/Tool Properties
@@ -36,11 +36,9 @@ Panels:
   - Class: rviz/Time
     Name: Time
     SyncMode: 0
-    SyncSource: VLP
+    SyncSource: SurfacePCL
   - Class: gbplanner_ui/GbPlanner Control
     Name: GbPlanner Control
-  - Class: rmf_ui/RMF Control
-    Name: RMF Control
   - Class: gbplanner_ui/GbPlanner Control
     Name: GbPlanner Control
 Preferences:
@@ -144,6 +142,50 @@ Visualization Manager:
       Value: true
     - Class: rviz/Group
       Displays:
+        - Class: rviz/Image
+          Enabled: false
+          Image Topic: /m100/camera_blackfly/image_raw
+          Max Value: 1
+          Median window: 5
+          Min Value: 0
+          Name: Image
+          Normalize Range: true
+          Queue Size: 2
+          Transport Hint: raw
+          Unreliable: false
+          Value: false
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 13.521932601928711
+            Min Value: -0.5667829513549805
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/PointCloud2
+          Color: 255; 255; 255
+          Color Transformer: AxisColor
+          Decay Time: 0
+          Enabled: false
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Min Color: 0; 0; 0
+          Name: VLP
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 1
+          Size (m): 0.009999999776482582
+          Style: Points
+          Topic: /rmf_owl/lidar/points
+          Unreliable: false
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: false
+      Enabled: true
+      Name: Sensors
+    - Class: rviz/Group
+      Displays:
         - Class: rviz/MarkerArray
           Enabled: false
           Marker Topic: /vis/planning_failed
@@ -217,15 +259,13 @@ Visualization Manager:
           Queue Size: 100
           Value: false
         - Class: rviz/MarkerArray
-          Enabled: true
+          Enabled: false
           Marker Topic: /vis/planning_graph
           Name: PlanningGraph
           Namespaces:
-            edges: false
-            heading: false
-            vertices: true
+            {}
           Queue Size: 100
-          Value: true
+          Value: false
         - Class: rviz/MarkerArray
           Enabled: false
           Marker Topic: /vis/sampler
@@ -241,6 +281,16 @@ Visualization Manager:
           Namespaces:
             ref_path: true
             vertices: true
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /vis/local_navigation_goals
+          Name: NavigationGoalSequence
+          Namespaces:
+            local_navigation_goal_order: true
+            local_navigation_goal_order_bold: true
+            local_navigation_goal_spheres: true
           Queue Size: 100
           Value: true
         - Class: rviz/MarkerArray
@@ -319,50 +369,6 @@ Visualization Manager:
       Name: PlannerViz
     - Class: rviz/Group
       Displays:
-        - Class: rviz/Image
-          Enabled: false
-          Image Topic: /m100/camera_blackfly/image_raw
-          Max Value: 1
-          Median window: 5
-          Min Value: 0
-          Name: Image
-          Normalize Range: true
-          Queue Size: 2
-          Transport Hint: raw
-          Unreliable: false
-          Value: false
-        - Alpha: 1
-          Autocompute Intensity Bounds: true
-          Autocompute Value Bounds:
-            Max Value: 12.370576858520508
-            Min Value: -0.5333738327026367
-            Value: true
-          Axis: Z
-          Channel Name: intensity
-          Class: rviz/PointCloud2
-          Color: 255; 255; 255
-          Color Transformer: AxisColor
-          Decay Time: 0
-          Enabled: true
-          Invert Rainbow: false
-          Max Color: 255; 255; 255
-          Min Color: 0; 0; 0
-          Name: VLP
-          Position Transformer: XYZ
-          Queue Size: 10
-          Selectable: true
-          Size (Pixels): 1
-          Size (m): 0.009999999776482582
-          Style: Points
-          Topic: /rmf_owl/lidar/points
-          Unreliable: false
-          Use Fixed Frame: true
-          Use rainbow: true
-          Value: true
-      Enabled: true
-      Name: Sensors
-    - Class: rviz/Group
-      Displays:
         - Class: voxblox_rviz_plugin/VoxbloxMesh
           Enabled: false
           Name: VoxbloxMesh
@@ -409,13 +415,13 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 12.450000762939453
-            Min Value: -0.4499998092651367
+            Max Value: 13.050000190734863
+            Min Value: -1.3500001430511475
             Value: true
           Axis: Z
           Channel Name: intensity
           Class: rviz/PointCloud2
-          Color: 255; 255; 255
+          Color: 52; 101; 164
           Color Transformer: AxisColor
           Decay Time: 0
           Enabled: true
@@ -462,6 +468,34 @@ Visualization Manager:
           Use Fixed Frame: true
           Use rainbow: true
           Value: false
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 10
+            Min Value: -10
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/PointCloud2
+          Color: 255; 255; 255
+          Color Transformer: Intensity
+          Decay Time: 0
+          Enabled: true
+          Invert Rainbow: true
+          Max Color: 255; 255; 255
+          Min Color: 0; 0; 0
+          Name: FreeSpace
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.20000000298023224
+          Style: Boxes
+          Topic: /freespace_pointcloud
+          Unreliable: false
+          Use Fixed Frame: true
+          Use rainbow: false
+          Value: true
       Enabled: true
       Name: Voxblox
     - Class: rviz/MarkerArray
@@ -663,7 +697,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 56.9989128112793
+      Distance: 68.47467041015625
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -671,31 +705,29 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0.32901495695114136
-        Y: -0.09331060200929642
-        Z: 0.015357490628957748
+        X: -2.372347116470337
+        Y: 2.752427816390991
+        Z: -4.807111740112305
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.2553977966308594
+      Pitch: 1.5697963237762451
       Target Frame: rmf_owl
-      Yaw: 3.340400457382202
+      Yaw: 1.8822041749954224
     Saved: ~
 Window Geometry:
   Displays:
     collapsed: false
   GbPlanner Control:
     collapsed: false
-  Height: 2806
+  Height: 2656
   Hide Left Dock: false
   Hide Right Dock: false
   Image:
     collapsed: false
-  QMainWindow State: 000000ff00000000fd0000000400000000000003b4000009f0fc0200000010fb0000001200530065006c0065006300740069006f006e00000001e10000009b000000b000fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000b0fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000006e000007c60000018200fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb0000000a0049006d0061006700650000000190000002310000002600fffffffb0000000c00430061006d00650072006100000003affffffff60000000000000000fb0000000a0049006d006100670065000000010c0000008c0000002600fffffffb00000022004700620050006c0061006e006e0065007200200043006f006e00740072006f006c00000003ac000001560000021e00fffffffb0000000a0049006d006100670065000000038c000000a20000000000000000fb0000000a0049006d00610067006501000001ee000003140000000000000000fb000000160052004d004600200043006f006e00740072006f006c000000013600000154000000d400fffffffb00000022004700620050006c0061006e006e0065007200200043006f006e00740072006f006c01000008400000021e0000021e00ffffff000000010000015f000009f0fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073010000006e000009f00000013200fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000014000000005efc0100000002fb0000000800540069006d0065010000000000001400000006dc00fffffffb0000000800540069006d0065010000000000000450000000000000000000000ed5000009f000000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
-  RMF Control:
-    collapsed: false
+  QMainWindow State: 000000ff00000000fd0000000400000000000004510000095afc0200000010fb0000001200530065006c0065006300740069006f006e00000001e10000009b000000b000fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000b0fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000006e0000058a0000018200fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb0000000a0049006d0061006700650000000190000002310000002600fffffffb0000000c00430061006d00650072006100000003affffffff60000000000000000fb0000000a0049006d006100670065000000010c0000008c0000002600fffffffb00000022004700620050006c0061006e006e0065007200200043006f006e00740072006f006c00000003ac000001560000021e00fffffffb0000000a0049006d006100670065000000038c000000a20000000000000000fb0000000a0049006d00610067006501000001ee000003140000000000000000fb000000160052004d004600200043006f006e00740072006f006c0000000136000001540000000000000000fb00000022004700620050006c0061006e006e0065007200200043006f006e00740072006f006c0100000604000003c40000021e00ffffff00000001000002790000095afc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073010000006e0000095a0000013200fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000014000000005efc0100000002fb0000000800540069006d0065010000000000001400000006dc00fffffffb0000000800540069006d0065010000000000000450000000000000000000000d1e0000095a00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:
@@ -705,5 +737,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 5120
-  X: 0
-  Y: 0
+  X: 5120
+  Y: 54

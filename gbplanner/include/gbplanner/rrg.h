@@ -306,6 +306,12 @@ class Rrg {
     local_goal_progress_fail_iters_ = 0;
   }
 
+  void clearLocalNavGoal() {
+    local_navigation_goal_set_ = false;
+    local_goal_distance_reached_ = std::numeric_limits<double>::max();
+    local_goal_progress_fail_iters_ = 0;
+  }
+
   std::vector<geometry_msgs::Pose> getInspectionPath();
   std::vector<geometry_msgs::Pose> getInspectionPathBasic();
 
