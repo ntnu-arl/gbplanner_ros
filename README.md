@@ -11,7 +11,8 @@
 **OmniPlanner** is a unified graph-based planning framework that enables autonomous robots to explore unknown environments, inspect structures and regions of interest, and navigate to specified targets. Its modular formulation adapts the planning process to the motion and sensing characteristics of aerial, ground, and underwater platforms, allowing the same framework to generate feasible and informative paths across diverse robot morphologies and operating environments.
 
 ![swag](img/omniplanner_intro.png)
-_**OmniPlanner:** A unified framework for autonomous exploration, inspection, and target-reach planning with aerial, ground, and underwater robots._
+<sub><em>**OmniPlanner:** A unified framework for autonomous exploration, inspection, and target-reach planning with aerial, ground, and underwater robots.</em></sub>
+
 
 For an extensive documentation, installation instructions, and demos please visit the documentation page of the repository here: [**Documetation**](https://github.com/ntnu-arl/gbplanner3_wiki/wiki).
 
@@ -114,7 +115,7 @@ cd ~/omniplanner_dev_env/omniplanner_ws/src/exploration
 ```
 #### Clone the planner
 ```bash
-git clone git@github.com:ntnu-arl/gbplanner_ros.git -b gbplanner3
+git clone git@github.com:ntnu-arl/gbplanner_ros.git
 ```
 
 #### Clone and update the required packages
