@@ -3,6 +3,9 @@
 
 #include <stdio.h>
 
+#include <atomic>
+#include <memory>
+
 #include <planner_msgs/pci_global.h>
 #include <planner_msgs/pci_initialization.h>
 #include <ros/ros.h>
@@ -47,6 +50,7 @@ class gbplanner_panel : public rviz::Panel {
  protected:
   QPushButton* button_start_planner;
   ros::ServiceClient planner_client_start_planner;
+  std::shared_ptr<std::atomic_bool> start_request_in_flight_;
 
   QPushButton* button_start_planner_single;
   ros::ServiceClient planner_client_start_planner_single;
@@ -59,6 +63,7 @@ class gbplanner_panel : public rviz::Panel {
 
   QPushButton* button_init_motion;
   ros::ServiceClient planner_client_init_motion;
+  std::shared_ptr<std::atomic_bool> init_request_in_flight_;
 
   QPushButton* button_plan_to_waypoint;
   ros::ServiceClient planner_client_plan_to_waypoint;

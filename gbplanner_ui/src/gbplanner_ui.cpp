@@ -1,8 +1,13 @@
 #include "gbplanner_ui.h"
-// pci_initialization_trigger
+
+#include <thread>
+
 namespace gbplanner_ui {
 
-gbplanner_panel::gbplanner_panel(QWidget* parent) : rviz::Panel(parent) {
+gbplanner_panel::gbplanner_panel(QWidget* parent)
+    : rviz::Panel(parent),
+      start_request_in_flight_(std::make_shared<std::atomic_bool>(false)),
+      init_request_in_flight_(std::make_shared<std::atomic_bool>(false)) {
   planner_client_start_planner = nh.serviceClient<std_srvs::Trigger>(
       "/planner_control_interface/std_srvs/automatic_planning");
   planner_client_start_planner_single = nh.serviceClient<std_srvs::Trigger>(
@@ -81,11 +86,24 @@ gbplanner_panel::gbplanner_panel(QWidget* parent) : rviz::Panel(parent) {
 }
 
 void gbplanner_panel::on_start_planner_click() {
-  std_srvs::Trigger srv;
-  if (!planner_client_start_planner.call(srv)) {
-    ROS_ERROR("[GBPLANNER-UI] Service call failed: %s",
-              planner_client_start_planner.getService().c_str());
+  if (start_request_in_flight_->exchange(true)) {
+    ROS_WARN("[GBPLANNER-UI] Start planner request is already in progress");
+    return;
   }
+
+  auto client = planner_client_start_planner;
+  auto in_flight = start_request_in_flight_;
+  std::thread([client, in_flight]() mutable {
+    std_srvs::Trigger srv;
+    if (!client.call(srv)) {
+      ROS_ERROR("[GBPLANNER-UI] Service call failed: %s",
+                client.getService().c_str());
+    } else if (!srv.response.success) {
+      ROS_ERROR("[GBPLANNER-UI] Start planner request was rejected: %s",
+                srv.response.message.c_str());
+    }
+    in_flight->store(false);
+  }).detach();
 }
 
 void gbplanner_panel::on_start_planner_single_click() {
@@ -113,11 +131,25 @@ void gbplanner_panel::on_homing_click() {
 }
 
 void gbplanner_panel::on_init_motion_click() {
-  planner_msgs::pci_initialization srv;
-  if (!planner_client_init_motion.call(srv)) {
-    ROS_ERROR("[GBPLANNER-UI] Service call failed: %s",
-              planner_client_init_motion.getService().c_str());
+  if (init_request_in_flight_->exchange(true)) {
+    ROS_WARN("[GBPLANNER-UI] Initialization request is already in progress");
+    return;
   }
+
+  // A service call can wait for the server indefinitely. Never block RViz's
+  // Qt event thread while waiting for initialization to be accepted.
+  auto client = planner_client_init_motion;
+  auto in_flight = init_request_in_flight_;
+  std::thread([client, in_flight]() mutable {
+    planner_msgs::pci_initialization srv;
+    if (!client.call(srv)) {
+      ROS_ERROR("[GBPLANNER-UI] Service call failed: %s",
+                client.getService().c_str());
+    } else if (!srv.response.success) {
+      ROS_ERROR("[GBPLANNER-UI] Initialization request was rejected");
+    }
+    in_flight->store(false);
+  }).detach();
 }
 
 void gbplanner_panel::on_plan_to_waypoint_click() {

@@ -208,7 +208,9 @@ void PlannerControlInterface::setGoal(const geometry_msgs::PoseStamped& pose) {
       pose_in_world_frame.pose.position.x, pose_in_world_frame.pose.position.y,
       pose_in_world_frame.pose.position.z,
       pose_in_world_frame.header.frame_id.c_str());
-  ros::Rate rr(10);  // 10Hz
+  // Keep processing service callbacks while visualizing the goal, even if
+  // simulated time pauses during a synchronous bridge service call.
+  ros::WallRate rr(10);
   for (int i = 0; i < 5; ++i) {
     publishGoToWaypointVisualization(set_waypoint_stamped_);
     ros::spinOnce();
@@ -550,7 +552,8 @@ bool PlannerControlInterface::init() {
 }
 
 void PlannerControlInterface::run() {
-  ros::Rate rr(20);  // 10Hz
+  // Service callbacks must keep running even when simulated /clock pauses.
+  ros::WallRate rr(20);
   bool cont = true;
   while (cont) {
     PCIManager::PCIStatus pci_status = pci_manager_->getStatus();
