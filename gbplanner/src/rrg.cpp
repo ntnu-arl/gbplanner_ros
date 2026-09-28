@@ -2769,6 +2769,8 @@ Rrg::LocalPlannerStatus Rrg::evaluateLocalNavigationPath()
     {
       // int id = leaf_vertices[i]->id;
       int id = local_graph_->getVertex(i)->id;
+      // Vertex 0 is the root; selecting it cannot produce an executable path.
+      if (id == 0) continue;
       std::vector<Vertex*> path;
       local_graph_->getShortestPath(id, local_graph_rep_, true, path);
 
