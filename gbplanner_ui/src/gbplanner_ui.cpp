@@ -7,6 +7,8 @@ namespace gbplanner_ui {
 gbplanner_panel::gbplanner_panel(QWidget* parent)
     : rviz::Panel(parent),
       start_request_in_flight_(std::make_shared<std::atomic_bool>(false)),
+      agent_start_request_in_flight_(std::make_shared<std::atomic_bool>(false)),
+      agent_stop_request_in_flight_(std::make_shared<std::atomic_bool>(false)),
       init_request_in_flight_(std::make_shared<std::atomic_bool>(false)) {
   planner_client_start_planner = nh.serviceClient<std_srvs::Trigger>(
       "/planner_control_interface/std_srvs/automatic_planning");
@@ -14,6 +16,8 @@ gbplanner_panel::gbplanner_panel(QWidget* parent)
       "/planner_control_interface/std_srvs/single_planning");   
   planner_client_stop_planner = nh.serviceClient<std_srvs::Trigger>(
       "/planner_control_interface/std_srvs/stop");
+  agent_client_start = nh.serviceClient<std_srvs::Trigger>("/agentic_uas/start");
+  agent_client_stop = nh.serviceClient<std_srvs::Trigger>("/agentic_uas/stop");
   planner_client_homing = nh.serviceClient<std_srvs::Trigger>(
       "/planner_control_interface/std_srvs/homing_trigger");
   planner_client_init_motion =
@@ -31,6 +35,8 @@ gbplanner_panel::gbplanner_panel(QWidget* parent)
   button_start_planner = new QPushButton;
   button_start_planner_single = new QPushButton;
   button_stop_planner = new QPushButton;
+  button_start_agent = new QPushButton;
+  button_stop_agent = new QPushButton;
   button_homing = new QPushButton;
   button_init_motion = new QPushButton;
   button_plan_to_waypoint = new QPushButton;
@@ -40,6 +46,8 @@ gbplanner_panel::gbplanner_panel(QWidget* parent)
   button_start_planner->setText("Start Planner");
   button_start_planner_single->setText("Start Single Planner");
   button_stop_planner->setText("Stop Planner");
+  button_start_agent->setText("Start Agent");
+  button_stop_agent->setText("Stop Agent");
   button_homing->setText("Go Home");
   button_init_motion->setText("Initialization");
   button_plan_to_waypoint->setText("Plan to Waypoint");
@@ -51,6 +59,8 @@ gbplanner_panel::gbplanner_panel(QWidget* parent)
   v_box_layout->addWidget(button_stop_planner);
   v_box_layout->addWidget(button_homing);
   v_box_layout->addWidget(button_init_motion);
+  v_box_layout->addWidget(button_start_agent);
+  v_box_layout->addWidget(button_stop_agent);
   v_box_layout->addWidget(button_plan_to_waypoint);
   v_box_layout->addWidget(button_change_operation_mode);
 
@@ -75,6 +85,10 @@ gbplanner_panel::gbplanner_panel(QWidget* parent)
           SLOT(on_start_planner_single_click()));
   connect(button_stop_planner, SIGNAL(clicked()), this,
           SLOT(on_stop_planner_click()));
+  connect(button_start_agent, SIGNAL(clicked()), this,
+          SLOT(on_start_agent_click()));
+  connect(button_stop_agent, SIGNAL(clicked()), this,
+          SLOT(on_stop_agent_click()));
   connect(button_homing, SIGNAL(clicked()), this, SLOT(on_homing_click()));
   connect(button_init_motion, SIGNAL(clicked()), this,
           SLOT(on_init_motion_click()));
@@ -101,6 +115,54 @@ void gbplanner_panel::on_start_planner_click() {
     } else if (!srv.response.success) {
       ROS_ERROR("[GBPLANNER-UI] Start planner request was rejected: %s",
                 srv.response.message.c_str());
+    }
+    in_flight->store(false);
+  }).detach();
+}
+
+void gbplanner_panel::on_start_agent_click() {
+  if (agent_start_request_in_flight_->exchange(true)) {
+    ROS_WARN("[GBPLANNER-UI] Agent start request is already in progress");
+    return;
+  }
+
+  auto client = agent_client_start;
+  auto in_flight = agent_start_request_in_flight_;
+  std::thread([client, in_flight]() mutable {
+    std_srvs::Trigger srv;
+    if (!client.waitForExistence(ros::Duration(2.0))) {
+      ROS_ERROR("[GBPLANNER-UI] Agent start service is unavailable: %s",
+                client.getService().c_str());
+    } else if (!client.call(srv)) {
+      ROS_ERROR("[GBPLANNER-UI] Agent start call failed: %s",
+                client.getService().c_str());
+    } else if (!srv.response.success) {
+      ROS_WARN("[GBPLANNER-UI] Agent did not start: %s",
+               srv.response.message.c_str());
+    }
+    in_flight->store(false);
+  }).detach();
+}
+
+void gbplanner_panel::on_stop_agent_click() {
+  if (agent_stop_request_in_flight_->exchange(true)) {
+    ROS_WARN("[GBPLANNER-UI] Agent stop request is already in progress");
+    return;
+  }
+
+  auto client = agent_client_stop;
+  auto in_flight = agent_stop_request_in_flight_;
+  std::thread([client, in_flight]() mutable {
+    std_srvs::Trigger srv;
+    if (!client.waitForExistence(ros::Duration(2.0))) {
+      ROS_ERROR("[GBPLANNER-UI] Agent stop service is unavailable: %s",
+                client.getService().c_str());
+    } else if (!client.call(srv)) {
+      ROS_ERROR("[GBPLANNER-UI] Agent stop call failed: %s",
+                client.getService().c_str());
+    } else if (!srv.response.success) {
+      ROS_WARN("[GBPLANNER-UI] Agent stopped without PCI confirmation: %s",
+               srv.response.message.c_str());
     }
     in_flight->store(false);
   }).detach();

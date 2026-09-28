@@ -38,6 +38,8 @@ class gbplanner_panel : public rviz::Panel {
 
  public Q_SLOTS:
   void on_start_planner_click();
+  void on_start_agent_click();
+  void on_stop_agent_click();
   void on_start_planner_single_click();
   void on_stop_planner_click();
   void on_homing_click();
@@ -51,6 +53,13 @@ class gbplanner_panel : public rviz::Panel {
   QPushButton* button_start_planner;
   ros::ServiceClient planner_client_start_planner;
   std::shared_ptr<std::atomic_bool> start_request_in_flight_;
+
+  QPushButton* button_start_agent;
+  QPushButton* button_stop_agent;
+  ros::ServiceClient agent_client_start;
+  ros::ServiceClient agent_client_stop;
+  std::shared_ptr<std::atomic_bool> agent_start_request_in_flight_;
+  std::shared_ptr<std::atomic_bool> agent_stop_request_in_flight_;
 
   QPushButton* button_start_planner_single;
   ros::ServiceClient planner_client_start_planner_single;
