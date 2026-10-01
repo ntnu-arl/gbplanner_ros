@@ -5,6 +5,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonParseError>
+#include <QScrollArea>
 
 namespace gbplanner_ui {
 
@@ -35,6 +36,7 @@ gbplanner_panel::gbplanner_panel(QWidget* parent)
         "gbplanner/switch_operation_mode");
 
   QVBoxLayout* v_box_layout = new QVBoxLayout;
+  v_box_layout->setSizeConstraint(QLayout::SetMinAndMaxSize);
 
   button_start_planner = new QPushButton;
   button_start_planner_single = new QPushButton;
@@ -67,17 +69,17 @@ gbplanner_panel::gbplanner_panel(QWidget* parent)
   v_box_layout->addWidget(button_stop_agent);
 
   agent_state_label_ = new QLabel("Agent state: waiting for status");
+  agent_state_label_->setStyleSheet("color: #9a6700;");
   agent_task_label_ = new QLabel("Task accomplished: unknown");
+  agent_task_label_->setStyleSheet("color: #b71c1c;");
   agent_task_label_->setToolTip("Completion reported by the agent; resets when a new task is assigned.");
   agent_reason_label_ = new QLabel("Model reason: none yet");
   for (QLabel* label : {agent_state_label_, agent_task_label_, agent_reason_label_}) {
     label->setTextFormat(Qt::PlainText);
     label->setWordWrap(true);
     label->setTextInteractionFlags(Qt::TextSelectableByMouse);
-    label->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Maximum);
-    v_box_layout->addWidget(label);
+    label->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Minimum);
   }
-  agent_reason_label_->setMaximumHeight(100);
   v_box_layout->addWidget(button_plan_to_waypoint);
   v_box_layout->addWidget(button_change_operation_mode);
 
@@ -90,12 +92,27 @@ gbplanner_panel::gbplanner_panel(QWidget* parent)
 
   global_hbox_layout->addWidget(text_label_ptr);
   global_hbox_layout->addWidget(global_id_line_edit);
-  global_hbox_layout->addWidget(button_global_planner);
   global_vbox_layout->addLayout(global_hbox_layout);
+  global_vbox_layout->addWidget(button_global_planner);
   v_box_layout->addLayout(global_vbox_layout);
   v_box_layout->addStretch();
 
-  setLayout(v_box_layout);
+  // Scroll the controls, keeping live status outside the scroll area's cached
+  // viewport. The status stays visible and wrapped text cannot overlap buttons.
+  QWidget* content = new QWidget;
+  content->setLayout(v_box_layout);
+  QScrollArea* scroll_area = new QScrollArea;
+  scroll_area->setWidgetResizable(true);
+  scroll_area->setFrameShape(QFrame::NoFrame);
+  scroll_area->setWidget(content);
+  QVBoxLayout* panel_layout = new QVBoxLayout;
+  panel_layout->setContentsMargins(0, 0, 0, 0);
+  panel_layout->setSizeConstraint(QLayout::SetMinimumSize);
+  for (QLabel* label : {agent_state_label_, agent_task_label_, agent_reason_label_}) {
+    panel_layout->addWidget(label);
+  }
+  panel_layout->addWidget(scroll_area);
+  setLayout(panel_layout);
 
   connect(button_start_planner, SIGNAL(clicked()), this,
           SLOT(on_start_planner_click()));
@@ -115,15 +132,33 @@ gbplanner_panel::gbplanner_panel(QWidget* parent)
   connect(button_global_planner, SIGNAL(clicked()), this,
           SLOT(on_global_planner_click()));
   connect(button_change_operation_mode, SIGNAL(clicked()), this, SLOT(on_change_operation_mode_click()));
-  connect(this, SIGNAL(agent_status_received(QString)), this,
-          SLOT(update_agent_status(QString)), Qt::QueuedConnection);
-  agent_status_subscriber_ = nh.subscribe(
+  // RViz services its own callback queues; a panel's default ROS queue may
+  // never be spun. Service this subscription from the Qt event loop instead.
+  ros::NodeHandle status_nh(nh);
+  status_nh.setCallbackQueue(&agent_status_queue_);
+  agent_status_subscriber_ = status_nh.subscribe(
       "/agentic_uas/status", 1, &gbplanner_panel::on_agent_status, this);
+  QTimer* status_timer = new QTimer(this);
+  agent_status_age_.start();
+  connect(status_timer, &QTimer::timeout, this, [this]() {
+    agent_status_queue_.callAvailable(ros::WallDuration(0));
+    if (!agent_status_stale_ && agent_status_age_.elapsed() > 5000) {
+      agent_status_stale_ = true;
+      agent_state_label_->setText("Agent state: status unavailable");
+      agent_state_label_->setStyleSheet("color: #b71c1c;");
+      agent_task_label_->setText("Task accomplished: unknown (status stale)");
+      agent_task_label_->setStyleSheet("color: #b71c1c;");
+      ROS_WARN("[GBPLANNER-UI] No valid /agentic_uas/status update for 5 seconds; check the agent and topic bridge");
+    }
+  });
+  status_timer->start(100);
+  ROS_INFO("[GBPLANNER-UI] Listening for /agentic_uas/status (panel callback queue)");
 }
 
 void gbplanner_panel::on_agent_status(const std_msgs::String::ConstPtr& message) {
-  // ROS callbacks may run outside the Qt thread; queue all widget updates.
-  Q_EMIT agent_status_received(QString::fromStdString(message->data));
+  // Only the Qt timer services this queue, so widget updates run on the GUI
+  // thread without a second signal/slot dispatch or RViz's global ROS queue.
+  update_agent_status(QString::fromStdString(message->data));
 }
 
 void gbplanner_panel::update_agent_status(const QString& status) {
@@ -136,8 +171,32 @@ void gbplanner_panel::update_agent_status(const QString& status) {
   const QJsonObject data = document.object();
   const QString state = data.value("state").toString("unknown");
   const bool accomplished = data.value("task_accomplished").toBool(state == "complete");
-  agent_state_label_->setText("Agent state: " + state);
-  agent_task_label_->setText("Task accomplished: " + QString(accomplished ? "Yes" : "No"));
+  const QString state_text = "Agent state: " + state;
+  const QString task_text = "Task accomplished: " + QString(accomplished ? "Yes" : "No");
+  if (agent_state_label_->text() != state_text || agent_task_label_->text() != task_text) {
+    ROS_INFO("[GBPLANNER-UI] Agent status: %s; task accomplished: %s",
+             state.toStdString().c_str(), accomplished ? "Yes" : "No");
+  }
+  agent_status_age_.restart();
+  agent_status_stale_ = false;
+  agent_state_label_->setText(state_text);
+  agent_task_label_->setText(task_text);
+  agent_task_label_->setStyleSheet(accomplished ? "color: #2e7d32;" : "color: #b71c1c;");
+
+  QString state_color = "#616161";  // Idle, ready, or unknown.
+  if (state == "complete") {
+    state_color = "#2e7d32";
+  } else if (state == "unconfigured" || state == "error") {
+    state_color = "#b71c1c";
+  } else if (state == "thinking") {
+    state_color = "#6a1b9a";
+  } else if (state == "moving" || state == "starting_goal" || state == "awaiting_path") {
+    state_color = "#1565c0";
+  } else if (state == "observing" || state.startsWith("waiting") ||
+             state == "awaiting_manual_start") {
+    state_color = "#9a6700";
+  }
+  agent_state_label_->setStyleSheet("color: " + state_color + ";");
 
   const QString reason = data.value("reasoning").toString().simplified();
   const QString brief = reason.size() > 300 ? reason.left(297) + "..." : reason;

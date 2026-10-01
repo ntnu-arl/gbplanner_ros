@@ -9,6 +9,7 @@
 #include <planner_msgs/pci_global.h>
 #include <planner_msgs/pci_initialization.h>
 #include <ros/ros.h>
+#include <ros/callback_queue.h>
 #include <std_msgs/ColorRGBA.h>
 #include <std_msgs/String.h>
 #include <std_srvs/Empty.h>
@@ -17,6 +18,7 @@
 
 #ifndef Q_MOC_RUN
 #include <QHBoxLayout>
+#include <QElapsedTimer>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPainter>
@@ -48,15 +50,13 @@ class gbplanner_panel : public rviz::Panel {
   void on_plan_to_waypoint_click();
   void on_global_planner_click();
   void on_change_operation_mode_click();
- protected Q_SLOTS:
-  void update_agent_status(const QString& status);
-
- Q_SIGNALS:
-  void agent_status_received(const QString& status);
-
  protected:
+  void update_agent_status(const QString& status);
   void on_agent_status(const std_msgs::String::ConstPtr& message);
+  ros::CallbackQueue agent_status_queue_;
   ros::Subscriber agent_status_subscriber_;
+  QElapsedTimer agent_status_age_;
+  bool agent_status_stale_ = false;
   QLabel* agent_state_label_;
   QLabel* agent_task_label_;
   QLabel* agent_reason_label_;
