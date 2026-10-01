@@ -4,6 +4,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11")
 
 find_package(catkin REQUIRED COMPONENTS
   rviz
+  std_msgs
   planner_msgs)
 
 catkin_package()

@@ -2,6 +2,10 @@
 
 #include <thread>
 
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonParseError>
+
 namespace gbplanner_ui {
 
 gbplanner_panel::gbplanner_panel(QWidget* parent)
@@ -61,6 +65,19 @@ gbplanner_panel::gbplanner_panel(QWidget* parent)
   v_box_layout->addWidget(button_init_motion);
   v_box_layout->addWidget(button_start_agent);
   v_box_layout->addWidget(button_stop_agent);
+
+  agent_state_label_ = new QLabel("Agent state: waiting for status");
+  agent_task_label_ = new QLabel("Task accomplished: unknown");
+  agent_task_label_->setToolTip("Completion reported by the agent; resets when a new task is assigned.");
+  agent_reason_label_ = new QLabel("Model reason: none yet");
+  for (QLabel* label : {agent_state_label_, agent_task_label_, agent_reason_label_}) {
+    label->setTextFormat(Qt::PlainText);
+    label->setWordWrap(true);
+    label->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    label->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Maximum);
+    v_box_layout->addWidget(label);
+  }
+  agent_reason_label_->setMaximumHeight(100);
   v_box_layout->addWidget(button_plan_to_waypoint);
   v_box_layout->addWidget(button_change_operation_mode);
 
@@ -76,6 +93,7 @@ gbplanner_panel::gbplanner_panel(QWidget* parent)
   global_hbox_layout->addWidget(button_global_planner);
   global_vbox_layout->addLayout(global_hbox_layout);
   v_box_layout->addLayout(global_vbox_layout);
+  v_box_layout->addStretch();
 
   setLayout(v_box_layout);
 
@@ -97,6 +115,34 @@ gbplanner_panel::gbplanner_panel(QWidget* parent)
   connect(button_global_planner, SIGNAL(clicked()), this,
           SLOT(on_global_planner_click()));
   connect(button_change_operation_mode, SIGNAL(clicked()), this, SLOT(on_change_operation_mode_click()));
+  connect(this, SIGNAL(agent_status_received(QString)), this,
+          SLOT(update_agent_status(QString)), Qt::QueuedConnection);
+  agent_status_subscriber_ = nh.subscribe(
+      "/agentic_uas/status", 1, &gbplanner_panel::on_agent_status, this);
+}
+
+void gbplanner_panel::on_agent_status(const std_msgs::String::ConstPtr& message) {
+  // ROS callbacks may run outside the Qt thread; queue all widget updates.
+  Q_EMIT agent_status_received(QString::fromStdString(message->data));
+}
+
+void gbplanner_panel::update_agent_status(const QString& status) {
+  QJsonParseError error;
+  const QJsonDocument document = QJsonDocument::fromJson(status.toUtf8(), &error);
+  if (error.error != QJsonParseError::NoError || !document.isObject()) {
+    ROS_WARN_THROTTLE(5.0, "[GBPLANNER-UI] Invalid agent status JSON");
+    return;
+  }
+  const QJsonObject data = document.object();
+  const QString state = data.value("state").toString("unknown");
+  const bool accomplished = data.value("task_accomplished").toBool(state == "complete");
+  agent_state_label_->setText("Agent state: " + state);
+  agent_task_label_->setText("Task accomplished: " + QString(accomplished ? "Yes" : "No"));
+
+  const QString reason = data.value("reasoning").toString().simplified();
+  const QString brief = reason.size() > 300 ? reason.left(297) + "..." : reason;
+  agent_reason_label_->setText("Model reason: " + (brief.isEmpty() ? "none yet" : brief));
+  agent_reason_label_->setToolTip(reason);
 }
 
 void gbplanner_panel::on_start_planner_click() {

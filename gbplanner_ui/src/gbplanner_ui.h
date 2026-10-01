@@ -10,6 +10,7 @@
 #include <planner_msgs/pci_initialization.h>
 #include <ros/ros.h>
 #include <std_msgs/ColorRGBA.h>
+#include <std_msgs/String.h>
 #include <std_srvs/Empty.h>
 #include <std_srvs/Trigger.h>
 #include <std_srvs/SetBool.h>
@@ -48,8 +49,18 @@ class gbplanner_panel : public rviz::Panel {
   void on_global_planner_click();
   void on_change_operation_mode_click();
  protected Q_SLOTS:
+  void update_agent_status(const QString& status);
+
+ Q_SIGNALS:
+  void agent_status_received(const QString& status);
 
  protected:
+  void on_agent_status(const std_msgs::String::ConstPtr& message);
+  ros::Subscriber agent_status_subscriber_;
+  QLabel* agent_state_label_;
+  QLabel* agent_task_label_;
+  QLabel* agent_reason_label_;
+
   QPushButton* button_start_planner;
   ros::ServiceClient planner_client_start_planner;
   std::shared_ptr<std::atomic_bool> start_request_in_flight_;
