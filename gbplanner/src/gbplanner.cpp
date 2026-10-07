@@ -511,6 +511,15 @@ Rrg::LocalPlannerStatus Gbplanner::getLocalNavigationPath()
     return Rrg::LocalPlannerStatus::L_ERR;
   }
 
+  if (rrg_->getLocalNavigationAlignmentPath(out_srv_res_.path)) {
+    if (out_srv_res_.path.empty()) {
+      out_srv_res_.status = planner_msgs::planner_srv::Response::kManualCustomPath;
+      return Rrg::LocalPlannerStatus::L_EXHAUSTED;
+    }
+    out_srv_res_.status = planner_msgs::planner_srv::Response::kForward;
+    return Rrg::LocalPlannerStatus::L_OK;
+  }
+
   rrg_->reset();
 
   if (planning_params_.graph_building_mode == GraphBuildingModeType::kBasic) {
@@ -585,6 +594,7 @@ Rrg::LocalPlannerStatus Gbplanner::getLocalNavigationPath()
   }
   else {
     out_srv_res_.path = rrg_->getBestPathSimplified();
+    rrg_->appendLocalNavigationYaw(out_srv_res_.path);
     out_srv_res_.status = planner_msgs::planner_srv::Response::kForward;
     ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "[GBPLANNER] Regular Planning");
     ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "[GBPLANNER] Path status: %d", out_srv_res_.status);
@@ -1270,8 +1280,21 @@ void Gbplanner::localNavGoalCallback(const geometry_msgs::PoseStamped& goal)
   local_nav_goal[0] = goal.pose.position.x;
   local_nav_goal[1] = goal.pose.position.y;
   local_nav_goal[2] = goal.pose.position.z;
-  rrg_->setLocalNavGoal(local_nav_goal);
-  ROS_WARN("Received local navigation goal: %f, %f, %f", local_nav_goal[0], local_nav_goal[1], local_nav_goal[2]);
+  const auto& q = goal.pose.orientation;
+  const double norm_sq = q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w;
+  double yaw = std::numeric_limits<double>::quiet_NaN();
+  if (std::isfinite(norm_sq) && norm_sq > 1e-12) {
+    geometry_msgs::Quaternion normalized = q;
+    const double norm = std::sqrt(norm_sq);
+    normalized.x /= norm;
+    normalized.y /= norm;
+    normalized.z /= norm;
+    normalized.w /= norm;
+    yaw = tf::getYaw(normalized);
+  }
+  rrg_->setLocalNavGoal(local_nav_goal, yaw);
+  ROS_WARN("Received local navigation goal: %f, %f, %f; yaw: %f rad",
+           local_nav_goal[0], local_nav_goal[1], local_nav_goal[2], yaw);
 }
 
 void Gbplanner::stopMsgCallback(const std_msgs::Bool& msg)
