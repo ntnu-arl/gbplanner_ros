@@ -299,12 +299,18 @@ class Rrg {
                        const BoundedSpaceParams& global_space_params,
                        const BoundedSpaceParams& local_space_params);
 
-  void setLocalNavGoal(Eigen::Vector3d goal) {
+  void setLocalNavGoal(Eigen::Vector3d goal,
+                       double yaw = std::numeric_limits<double>::quiet_NaN()) {
     local_navigation_goal_ = goal;
+    local_navigation_goal_yaw_ = yaw;
     local_navigation_goal_set_ = true;
     local_goal_distance_reached_ = std::numeric_limits<double>::max();
     local_goal_progress_fail_iters_ = 0;
   }
+
+  // Handle terminal heading without requiring another collision-free graph.
+  bool getLocalNavigationAlignmentPath(std::vector<geometry_msgs::Pose>& path);
+  void appendLocalNavigationYaw(std::vector<geometry_msgs::Pose>& path) const;
 
   std::vector<geometry_msgs::Pose> getInspectionPath();
   std::vector<geometry_msgs::Pose> getInspectionPathBasic();
@@ -453,6 +459,7 @@ class Rrg {
   StateVec query_vec_;
 
   Eigen::Vector3d local_navigation_goal_;
+  double local_navigation_goal_yaw_ = std::numeric_limits<double>::quiet_NaN();
   bool local_navigation_goal_set_ = false;
   double local_goal_distance_reached_ = std::numeric_limits<double>::max();
   int local_goal_progress_fail_iters_ = 0;

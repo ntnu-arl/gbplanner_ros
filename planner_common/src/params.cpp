@@ -1429,6 +1429,16 @@ bool PlanningParams::loadParams(std::string ns) {
     ROSPARAM_WARN(param_name, local_navigation_reaching_radius);
   }
 
+  param_name = ns + "/local_navigation_yaw_tolerance";
+  if (!ros::param::get(param_name, local_navigation_yaw_tolerance)) {
+    local_navigation_yaw_tolerance = 0.15;
+  }
+  if (!std::isfinite(local_navigation_yaw_tolerance) ||
+      local_navigation_yaw_tolerance <= 0.0 || local_navigation_yaw_tolerance > M_PI) {
+    ROS_ERROR("local_navigation_yaw_tolerance must be in (0, pi] radians");
+    return false;
+  }
+
   param_name = ns + "/local_navigation_max_fail_iters";
   if (!ros::param::get(param_name, local_navigation_max_fail_iters)) {
     local_navigation_max_fail_iters = 5;

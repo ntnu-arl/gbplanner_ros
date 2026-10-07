@@ -2577,6 +2577,47 @@ Rrg::GraphStatus Rrg::evaluateGraph() {
   return gstatus;
 }
 
+bool Rrg::getLocalNavigationAlignmentPath(std::vector<geometry_msgs::Pose>& path)
+{
+  if (!local_navigation_goal_set_ ||
+      (current_state_.head(3) - local_navigation_goal_).norm() >
+          planning_params_.local_navigation_reaching_radius) return false;
+
+  const double error = local_navigation_goal_yaw_ - current_state_[3];
+  const double yaw_error = std::abs(std::atan2(std::sin(error), std::cos(error)));
+  path.clear();
+  if (!std::isfinite(local_navigation_goal_yaw_) ||
+      yaw_error <= planning_params_.local_navigation_yaw_tolerance) {
+    local_navigation_goal_set_ = false;
+    local_goal_distance_reached_ = std::numeric_limits<double>::max();
+    local_goal_progress_fail_iters_ = 0;
+    return true;
+  }
+
+  ROS_INFO("Aligning local navigation yaw: error %.3f rad", yaw_error);
+  geometry_msgs::Pose pose;
+  pose.position.x = current_state_[0];
+  pose.position.y = current_state_[1];
+  pose.position.z = current_state_[2];
+  pose.orientation = tf::createQuaternionMsgFromYaw(current_state_[3]);
+  path.push_back(pose);
+  pose.orientation = tf::createQuaternionMsgFromYaw(local_navigation_goal_yaw_);
+  path.push_back(pose);
+  return true;
+}
+
+void Rrg::appendLocalNavigationYaw(std::vector<geometry_msgs::Pose>& path) const
+{
+  if (path.empty() || !std::isfinite(local_navigation_goal_yaw_)) return;
+  const auto& endpoint = path.back().position;
+  const Eigen::Vector3d position(endpoint.x, endpoint.y, endpoint.z);
+  if ((position - local_navigation_goal_).norm() >
+      planning_params_.local_navigation_reaching_radius) return;
+  geometry_msgs::Pose turn = path.back();
+  turn.orientation = tf::createQuaternionMsgFromYaw(local_navigation_goal_yaw_);
+  path.push_back(turn);
+}
+
 Rrg::LocalPlannerStatus Rrg::evaluateLocalNavigationPath()
 {
   auto t1 = std::chrono::high_resolution_clock::now();
@@ -2730,7 +2771,11 @@ Rrg::LocalPlannerStatus Rrg::evaluateLocalNavigationPath()
     local_target_pub_.publish(local_target_msg);
 
     double g_2_c = (local_navigation_goal_ - current_state_.head(3)).norm();
-    if(g_2_c <= planning_params_.local_navigation_reaching_radius)
+    if(g_2_c <= planning_params_.local_navigation_reaching_radius &&
+       (!std::isfinite(local_navigation_goal_yaw_) ||
+        std::abs(std::atan2(std::sin(local_navigation_goal_yaw_ - current_state_[3]),
+                            std::cos(local_navigation_goal_yaw_ - current_state_[3]))) <=
+            planning_params_.local_navigation_yaw_tolerance))
     {
       local_goal_distance_reached_ = std::numeric_limits<double>::max();
       local_navigation_goal_set_ = false;
