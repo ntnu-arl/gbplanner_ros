@@ -23,6 +23,8 @@ gbplanner_panel::gbplanner_panel(QWidget* parent)
       "/planner_control_interface/std_srvs/stop");
   agent_client_start = nh.serviceClient<std_srvs::Trigger>("/agentic_uas/start");
   agent_client_stop = nh.serviceClient<std_srvs::Trigger>("/agentic_uas/stop");
+  // Do not latch commands: restarting the bridge must not resubmit an old task.
+  agent_task_publisher_ = nh.advertise<std_msgs::String>("/agentic_uas/task", 1);
   planner_client_homing = nh.serviceClient<std_srvs::Trigger>(
       "/planner_control_interface/std_srvs/homing_trigger");
   planner_client_init_motion =
@@ -65,6 +67,24 @@ gbplanner_panel::gbplanner_panel(QWidget* parent)
   v_box_layout->addWidget(button_stop_planner);
   v_box_layout->addWidget(button_homing);
   v_box_layout->addWidget(button_init_motion);
+  v_box_layout->addWidget(new QLabel("Agent task:"));
+  agent_task_edit_ = new QPlainTextEdit;
+  agent_task_edit_->setPlaceholderText("Enter a navigation or scene-understanding task");
+  agent_task_edit_->setMinimumHeight(60);
+  agent_task_edit_->setMaximumHeight(100);
+  v_box_layout->addWidget(agent_task_edit_);
+  QPushButton* send_task = new QPushButton("Send Task");
+  send_task->setEnabled(false);
+  send_task->setToolTip("Set or replace the task. Start Agent starts an idle agent.");
+  connect(agent_task_edit_, &QPlainTextEdit::textChanged, this, [this, send_task]() {
+    send_task->setEnabled(!agent_task_edit_->toPlainText().trimmed().isEmpty());
+  });
+  connect(send_task, SIGNAL(clicked()), this, SLOT(on_send_task_click()));
+  v_box_layout->addWidget(send_task);
+  agent_task_submission_label_ = new QLabel("Send a task, then click Start Agent.");
+  agent_task_submission_label_->setTextFormat(Qt::PlainText);
+  agent_task_submission_label_->setWordWrap(true);
+  v_box_layout->addWidget(agent_task_submission_label_);
   v_box_layout->addWidget(button_start_agent);
   v_box_layout->addWidget(button_stop_agent);
 
@@ -142,6 +162,10 @@ gbplanner_panel::gbplanner_panel(QWidget* parent)
   agent_status_age_.start();
   connect(status_timer, &QTimer::timeout, this, [this]() {
     agent_status_queue_.callAvailable(ros::WallDuration(0));
+    if (!pending_agent_task_.isEmpty() && agent_task_send_age_.elapsed() > 10000) {
+      pending_agent_task_.clear();
+      agent_task_submission_label_->setText("No task confirmation. Check agent/bridge and resend.");
+    }
     if (!agent_status_stale_ && agent_status_age_.elapsed() > 5000) {
       agent_status_stale_ = true;
       agent_state_label_->setText("Agent state: status unavailable");
@@ -169,6 +193,11 @@ void gbplanner_panel::update_agent_status(const QString& status) {
     return;
   }
   const QJsonObject data = document.object();
+  if (!pending_agent_task_.isEmpty() && data.value("task").toString() == pending_agent_task_) {
+    pending_agent_task_.clear();
+    agent_task_submission_label_->setText(data.value("active").toBool()
+        ? "Task received; agent is running." : "Task received; click Start Agent to begin.");
+  }
   const QString state = data.value("state").toString("unknown");
   const bool accomplished = data.value("task_accomplished").toBool(state == "complete");
   const QString state_text = "Agent state: " + state;
@@ -202,6 +231,24 @@ void gbplanner_panel::update_agent_status(const QString& status) {
   const QString brief = reason.size() > 300 ? reason.left(297) + "..." : reason;
   agent_reason_label_->setText("Model reason: " + (brief.isEmpty() ? "none yet" : brief));
   agent_reason_label_->setToolTip(reason);
+}
+
+void gbplanner_panel::on_send_task_click() {
+  const QString task = agent_task_edit_->toPlainText().trimmed();
+  if (task.isEmpty()) {
+    return;
+  }
+  if (agent_task_publisher_.getNumSubscribers() == 0) {
+    agent_task_submission_label_->setText("Task bridge unavailable. Check bridge and resend.");
+    return;
+  }
+  std_msgs::String message;
+  message.data = task.toStdString();
+  pending_agent_task_ = task;
+  agent_task_send_age_.start();
+  agent_task_publisher_.publish(message);
+  agent_task_submission_label_->setText("Task sent; waiting for agent confirmation...");
+  ROS_INFO("[GBPLANNER-UI] Sent task to /agentic_uas/task");
 }
 
 void gbplanner_panel::on_start_planner_click() {

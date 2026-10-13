@@ -22,6 +22,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPainter>
+#include <QPlainTextEdit>
 #include <QPushButton>
 #include <QTimer>
 #include <QVBoxLayout>
@@ -43,6 +44,7 @@ class gbplanner_panel : public rviz::Panel {
   void on_start_planner_click();
   void on_start_agent_click();
   void on_stop_agent_click();
+  void on_send_task_click();
   void on_start_planner_single_click();
   void on_stop_planner_click();
   void on_homing_click();
@@ -60,6 +62,11 @@ class gbplanner_panel : public rviz::Panel {
   QLabel* agent_state_label_;
   QLabel* agent_task_label_;
   QLabel* agent_reason_label_;
+  QPlainTextEdit* agent_task_edit_;
+  QLabel* agent_task_submission_label_;
+  ros::Publisher agent_task_publisher_;
+  QString pending_agent_task_;
+  QElapsedTimer agent_task_send_age_;
 
   QPushButton* button_start_planner;
   ros::ServiceClient planner_client_start_planner;
