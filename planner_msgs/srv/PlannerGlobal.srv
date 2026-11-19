@@ -8,6 +8,6 @@ int32 id
 bool not_check_frontier
 # Force the planner to provide the path regardless the time budget.
 bool ignore_time
--------
+---
 # Return best path.
 geometry_msgs/Pose[] path

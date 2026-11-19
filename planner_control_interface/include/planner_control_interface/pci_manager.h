@@ -1,9 +1,10 @@
 #ifndef PCI_MANAGER_H_
 #define PCI_MANAGER_H_
 
-#include <geometry_msgs/PoseWithCovarianceStamped.h>
-#include <ros/ros.h>
-#include <visualization_msgs/MarkerArray.h>
+#include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
+#include <ros1_compat/node_handle.h>
+#include <planner_msgs/ros2_service_traits.hpp>
+#include <visualization_msgs/msg/marker_array.hpp>
 
 namespace explorer {
 
@@ -20,7 +21,7 @@ class PCIManager {
         nh_private_(nh_private),
         pci_status_(PCIStatus::kReady),
         force_stop_(false) {
-    trajectory_vis_pub_ = nh_.advertise<visualization_msgs::MarkerArray>(
+    trajectory_vis_pub_ = nh_.advertise<visualization_msgs::msg::MarkerArray>(
         "pci_command_trajectory_vis", 10);
   }
 
@@ -47,23 +48,23 @@ class PCIManager {
   virtual bool initialize() = 0;
   virtual bool initMotion() = 0;
 
-  virtual bool goToWaypoint(geometry_msgs::Pose& pose) = 0;
+  virtual bool goToWaypoint(geometry_msgs::msg::Pose& pose) = 0;
 
   // Send a path to be executed by the robot, return a new path if the
   // PCI modified the original path based on robot's dynamics.
   // is_global_path: indicate this is local or global path.
   virtual bool executePath(
-      const std::vector<geometry_msgs::Pose>& path,
-      std::vector<geometry_msgs::Pose>& modified_path,
+      const std::vector<geometry_msgs::msg::Pose>& path,
+      std::vector<geometry_msgs::msg::Pose>& modified_path,
       ExecutionPathType path_type = ExecutionPathType::kLocalPath) = 0;
 
   // Set the current state of the robot based on odometry or pose.
-  virtual void setState(const geometry_msgs::Pose& pose) = 0;
+  virtual void setState(const geometry_msgs::msg::Pose& pose) = 0;
 
   // Set max linear velocity allowed.
   virtual void setVelocity(double v) = 0;
 
-  virtual void setCurrentVelocity(const geometry_msgs::Vector3 &vel) = 0;
+  virtual void setCurrentVelocity(const geometry_msgs::msg::Vector3 &vel) = 0;
 
   // Check if we should trigger planner in advance.
   virtual bool planAhead() = 0;
@@ -71,10 +72,10 @@ class PCIManager {
   // Smoothly allocate yaw angle along the whole path to prevent sudden change
   // in yaw. Fix the heading from the root node, relax them over time.
   virtual void allocateYawAlongPath(
-      std::vector<geometry_msgs::Pose>& path) const = 0;
+      std::vector<geometry_msgs::msg::Pose>& path) const = 0;
   // Fix the commanded heading to match the first segment.
   virtual void allocateYawAlongFistSegment(
-      std::vector<geometry_msgs::Pose>& path) const = 0;
+      std::vector<geometry_msgs::msg::Pose>& path) const = 0;
 
   virtual double getVelocity(ExecutionPathType path_type) = 0;
 
@@ -83,7 +84,7 @@ class PCIManager {
 
   const PCIStatus& getStatus() const { return pci_status_; }
   void setStatus(const PCIStatus& status) { pci_status_ = status; }
-  const geometry_msgs::Pose& getState() { return current_pose_; }
+  const geometry_msgs::msg::Pose& getState() { return current_pose_; }
 
   void stopPCI() { force_stop_ = true; }
 
@@ -94,7 +95,7 @@ class PCIManager {
   ros::Publisher trajectory_vis_pub_;
 
   PCIStatus pci_status_;
-  geometry_msgs::Pose current_pose_;
+  geometry_msgs::msg::Pose current_pose_;
   Eigen::Vector3d current_vel_;
 
   bool force_stop_;

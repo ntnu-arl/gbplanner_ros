@@ -3,7 +3,8 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/opencv.hpp>
 #include <pcl/common/transforms.h>
-#include <tf/transform_listener.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
 
 #define SQ(x) (x * x)
 
@@ -69,22 +70,22 @@ void Rrg::initializeAttributes() {
   inspection_bound_.setRotation(zero_vec);
 
   pci_reset_pub_ =
-      nh_.advertise<std_msgs::Bool>("planner_control_interface/msg/reset", 10);
+      nh_.advertise<std_msgs::msg::Bool>("planner_control_interface/msg/reset", 10);
 
   local_free_map_pub_ =
-      nh_.advertise<sensor_msgs::PointCloud2>("gbplanner/local_free_cloud", 10);
+      nh_.advertise<sensor_msgs::msg::PointCloud2>("gbplanner/local_free_cloud", 10);
   
   path_pub_ =
-      nh_.advertise<nav_msgs::Path>("/gbplanner_path", 10);
+      nh_.advertise<nav_msgs::msg::Path>("/gbplanner_path", 10);
 
   free_cloud_pub_ =
-      nh_.advertise<sensor_msgs::PointCloud2>("freespace_pointcloud", 10);
+      nh_.advertise<sensor_msgs::msg::PointCloud2>("freespace_pointcloud", 10);
   
   entry_point_pub_ =
-      nh_.advertise<geometry_msgs::PoseStamped>("gbplanner/entry_point_viz", 10);
+      nh_.advertise<geometry_msgs::msg::PoseStamped>("gbplanner/entry_point_viz", 10);
   
   local_target_pub_ =
-      nh_.advertise<geometry_msgs::PointStamped>("gbplanner/local_target_viz", 10);
+      nh_.advertise<geometry_msgs::msg::PointStamped>("gbplanner/local_target_viz", 10);
   //
   global_graph_update_timer_ =
       nh_.createTimer(ros::Duration(kGlobalGraphUpdateTimerPeriod),
@@ -107,11 +108,11 @@ void Rrg::initializeAttributes() {
   cam_pitch_sub_ = nh_.subscribe("cam_pitch", 1, &Rrg::camPitchCallback, this);
 
   time_log_pub_ =
-      nh_.advertise<std_msgs::Float32MultiArray>("gbp_time_log", 10);
+      nh_.advertise<std_msgs::msg::Float32MultiArray>("gbp_time_log", 10);
 
-  pci_homing_ = nh_.serviceClient<std_srvs::Trigger>(
+  pci_homing_ = nh_.serviceClient<std_srvs::srv::Trigger>(
       "planner_control_interface/std_srvs/homing_trigger");
-  landing_srv_client_ = nh_.serviceClient<std_srvs::Empty>(
+  landing_srv_client_ = nh_.serviceClient<std_srvs::srv::Empty>(
       "land_srv");  // The service name should be remapped in the launch file
 
   reset_timer_srv_ = nh_.advertiseService("gbplanner/reset_timer",
@@ -236,13 +237,13 @@ void Rrg::reset() {
   }
 }
 
-bool Rrg::resetMapCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res) {
+bool Rrg::resetMapCallback(std_srvs::srv::Trigger::Request &req, std_srvs::srv::Trigger::Response &res) {
   map_manager_->resetMap();
   res.success = true;
   return true;
 }
 
-bool Rrg::queryCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
+bool Rrg::queryCallback(std_srvs::srv::Trigger::Request &req, std_srvs::srv::Trigger::Response &res)
 {
   std::shared_ptr<GraphManager> graph;
   graph.reset(new GraphManager());
@@ -309,8 +310,8 @@ bool Rrg::queryCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Resp
     }
     tsp_order.push_back(std::make_pair(i, subv_ids));
   }
-  std::vector<geometry_msgs::Pose> out_path = connectTSPOrderWithSubvertices(tsp_order, path_rep_map, graph);
-  nav_msgs::Path out_path_vis;
+  std::vector<geometry_msgs::msg::Pose> out_path = connectTSPOrderWithSubvertices(tsp_order, path_rep_map, graph);
+  nav_msgs::msg::Path out_path_vis;
   out_path_vis.header.frame_id = world_frame_;
   std::cout << "Final path: " << std::endl;
   for(auto p : out_path)
@@ -318,7 +319,7 @@ bool Rrg::queryCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Resp
     StateVec s;
     convert(p,s);
     std::cout << s.transpose() << std::endl;
-    geometry_msgs::PoseStamped ps;
+    geometry_msgs::msg::PoseStamped ps;
     ps.pose = p;
     out_path_vis.poses.push_back(ps);
   }
@@ -331,7 +332,7 @@ bool Rrg::queryCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Resp
 
 void Rrg::clear() {}
 
-void Rrg::openingDetectionCallback(const planner_msgs::MultipleOpeningDetections &detections) {
+void Rrg::openingDetectionCallback(const planner_msgs::msg::MultipleOpeningDetections &detections) {
 	std::map<int, std::shared_ptr<Opening>> remaining_detected_openings;
   
   for(auto det : detections.multiple_detections)
@@ -366,18 +367,18 @@ void Rrg::openingDetectionCallback(const planner_msgs::MultipleOpeningDetections
 
 }
 
-void Rrg::stopMsgCallback(const std_msgs::Bool& msg) {
+void Rrg::stopMsgCallback(const std_msgs::msg::Bool& msg) {
   global_exploration_ongoing_ = false;
   auto_global_planner_trig_ = false;
   opening_traversal_mode_ = OpeningTraversalMode::kNone;
 }
 
-void Rrg::camPitchCallback(const sensor_msgs::JointState &state)
+void Rrg::camPitchCallback(const sensor_msgs::msg::JointState &state)
 {
   cam_pitch_ = state.position[0];
 }
 
-void Rrg::queryPtCallback(const geometry_msgs::PoseStamped& pose)
+void Rrg::queryPtCallback(const geometry_msgs::msg::PoseStamped& pose)
 {
   StateVec query_state;
   convert(pose.pose, query_vec_);
@@ -2637,7 +2638,7 @@ Rrg::LocalPlannerStatus Rrg::evaluateLocalNavigationPath()
 
         if(!path_along_global_graph.empty())
         {
-          std::vector<geometry_msgs::Pose> path_poses;
+          std::vector<geometry_msgs::msg::Pose> path_poses;
           convert(path_along_global_graph, path_poses);
           visualization_->visualizeRefPath(path_poses, 2);
           // Get a point on the path_along_global_graph at the distance active_homing_update_radius from current_state. The distance should be calculated along the path not straight line
@@ -2678,7 +2679,7 @@ Rrg::LocalPlannerStatus Rrg::evaluateLocalNavigationPath()
                 std::vector<StateVec> path;
                 global_graph_->getShortestPath(id, global_graph_rep, true, path);
                 double dist = (local_navigation_goal_ - global_graph_->getVertex(id)->state.head(3)).norm();
-                std::vector<geometry_msgs::Pose> path_poses;
+                std::vector<geometry_msgs::msg::Pose> path_poses;
                 convert(path, path_poses);
                 double path_len = pathLength(path_poses);
                 double total_len = path_len + dist;
@@ -2698,7 +2699,7 @@ Rrg::LocalPlannerStatus Rrg::evaluateLocalNavigationPath()
 
               if(!path_along_global_graph.empty())
               {
-                std::vector<geometry_msgs::Pose> path_poses;
+                std::vector<geometry_msgs::msg::Pose> path_poses;
                 convert(path_along_global_graph, path_poses);
                 visualization_->visualizeRefPath(path_poses, 2);
                 // Get a point on the path_along_global_graph at the distance active_homing_update_radius from current_state. The distance should be calculated along the path not straight line
@@ -2721,7 +2722,7 @@ Rrg::LocalPlannerStatus Rrg::evaluateLocalNavigationPath()
     }
 
 
-    geometry_msgs::PointStamped local_target_msg;
+    geometry_msgs::msg::PointStamped local_target_msg;
     local_target_msg.header.frame_id = world_frame_;
     local_target_msg.header.stamp = ros::Time::now();
     local_target_msg.point.x = local_target.x();
@@ -3147,7 +3148,7 @@ void Rrg::addFrontiers(int best_vertex_id) {
   visualization_->visualizeRobotStateHistory(robot_state_hist_->state_hist_);
 }
 
-bool Rrg::resetTimerCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res) {
+bool Rrg::resetTimerCallback(std_srvs::srv::Trigger::Request &req, std_srvs::srv::Trigger::Response &res) {
     resetMissionTimer();
     ROS_WARN_COND(global_verbosity >= Verbosity::PLANNER_STATUS, "Mission time reset.");
     res.success = true;
@@ -3316,7 +3317,7 @@ void Rrg::expandGlobalGraphTimerCallback(const ros::TimerEvent& event) {
 }
 
 void Rrg::semanticsCallback(
-    const planner_semantic_msgs::SemanticPoint& semantic) {
+    const planner_semantic_msgs::msg::SemanticPoint& semantic) {
   // std::cout << "Inside semantic callback" << std::endl;
   StateVec new_state;
   new_state << semantic.point.x, semantic.point.y, semantic.point.z, 0.0, 0.0;
@@ -3347,12 +3348,12 @@ void Rrg::semanticsCallback(
     return;
   }
 
-  std::vector<geometry_msgs::Pose> path_ret;
+  std::vector<geometry_msgs::msg::Pose> path_ret;
   bool path_status = false;
   const int kMaxNumTrials = 5;
   for (int i = 0; (i < nearest_vertices.size()) && (i < kMaxNumTrials); ++i) {
     nearest_vertex = nearest_vertices[i];
-    geometry_msgs::Pose start, end;
+    geometry_msgs::msg::Pose start, end;
     end.position.x = semantic.point.x;
     end.position.y = semantic.point.y;
     end.position.z = semantic.point.z;
@@ -3394,7 +3395,7 @@ void Rrg::semanticsCallback(
           vert->is_leaf_vertex = true;
         } else {
           vert->semantic_class.value =
-              planner_semantic_msgs::SemanticClass::kNone;
+              planner_semantic_msgs::msg::SemanticClass::K_NONE;
         }
         semantic_path.push_back(vert);
       }
@@ -3431,9 +3432,9 @@ void Rrg::printShortestPath(int id) {
   std::cout << std::endl;
 }
 
-bool Rrg::search(geometry_msgs::Pose source_pose,
-                 geometry_msgs::Pose target_pose, bool use_current_state,
-                 std::vector<geometry_msgs::Pose>& path_ret) {
+bool Rrg::search(geometry_msgs::msg::Pose source_pose,
+                 geometry_msgs::msg::Pose target_pose, bool use_current_state,
+                 std::vector<geometry_msgs::msg::Pose>& path_ret) {
   StateVec source;
   if (use_current_state)
     source = current_state_;
@@ -3462,7 +3463,7 @@ bool Rrg::search(geometry_msgs::Pose source_pose,
 ConnectStatus Rrg::findPathToConnect(
     StateVec& source, StateVec& target,
     std::shared_ptr<GraphManager> graph_manager, RandomSamplingParams& params,
-    int& final_target_id, std::vector<geometry_msgs::Pose>& path_ret) {
+    int& final_target_id, std::vector<geometry_msgs::msg::Pose>& path_ret) {
   ConnectStatus status;
   path_ret.clear();
   graph_manager->reset();
@@ -3494,10 +3495,10 @@ ConnectStatus Rrg::findPathToConnect(
                              (tgt_pos - src_pos).norm());
       final_target_id = target_vertex->id;
 
-      geometry_msgs::Pose source_pose;
+      geometry_msgs::msg::Pose source_pose;
       convertStateToPoseMsg(source, source_pose);
       path_ret.push_back(source_pose);
-      geometry_msgs::Pose target_pose;
+      geometry_msgs::msg::Pose target_pose;
       convertStateToPoseMsg(target, target_pose);
       path_ret.push_back(target_pose);
 
@@ -3648,7 +3649,7 @@ ConnectStatus Rrg::findPathToConnect(
   final_target_id = target_vertex->id;
   // Convert to the pose message path.
   while (!path_id_list.empty()) {
-    geometry_msgs::Pose pose;
+    geometry_msgs::msg::Pose pose;
     int id = path_id_list.back();
     path_id_list.pop_back();
     convertStateToPoseMsg(graph_manager->getVertex(id)->state, pose);
@@ -3850,7 +3851,7 @@ void Rrg::initializeParams() {
                            global_space_params_.max_val);
 }
 
-bool Rrg::setGlobalBound(planner_msgs::PlanningBound& bound,
+bool Rrg::setGlobalBound(planner_msgs::msg::PlanningBound& bound,
                          bool reset_to_default) {
   if (!reset_to_default) {
     // Make sure current position of the robot and its bounding box is inside
@@ -3910,7 +3911,7 @@ bool Rrg::setGlobalBound(planner_msgs::PlanningBound& bound,
 }
 
 bool Rrg::setGlobalBound(
-    planner_msgs::planner_dynamic_global_bound::Request bound) {
+    planner_msgs::srv::PlannerDynamicGlobalBound::Request bound) {
   if (bound.reset_to_default) {
     // reset to an original bounding box.
     global_bound_.reset();
@@ -3939,7 +3940,7 @@ bool Rrg::setGlobalBound(
     tf::Vector3 center_tf;
     tf::pointMsgToTF(bound.center, center_tf);
     tf::Vector3 center_trans_tf = darpa_to_world_transform * center_tf;
-    geometry_msgs::Point center_trans_point;
+    geometry_msgs::msg::Point center_trans_point;
     tf::pointTFToMsg(center_trans_tf, center_trans_point);
     Eigen::Vector3d center;
     convertPointToEigen(center_trans_point, center);
@@ -3947,7 +3948,7 @@ bool Rrg::setGlobalBound(
     tf::Vector3 left_tf;
     tf::pointMsgToTF(bound.left, left_tf);
     tf::Vector3 left_trans_tf = darpa_to_world_transform * left_tf;
-    geometry_msgs::Point left_trans_point;
+    geometry_msgs::msg::Point left_trans_point;
     tf::pointTFToMsg(left_trans_tf, left_trans_point);
     Eigen::Vector3d left;
     convertPointToEigen(left_trans_point, left);
@@ -3955,7 +3956,7 @@ bool Rrg::setGlobalBound(
     tf::Vector3 up_tf;
     tf::pointMsgToTF(bound.up, up_tf);
     tf::Vector3 up_trans_tf = darpa_to_world_transform * up_tf;
-    geometry_msgs::Point up_trans_point;
+    geometry_msgs::msg::Point up_trans_point;
     tf::pointTFToMsg(up_trans_tf, up_trans_point);
     Eigen::Vector3d up;
     convertPointToEigen(up_trans_point, up);
@@ -3963,7 +3964,7 @@ bool Rrg::setGlobalBound(
     tf::Vector3 front_tf;
     tf::pointMsgToTF(bound.front, front_tf);
     tf::Vector3 front_trans_tf = darpa_to_world_transform * front_tf;
-    geometry_msgs::Point front_trans_point;
+    geometry_msgs::msg::Point front_trans_point;
     tf::pointTFToMsg(front_trans_tf, front_trans_point);
     Eigen::Vector3d front;
     convertPointToEigen(front_trans_point, front);
@@ -4009,7 +4010,7 @@ bool Rrg::setGlobalBound(
   return true;
 }
 
-void Rrg::getGlobalBound(planner_msgs::PlanningBound& bound) {
+void Rrg::getGlobalBound(planner_msgs::msg::PlanningBound& bound) {
   global_bound_.get(bound.min_val, bound.max_val);
 }
 
@@ -4444,7 +4445,7 @@ void Rrg::computeVolumetricGainRayModelNoBound(StateVec& state,
   }
 }
 
-void Rrg::setRootStateForPlanning(const geometry_msgs::Pose& root_pose) {
+void Rrg::setRootStateForPlanning(const geometry_msgs::msg::Pose& root_pose) {
   // If require plan ahead --> use the end pose from the last best path.
   // Otherwise, use current pose.
   state_for_planning_[0] = root_pose.position.x;
@@ -4472,9 +4473,9 @@ bool Rrg::setHomingPos() {
   }
 }
 
-std::vector<geometry_msgs::Pose> Rrg::searchHomingPath(
+std::vector<geometry_msgs::msg::Pose> Rrg::searchHomingPath(
     std::string tgt_frame, const StateVec& current_state) {
-  std::vector<geometry_msgs::Pose> ret_path;
+  std::vector<geometry_msgs::msg::Pose> ret_path;
   ret_path.clear();
 
   if (global_graph_->getNumVertices() <= 1) {
@@ -4584,7 +4585,7 @@ std::vector<geometry_msgs::Pose> Rrg::searchHomingPath(
       quat.setW(q_eigen.w());
       tf::Vector3 origin(state[0], state[1], state[2]);
       tf::Pose poseTF(quat, origin);
-      geometry_msgs::Pose pose;
+      geometry_msgs::msg::Pose pose;
       tf::poseTFToMsg(poseTF, pose);
       ret_path.push_back(pose);
     }
@@ -4620,9 +4621,9 @@ std::vector<geometry_msgs::Pose> Rrg::searchHomingPath(
   return ret_path;
 }
 
-std::vector<geometry_msgs::Pose> Rrg::getGlobalPath(
-    geometry_msgs::PoseStamped& waypoint) {
-  std::vector<geometry_msgs::Pose> ret_path;
+std::vector<geometry_msgs::msg::Pose> Rrg::getGlobalPath(
+    geometry_msgs::msg::PoseStamped& waypoint) {
+  std::vector<geometry_msgs::msg::Pose> ret_path;
   if (global_graph_->getNumVertices() <= 1) {
     ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "[GlobalGraph] Graph is empty, nothing to search for homing.");
     return ret_path;
@@ -4756,7 +4757,7 @@ std::vector<geometry_msgs::Pose> Rrg::getGlobalPath(
       quat.setW(q_eigen.w());
       tf::Vector3 origin(state[0], state[1], state[2]);
       tf::Pose poseTF(quat, origin);
-      geometry_msgs::Pose pose;
+      geometry_msgs::msg::Pose pose;
       tf::poseTFToMsg(poseTF, pose);
       ret_path.push_back(pose);
     }
@@ -4792,7 +4793,7 @@ std::vector<geometry_msgs::Pose> Rrg::getGlobalPath(
   if (planning_params_.path_safety_enhance_enable) {
     ros::Time mod_time;
     START_TIMER(mod_time);
-    std::vector<geometry_msgs::Pose> mod_path;
+    std::vector<geometry_msgs::msg::Pose> mod_path;
     if (improveFreePath(ret_path, mod_path, true)) {
       ret_path = mod_path;
     }
@@ -4804,7 +4805,7 @@ std::vector<geometry_msgs::Pose> Rrg::getGlobalPath(
   // Interpolate path
   const double kInterpolationDistance =
       planning_params_.path_interpolation_distance;
-  std::vector<geometry_msgs::Pose> interp_path;
+  std::vector<geometry_msgs::msg::Pose> interp_path;
   if (Trajectory::interpolatePath(ret_path, kInterpolationDistance,
                                   interp_path)) {
     ret_path = interp_path;
@@ -4813,8 +4814,8 @@ std::vector<geometry_msgs::Pose> Rrg::getGlobalPath(
   return ret_path;
 }
 
-std::vector<geometry_msgs::Pose> Rrg::getHomingPath(std::string tgt_frame) {
-  std::vector<geometry_msgs::Pose> ret_path;
+std::vector<geometry_msgs::msg::Pose> Rrg::getHomingPath(std::string tgt_frame) {
+  std::vector<geometry_msgs::msg::Pose> ret_path;
   ret_path = searchHomingPath(tgt_frame, current_state_);
   if (ret_path.size() < 1) return ret_path;
 
@@ -4839,7 +4840,7 @@ std::vector<geometry_msgs::Pose> Rrg::getHomingPath(std::string tgt_frame) {
     // find segments that need to be improved
     // build the graph to reconnect those segments only, keep the remaining the
     // same
-    std::vector<geometry_msgs::Pose> mod_path;
+    std::vector<geometry_msgs::msg::Pose> mod_path;
     if (reconnectPathBlindly(ret_path, mod_path)) {
       ret_path = mod_path;
     }
@@ -4849,7 +4850,7 @@ std::vector<geometry_msgs::Pose> Rrg::getHomingPath(std::string tgt_frame) {
   if (planning_params_.path_safety_enhance_enable) {
     ros::Time mod_time;
     START_TIMER(mod_time);
-    std::vector<geometry_msgs::Pose> mod_path;
+    std::vector<geometry_msgs::msg::Pose> mod_path;
     if (improveFreePath(ret_path, mod_path, true)) {
       ret_path = mod_path;
       // Re-assign yaw angle after modification.
@@ -4884,7 +4885,7 @@ std::vector<geometry_msgs::Pose> Rrg::getHomingPath(std::string tgt_frame) {
   // Interpolate path
   const double kInterpolationDistance =
       planning_params_.path_interpolation_distance;
-  std::vector<geometry_msgs::Pose> interp_path;
+  std::vector<geometry_msgs::msg::Pose> interp_path;
   if (Trajectory::interpolatePath(ret_path, kInterpolationDistance,
                                   interp_path)) {
     ret_path = interp_path;
@@ -4895,8 +4896,8 @@ std::vector<geometry_msgs::Pose> Rrg::getHomingPath(std::string tgt_frame) {
   return ret_path;
 }
 
-bool Rrg::reconnectPathBlindly(std::vector<geometry_msgs::Pose>& ref_path,
-                               std::vector<geometry_msgs::Pose>& mod_path) {
+bool Rrg::reconnectPathBlindly(std::vector<geometry_msgs::msg::Pose>& ref_path,
+                               std::vector<geometry_msgs::msg::Pose>& mod_path) {
   // Divide and conquer/Coarse to fine
   // Interpolate the path into intermidiate nodes and reconnect using graph
   if (ref_path.size() <= 2) return false;
@@ -4977,7 +4978,7 @@ bool Rrg::reconnectPathBlindly(std::vector<geometry_msgs::Pose>& ref_path,
         StateVec st;
         st << shortest_path[i][0], shortest_path[i][1],
                     shortest_path[i][2], prev_yaw, 0;
-        geometry_msgs::Pose pose_tmp;
+        geometry_msgs::msg::Pose pose_tmp;
         convertStateToPoseMsg(st, pose_tmp);
         mod_path.push_back(pose_tmp);
       }
@@ -4990,7 +4991,7 @@ bool Rrg::reconnectPathBlindly(std::vector<geometry_msgs::Pose>& ref_path,
   return true;
 }
 
-bool Rrg::homingRequired(std::vector<geometry_msgs::Pose> &homing_path)
+bool Rrg::homingRequired(std::vector<geometry_msgs::msg::Pose> &homing_path)
 {
   homing_path.clear();
   double time_elapsed = 0.0;
@@ -5017,7 +5018,7 @@ bool Rrg::homingRequired(std::vector<geometry_msgs::Pose> &homing_path)
     if (time_to_home > time_remaining - kTimeDelta) {
       ROS_WARN_COND(global_verbosity >= Verbosity::PLANNER_STATUS, "REACHED TIME LIMIT: HOMING ENGAGED.");
       if (planning_params_.path_safety_enhance_enable) {
-        std::vector<geometry_msgs::Pose> mod_path;
+        std::vector<geometry_msgs::msg::Pose> mod_path;
         if (improveFreePath(homing_path, mod_path, true)) {
           homing_path = mod_path;
         }
@@ -5025,7 +5026,7 @@ bool Rrg::homingRequired(std::vector<geometry_msgs::Pose> &homing_path)
 
       const double kInterpolationDistance =
           planning_params_.path_interpolation_distance;
-      std::vector<geometry_msgs::Pose> interp_path;
+      std::vector<geometry_msgs::msg::Pose> interp_path;
       if (Trajectory::interpolatePath(homing_path, kInterpolationDistance,
                                       interp_path)) {
         homing_path = interp_path;
@@ -5045,9 +5046,9 @@ bool Rrg::homingRequired(std::vector<geometry_msgs::Pose> &homing_path)
   return false;
 }
 
-std::vector<geometry_msgs::Pose> Rrg::getBestPathSimplified()
+std::vector<geometry_msgs::msg::Pose> Rrg::getBestPathSimplified()
 {
-  std::vector<geometry_msgs::Pose> ret, empty_path;
+  std::vector<geometry_msgs::msg::Pose> ret, empty_path;
   int id = best_vertex_->id;
   if (id == 0) return ret;
 
@@ -5122,7 +5123,7 @@ std::vector<geometry_msgs::Pose> Rrg::getBestPathSimplified()
     quat.setW(q_eigen.w());
     tf::Vector3 origin(best_path[i][0], best_path[i][1], best_path[i][2]);
     tf::Pose poseTF(quat, origin);
-    geometry_msgs::Pose pose;
+    geometry_msgs::msg::Pose pose;
     tf::poseTFToMsg(poseTF, pose);
     ret.push_back(pose);
 
@@ -5151,7 +5152,7 @@ std::vector<geometry_msgs::Pose> Rrg::getBestPathSimplified()
   if (planning_params_.path_safety_enhance_enable) {
     ros::Time mod_time;
     START_TIMER(mod_time);
-    std::vector<geometry_msgs::Pose> mod_path;
+    std::vector<geometry_msgs::msg::Pose> mod_path;
     if (improveFreePath(ret, mod_path, false)) {
       ret = mod_path;
       addRefPathToGraph(global_graph_, mod_path);
@@ -5170,7 +5171,7 @@ std::vector<geometry_msgs::Pose> Rrg::getBestPathSimplified()
   if(planning_params_.path_interpolation_distance > 0.0) {
     const double kInterpolationDistance =
         planning_params_.path_interpolation_distance;
-    std::vector<geometry_msgs::Pose> interp_path;
+    std::vector<geometry_msgs::msg::Pose> interp_path;
     if (Trajectory::interpolatePath(ret, kInterpolationDistance, interp_path)) {
       ret = interp_path;
     }
@@ -5181,13 +5182,13 @@ std::vector<geometry_msgs::Pose> Rrg::getBestPathSimplified()
   return ret;
 }
 
-std::vector<geometry_msgs::Pose> Rrg::getBestPath(std::string tgt_frame,
+std::vector<geometry_msgs::msg::Pose> Rrg::getBestPath(std::string tgt_frame,
                                                   int& status) {
   // Check if needs to land
   if (planning_params_.auto_landing_enable &&
       robot_params_.type == RobotType::kAerialRobot) {
     double time_elapsed = 0.0;
-    std::vector<geometry_msgs::Pose> empty_path;
+    std::vector<geometry_msgs::msg::Pose> empty_path;
     if ((ros::Time::now()).toSec() != 0.0) {
       if (rostime_start_.toSec() == 0.0) rostime_start_ = ros::Time::now();
       time_elapsed = (double)((ros::Time::now() - rostime_start_).toSec());
@@ -5197,23 +5198,23 @@ std::vector<geometry_msgs::Pose> Rrg::getBestPath(std::string tgt_frame,
     if (time_budget_remaining <= 0.0) {
       ROS_WARN_COND(global_verbosity >= Verbosity::PLANNER_STATUS, "RAN OUT OF TIME BUDGET --> LANDING.");
       landing_engaged_ = true;
-      std_msgs::Bool stop_msg;
+      std_msgs::msg::Bool stop_msg;
       stop_msg.data = true;
 
-      std_srvs::Empty empty_srv;
+      ros1_compat::Srv<std_srvs::srv::Empty> empty_srv;
       if (!landing_engaged_) {
         landing_srv_client_.call(empty_srv);
         pci_reset_pub_.publish(stop_msg);
       }
       /* TODO: What happens if the disarm service fails */
-      status = planner_msgs::planner_srv::Response::kForward;
+      status = planner_msgs::srv::PlannerSrv::Response::K_FORWARD;
       return empty_path;
     }
   }
   // Decide if need to go home.
   if (planning_params_.auto_homing_enable) {
-    status = planner_msgs::planner_srv::Response::kHoming;
-    std::vector<geometry_msgs::Pose> homing_path;
+    status = planner_msgs::srv::PlannerSrv::Response::K_HOMING;
+    std::vector<geometry_msgs::msg::Pose> homing_path;
     double time_elapsed = 0.0;
     if ((ros::Time::now()).toSec() != 0.0) {
       if (rostime_start_.toSec() == 0.0) rostime_start_ = ros::Time::now();
@@ -5246,7 +5247,7 @@ std::vector<geometry_msgs::Pose> Rrg::getBestPath(std::string tgt_frame,
       if (time_to_home > time_remaining - kTimeDelta) {
         ROS_WARN_COND(global_verbosity >= Verbosity::PLANNER_STATUS, "REACHED TIME LIMIT: HOMING ENGAGED.");
         if (planning_params_.path_safety_enhance_enable) {
-          std::vector<geometry_msgs::Pose> mod_path;
+          std::vector<geometry_msgs::msg::Pose> mod_path;
           if (improveFreePath(homing_path, mod_path, true)) {
             homing_path = mod_path;
           }
@@ -5254,7 +5255,7 @@ std::vector<geometry_msgs::Pose> Rrg::getBestPath(std::string tgt_frame,
 
         const double kInterpolationDistance =
             planning_params_.path_interpolation_distance;
-        std::vector<geometry_msgs::Pose> interp_path;
+        std::vector<geometry_msgs::msg::Pose> interp_path;
         if (Trajectory::interpolatePath(homing_path, kInterpolationDistance,
                                         interp_path)) {
           homing_path = interp_path;
@@ -5270,7 +5271,7 @@ std::vector<geometry_msgs::Pose> Rrg::getBestPath(std::string tgt_frame,
     }
   }
 
-  std::vector<geometry_msgs::Pose> ret, empty_path;
+  std::vector<geometry_msgs::msg::Pose> ret, empty_path;
   int id = best_vertex_->id;
   if (id == 0) return ret;
 
@@ -5278,7 +5279,7 @@ std::vector<geometry_msgs::Pose> Rrg::getBestPath(std::string tgt_frame,
   std::vector<Eigen::Vector3d> best_path_3d;
   local_graph_->getShortestPath(id, local_graph_rep_, true, best_path_3d);
 
-  status = planner_msgs::planner_srv::Response::kForward;
+  status = planner_msgs::srv::PlannerSrv::Response::K_FORWARD;
 
   // Extract path.
   double traverse_length = 0;
@@ -5342,7 +5343,7 @@ std::vector<geometry_msgs::Pose> Rrg::getBestPath(std::string tgt_frame,
     quat.setW(q_eigen.w());
     tf::Vector3 origin(best_path[i][0], best_path[i][1], best_path[i][2]);
     tf::Pose poseTF(quat, origin);
-    geometry_msgs::Pose pose;
+    geometry_msgs::msg::Pose pose;
     tf::poseTFToMsg(poseTF, pose);
     ret.push_back(pose);
 
@@ -5371,7 +5372,7 @@ std::vector<geometry_msgs::Pose> Rrg::getBestPath(std::string tgt_frame,
   if (planning_params_.path_safety_enhance_enable) {
     ros::Time mod_time;
     START_TIMER(mod_time);
-    std::vector<geometry_msgs::Pose> mod_path;
+    std::vector<geometry_msgs::msg::Pose> mod_path;
     if (improveFreePath(ret, mod_path, false)) {
       ret = mod_path;
       addRefPathToGraph(global_graph_, mod_path);
@@ -5389,7 +5390,7 @@ std::vector<geometry_msgs::Pose> Rrg::getBestPath(std::string tgt_frame,
   if(planning_params_.path_interpolation_distance > 0.0) {
     const double kInterpolationDistance =
         planning_params_.path_interpolation_distance;
-    std::vector<geometry_msgs::Pose> interp_path;
+    std::vector<geometry_msgs::msg::Pose> interp_path;
     if (Trajectory::interpolatePath(ret, kInterpolationDistance, interp_path)) {
       ret = interp_path;
     }
@@ -5400,8 +5401,8 @@ std::vector<geometry_msgs::Pose> Rrg::getBestPath(std::string tgt_frame,
   return ret;
 }
 
-bool Rrg::improveFreePath(const std::vector<geometry_msgs::Pose>& path_orig,
-                          std::vector<geometry_msgs::Pose>& path_mod,
+bool Rrg::improveFreePath(const std::vector<geometry_msgs::msg::Pose>& path_orig,
+                          std::vector<geometry_msgs::msg::Pose>& path_mod,
                           bool relaxed) {
   // Few heuristics to improve the path.
   // a) Shorten path by reducing intermidiate nodes. (be careful with turning
@@ -5413,17 +5414,17 @@ bool Rrg::improveFreePath(const std::vector<geometry_msgs::Pose>& path_orig,
   if (path_orig.empty()) return false;
 
   // Interpolate path
-  std::vector<geometry_msgs::Pose> path_orig_interp = path_orig;
+  std::vector<geometry_msgs::msg::Pose> path_orig_interp = path_orig;
   double kInterpolationDistance =
       planning_params_.path_interpolation_distance * 2.0;
-  std::vector<geometry_msgs::Pose> interp_path_orig;
+  std::vector<geometry_msgs::msg::Pose> interp_path_orig;
   if (Trajectory::interpolatePath(path_orig, kInterpolationDistance,
                                   interp_path_orig)) {
     path_orig_interp = interp_path_orig;
   }
 
   // Feature a) Remove short intermidiate vertices.
-  std::vector<geometry_msgs::Pose> path_mod1 = path_orig_interp;
+  std::vector<geometry_msgs::msg::Pose> path_mod1 = path_orig_interp;
 
   const double kSegmentLenMin = 0.5;
   bool cont_refine = true;
@@ -5470,7 +5471,7 @@ bool Rrg::improveFreePath(const std::vector<geometry_msgs::Pose>& path_orig,
   // Implement (b) first: form a safe corridor along each path from cutting
   // hyperplanes.
   feasible_corridor_pcl_.reset(new pcl::PointCloud<pcl::PointXYZ>());
-  geometry_msgs::Pose pose0;
+  geometry_msgs::msg::Pose pose0;
   pose0.position.x = path_mod1[0].position.x;
   pose0.position.y = path_mod1[0].position.y;
   pose0.position.z = path_mod1[0].position.z;
@@ -5536,7 +5537,7 @@ bool Rrg::improveFreePath(const std::vector<geometry_msgs::Pose>& path_orig,
     }
 
     Eigen::Vector3d p1_mod;
-    geometry_msgs::Pose pose;
+    geometry_msgs::msg::Pose pose;
 
     Eigen::Vector3d p_center;
     p_center = (p0_mod + p1_target) / 2.0;
@@ -6266,7 +6267,7 @@ void Rrg::generateGridSamples(std::vector<int> &viewpoint_ids) {
 
 }
 
-std::vector<geometry_msgs::Pose> Rrg::getInspectionPathBasic() {
+std::vector<geometry_msgs::msg::Pose> Rrg::getInspectionPathBasic() {
   auto t1 = std::chrono::high_resolution_clock::now();
   auto t2 = t1;
 
@@ -6292,7 +6293,7 @@ std::vector<geometry_msgs::Pose> Rrg::getInspectionPathBasic() {
   GraphStatus status = buildGraph();
   if(status != GraphStatus::OK)
   {
-    std::vector<geometry_msgs::Pose> empty_path;
+    std::vector<geometry_msgs::msg::Pose> empty_path;
     return empty_path;
   }
   ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Num of vertices in conneting graph: %d", local_graph_->getNumVertices());
@@ -6408,7 +6409,7 @@ std::vector<geometry_msgs::Pose> Rrg::getInspectionPathBasic() {
   visualization_->visualizeGraph(local_graph_);
   // visualization_->visualizeGraphVertices(local_graph_, all_vertex_ids);
 
-  // std::vector<geometry_msgs::Pose> empty_path;
+  // std::vector<geometry_msgs::msg::Pose> empty_path;
   // return empty_path;
 
   Timer sorting_timer;
@@ -6489,7 +6490,7 @@ std::vector<geometry_msgs::Pose> Rrg::getInspectionPathBasic() {
   std::map<int, ShortestPathsReport> path_rep_map;
   viewpoint_ids.push_back(0);  // Adding current node
 
-  std::vector<geometry_msgs::Pose> ret_path;
+  std::vector<geometry_msgs::msg::Pose> ret_path;
 
   if(!selected_vertices.empty()) {
     Timer T1;
@@ -6554,11 +6555,11 @@ std::vector<geometry_msgs::Pose> Rrg::getInspectionPathBasic() {
     // std::cout << "TSP order After: "; for (int i = 0; i < tsp_order.size(); ++i) std::cout << tsp_order[i] << ", "; std::cout << std::endl;
 		
     T1.reset();
-    std::vector<geometry_msgs::Pose> current_path;
+    std::vector<geometry_msgs::msg::Pose> current_path;
 		current_path = connectTSPOrder(tsp_order, path_rep_map, local_graph_);
     ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "[Inpsection]: TSP: connectTSPOrder: %f", T1.endTimer());
 
-    // geometry_msgs::Pose current_pose;
+    // geometry_msgs::msg::Pose current_pose;
     // convert(current_state_, current_pose);
     // current_path.push_back(current_pose);
 
@@ -6587,7 +6588,7 @@ std::vector<geometry_msgs::Pose> Rrg::getInspectionPathBasic() {
   return ret_path;
 }
 
-std::vector<geometry_msgs::Pose> Rrg::getInspectionPath() {
+std::vector<geometry_msgs::msg::Pose> Rrg::getInspectionPath() {
   // bool og_annotate_map_with_camera = planning_params_.annotate_map_with_camera;
   planning_params_.annotate_map_with_camera = true;
   auto t1 = std::chrono::high_resolution_clock::now();
@@ -6613,7 +6614,7 @@ std::vector<geometry_msgs::Pose> Rrg::getInspectionPath() {
   GraphStatus status = buildGraph();
   if(status != GraphStatus::OK)
   {
-    std::vector<geometry_msgs::Pose> empty_path;
+    std::vector<geometry_msgs::msg::Pose> empty_path;
     return empty_path;
   }
   ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "Num of vertices in conneting graph: %d", local_graph_->getNumVertices());
@@ -6732,7 +6733,7 @@ std::vector<geometry_msgs::Pose> Rrg::getInspectionPath() {
   std::map<int, ShortestPathsReport> path_rep_map;
   viewpoint_ids.push_back(0);  // Adding current node
 
-  std::vector<geometry_msgs::Pose> ret_path;
+  std::vector<geometry_msgs::msg::Pose> ret_path;
 
   if(!selected_vertices.empty()) {
     Timer T1;
@@ -6794,7 +6795,7 @@ std::vector<geometry_msgs::Pose> Rrg::getInspectionPath() {
     tsp_order = reordered_tsp_sol;
 
     T1.reset();
-    std::vector<geometry_msgs::Pose> current_path;
+    std::vector<geometry_msgs::msg::Pose> current_path;
 
     std::vector<std::pair<int, std::vector<int>>> tsp_nodes_with_subv;
     for(auto n_id : tsp_order)
@@ -6929,14 +6930,14 @@ std::vector<int> Rrg::doTSP(std::vector<int> &nodes, std::vector<std::vector<int
 	return tsp_order;
 }
 
-std::vector<geometry_msgs::Pose> Rrg::connectTSPOrder(std::vector<int> &tsp_nodes, std::map<int, ShortestPathsReport> &path_rep_map, std::shared_ptr<GraphManager> graph)
+std::vector<geometry_msgs::msg::Pose> Rrg::connectTSPOrder(std::vector<int> &tsp_nodes, std::map<int, ShortestPathsReport> &path_rep_map, std::shared_ptr<GraphManager> graph)
 {
   // std::cout << std::endl;
-	std::vector<geometry_msgs::Pose> tsp_path;
+	std::vector<geometry_msgs::msg::Pose> tsp_path;
 	for (int i = 0; i < tsp_nodes.size() - 1; ++i)
 	{
 		std::vector<StateVec> current_path_segment_vec;
-		std::vector<geometry_msgs::Pose> current_path_segment;
+		std::vector<geometry_msgs::msg::Pose> current_path_segment;
 		graph->getShortestPath(tsp_nodes[i + 1], path_rep_map[tsp_nodes[i]], true, current_path_segment_vec);
 		convert(current_path_segment_vec, current_path_segment);
 		linearlyInterpolateYaw(current_path_segment);
@@ -6946,21 +6947,21 @@ std::vector<geometry_msgs::Pose> Rrg::connectTSPOrder(std::vector<int> &tsp_node
 		}
 	}
 
-	geometry_msgs::Pose last_pose;
+	geometry_msgs::msg::Pose last_pose;
 	convert(graph->getVertex(tsp_nodes.back())->state, last_pose);
 	tsp_path.push_back(last_pose);
 
 	return tsp_path;
 }
 
-std::vector<geometry_msgs::Pose> Rrg::connectTSPOrderWithSubvertices(std::vector<std::pair<int, std::vector<int>>> &tsp_nodes, std::map<int, ShortestPathsReport> &path_rep_map, std::shared_ptr<GraphManager> graph)
+std::vector<geometry_msgs::msg::Pose> Rrg::connectTSPOrderWithSubvertices(std::vector<std::pair<int, std::vector<int>>> &tsp_nodes, std::map<int, ShortestPathsReport> &path_rep_map, std::shared_ptr<GraphManager> graph)
 {
-  std::vector<geometry_msgs::Pose> tsp_path;
+  std::vector<geometry_msgs::msg::Pose> tsp_path;
 
   std::set<size_t> cumulative_hash_keys;
   int num_vps_skipped = 0;
   
-  geometry_msgs::Pose p;
+  geometry_msgs::msg::Pose p;
   convert(graph->getVertex(tsp_nodes[0].first)->state, p);
   tsp_path.push_back(p);
   cumulative_hash_keys.merge(graph->getVertex(tsp_nodes[0].first)->vol_gain.unseen_voxel_hash_keys);
@@ -6983,7 +6984,7 @@ std::vector<geometry_msgs::Pose> Rrg::connectTSPOrderWithSubvertices(std::vector
   for (int i = 1; i < tsp_nodes.size(); ++i)
   {
     std::vector<StateVec> current_path_segment_vec;
-		std::vector<geometry_msgs::Pose> current_path_segment;
+		std::vector<geometry_msgs::msg::Pose> current_path_segment;
     graph->getShortestPath(tsp_nodes[i].first, path_rep_map[tsp_nodes[i-1].first], true, current_path_segment_vec);
     current_path_segment_vec[0](3) = prev_yaw;
     current_path_segment_vec[0](4) = prev_pitch;
@@ -7001,13 +7002,13 @@ std::vector<geometry_msgs::Pose> Rrg::connectTSPOrderWithSubvertices(std::vector
       for (int j = 1; j < current_path_segment_vec.size() - 1; ++j)
       {
         current_path_segment_vec[j](4) = current_path_segment_vec[0](4);
-        geometry_msgs::Pose p;
+        geometry_msgs::msg::Pose p;
         convert(current_path_segment_vec[j], p);
         tsp_path.push_back(p);
         // std::cout << "  " << current_path_segment_vec[j].transpose() << std::endl;
         // tsp_path.push_back(current_path_segment[j]);
       }
-      geometry_msgs::Pose p;
+      geometry_msgs::msg::Pose p;
       convert(graph->getVertex(tsp_nodes[i].first)->orientation_sub_vertices[tsp_nodes[i].second[0]]->state, p);
       // std::cout << "   " << graph->getVertex(tsp_nodes[i].first)->orientation_sub_vertices[tsp_nodes[i].second[0]]->state.transpose() << std::endl;
       tsp_path.push_back(p);
@@ -7164,7 +7165,7 @@ std::vector<geometry_msgs::Pose> Rrg::connectTSPOrderWithSubvertices(std::vector
       {
         // std::cout << "  " << current_path_segment_vec[j].transpose() << std::endl;
         current_path_segment_vec[j](4) = current_path_segment_vec[0](4);
-        geometry_msgs::Pose p;
+        geometry_msgs::msg::Pose p;
         convert(current_path_segment_vec[j], p);
         tsp_path.push_back(p);
         // tsp_path.push_back(current_path_segment[j]);
@@ -7180,7 +7181,7 @@ std::vector<geometry_msgs::Pose> Rrg::connectTSPOrderWithSubvertices(std::vector
           continue;
         }
         // std::cout << "  Next subvertex: " << subv_id << std::endl;
-        geometry_msgs::Pose p;
+        geometry_msgs::msg::Pose p;
         convert(graph->getVertex(tsp_nodes[i].first)->orientation_sub_vertices[subv_id]->state, p);
         // std::cout << "  " << graph->getVertex(tsp_nodes[i].first)->orientation_sub_vertices[subv_id]->state.transpose() << std::endl;
         tsp_path.push_back(p);
@@ -7353,7 +7354,7 @@ bool Rrg::addRefPathToGraph(const std::shared_ptr<GraphManager> graph_manager,
 }
 
 bool Rrg::addRefPathToGraph(const std::shared_ptr<GraphManager> graph_manager,
-                            const std::vector<geometry_msgs::Pose>& path) {
+                            const std::vector<geometry_msgs::msg::Pose>& path) {
   if (path.size() <= 0) return false;
 
   // The whole path is collision free already and start from root vertex.
@@ -7557,7 +7558,7 @@ void Rrg::freePointCloudtimerCallback(const ros::TimerEvent& event) {
     free_frustum_params_.sensor[sensor_name].convertBodyToSensor(
         free_cloud_body, free_cloud);
 
-    sensor_msgs::PointCloud2 out_cloud;
+    sensor_msgs::msg::PointCloud2 out_cloud;
     pcl::toROSMsg(*free_cloud.get(), out_cloud);
     out_cloud.header.frame_id =
         free_frustum_params_.sensor[sensor_name].frame_id;
@@ -7602,9 +7603,9 @@ void Rrg::timerCallback(const ros::TimerEvent& event) {
       if (!local_exploration_ongoing_) {
         ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "RAN OUT OF TIME BUDGET --> LANDING.");
         landing_engaged_ = true;
-        std_msgs::Bool stop_msg;
+        std_msgs::msg::Bool stop_msg;
         stop_msg.data = true;
-        std_srvs::Empty empty_srv;
+        ros1_compat::Srv<std_srvs::srv::Empty> empty_srv;
         landing_srv_client_.call(empty_srv);
         pci_reset_pub_.publish(stop_msg);
         /* TODO: What happens if the disarm service fails */
@@ -7779,7 +7780,7 @@ bool Rrg::compareAngles(double dir_angle_a, double dir_angle_b, double thres) {
 }
 
 bool Rrg::comparePathWithDirectionApprioximately(
-    const std::vector<geometry_msgs::Pose>& path, double yaw) {
+    const std::vector<geometry_msgs::msg::Pose>& path, double yaw) {
   const double kMinSegmentLen = 2.0;
   const double kYawThres = 0.5 * M_PI;
 
@@ -7997,8 +7998,8 @@ bool Rrg::isRemainingTimeSufficient(const double& time_cost,
   return true;
 }
 
-bool Rrg::getOpeningPathCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res) {
-	std::vector<geometry_msgs::Pose> path = getOpeningTraversalPath();
+bool Rrg::getOpeningPathCallback(std_srvs::srv::Trigger::Request &req, std_srvs::srv::Trigger::Response &res) {
+	std::vector<geometry_msgs::msg::Pose> path = getOpeningTraversalPath();
 	
 	if(!path.empty()) {
 		res.success = true;
@@ -8006,16 +8007,16 @@ bool Rrg::getOpeningPathCallback(std_srvs::Trigger::Request &req, std_srvs::Trig
 	return true;
 }
 
-bool Rrg::approvePassingCallback(planner_msgs::planner_opening_approval::Request &req, planner_msgs::planner_opening_approval::Response &res) {
-  if(req.approval == planner_msgs::planner_opening_approval::Request::kApproved) {
+bool Rrg::approvePassingCallback(planner_msgs::srv::PlannerOpeningApproval::Request &req, planner_msgs::srv::PlannerOpeningApproval::Response &res) {
+  if(req.approval == planner_msgs::srv::PlannerOpeningApproval::Request::K_APPROVED) {
     opening_passing_approved_ = OpeningApproval::kApproved;
     ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Opening Passing Approved");
   }
-  else if(req.approval == planner_msgs::planner_opening_approval::Request::kRejected) {
+  else if(req.approval == planner_msgs::srv::PlannerOpeningApproval::Request::K_REJECTED) {
     opening_passing_approved_ = OpeningApproval::kRejected;
     ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Opening Passing Rejected");
   }
-  else if(req.approval == planner_msgs::planner_opening_approval::Request::kReEvaluate) {
+  else if(req.approval == planner_msgs::srv::PlannerOpeningApproval::Request::K_RE_EVALUATE) {
     opening_passing_approved_ = OpeningApproval::kReEvaluate;
     ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "Opening Passing to be Re-evaluated");
   }
@@ -8028,8 +8029,8 @@ void Rrg::setNextCompartmentCenter(Eigen::Vector3d &center)
   next_compartment_ = center;
 }
 
-std::vector<geometry_msgs::Pose> Rrg::getOpeningTraversalPath(OpeningTraversalMode mode, OpeningTraversalStatus &status) {
-	std::vector<geometry_msgs::Pose> through_path;
+std::vector<geometry_msgs::msg::Pose> Rrg::getOpeningTraversalPath(OpeningTraversalMode mode, OpeningTraversalStatus &status) {
+	std::vector<geometry_msgs::msg::Pose> through_path;
 
   ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "OPENING Mode: %d", mode);
 
@@ -8130,7 +8131,7 @@ std::vector<geometry_msgs::Pose> Rrg::getOpeningTraversalPath(OpeningTraversalMo
   ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Best opening found: %d", opening_under_execution_);
 
   int max_tries = 5;
-  std::vector<geometry_msgs::Pose> empty_path;
+  std::vector<geometry_msgs::msg::Pose> empty_path;
   
 
   if(global_verbosity >= Verbosity::DEBUG) {
@@ -8139,19 +8140,19 @@ std::vector<geometry_msgs::Pose> Rrg::getOpeningTraversalPath(OpeningTraversalMo
   }
   
   double direction = tf::getYaw(best_opening->pose.orientation);
-  geometry_msgs::Pose p0;
+  geometry_msgs::msg::Pose p0;
   p0.position.x = best_opening->pose.position.x - planning_params_.opening_traversal_path_edge_length * std::cos(direction);
   p0.position.y = best_opening->pose.position.y - planning_params_.opening_traversal_path_edge_length * std::sin(direction);
   p0.position.z = best_opening->pose.position.z;
   p0.orientation = best_opening->pose.orientation;
   
-  geometry_msgs::Pose p1;
+  geometry_msgs::msg::Pose p1;
   p1.position.x = best_opening->pose.position.x + planning_params_.opening_traversal_path_edge_length * std::cos(direction);
   p1.position.y = best_opening->pose.position.y + planning_params_.opening_traversal_path_edge_length * std::sin(direction);
   p1.position.z = best_opening->pose.position.z;
   p1.orientation = best_opening->pose.orientation;
 
-  geometry_msgs::Pose first_pose;
+  geometry_msgs::msg::Pose first_pose;
   if(getDistance(current_state_, p0) < getDistance(current_state_, p1)) {
     first_pose = p0;
   }
@@ -8161,7 +8162,7 @@ std::vector<geometry_msgs::Pose> Rrg::getOpeningTraversalPath(OpeningTraversalMo
 
   ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Path direction set");
 
-  geometry_msgs::Quaternion corrected_quat = best_opening->pose.orientation;
+  geometry_msgs::msg::Quaternion corrected_quat = best_opening->pose.orientation;
 
   if(getDistance(current_state_, p0) < getDistance(current_state_, p1)) {
       tf::Quaternion quat;
@@ -8216,7 +8217,7 @@ std::vector<geometry_msgs::Pose> Rrg::getOpeningTraversalPath(OpeningTraversalMo
 
   ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Path set 1");
 
-  geometry_msgs::Pose current_pose;
+  geometry_msgs::msg::Pose current_pose;
   tf::Quaternion quat;
   quat.setEuler(0.0, 0.0, current_state_[3]);
   tf::Vector3 origin(current_state_[0], current_state_[1], current_state_[2]);
@@ -8225,7 +8226,7 @@ std::vector<geometry_msgs::Pose> Rrg::getOpeningTraversalPath(OpeningTraversalMo
 
   ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Path set 2");
 
-  std::vector<geometry_msgs::Pose> connecting_path;
+  std::vector<geometry_msgs::msg::Pose> connecting_path;
   if(mode != OpeningTraversalMode::kPassingThrough)
   {
     bool success = search(current_pose, first_pose, false, connecting_path);
@@ -8272,8 +8273,8 @@ std::vector<geometry_msgs::Pose> Rrg::getOpeningTraversalPath(OpeningTraversalMo
 }
 
 
-std::vector<geometry_msgs::Pose> Rrg::getOpeningTraversalPath() {
-	std::vector<geometry_msgs::Pose> through_path;
+std::vector<geometry_msgs::msg::Pose> Rrg::getOpeningTraversalPath() {
+	std::vector<geometry_msgs::msg::Pose> through_path;
 
 
   ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "OPENING Mode: %d", opening_traversal_mode_);
@@ -8380,7 +8381,7 @@ std::vector<geometry_msgs::Pose> Rrg::getOpeningTraversalPath() {
 
   bool decision_made = false;
   int max_tries = 5;
-  std::vector<geometry_msgs::Pose> empty_path;
+  std::vector<geometry_msgs::msg::Pose> empty_path;
   
   if(opening_traversal_mode_ != OpeningTraversalMode::kPassingThrough) {
     decision_made = true;
@@ -8393,20 +8394,20 @@ std::vector<geometry_msgs::Pose> Rrg::getOpeningTraversalPath() {
   
   double direction = tf::getYaw(best_opening->pose.orientation);
   // std::cout << "Direction: " << direction << std::endl;
-  geometry_msgs::Pose p0;
+  geometry_msgs::msg::Pose p0;
   p0.position.x = best_opening->pose.position.x - planning_params_.opening_traversal_path_edge_length * std::cos(direction);
   p0.position.y = best_opening->pose.position.y - planning_params_.opening_traversal_path_edge_length * std::sin(direction);
   p0.position.z = best_opening->pose.position.z;
   p0.orientation = best_opening->pose.orientation;
   
-  geometry_msgs::Pose p1;
+  geometry_msgs::msg::Pose p1;
   p1.position.x = best_opening->pose.position.x + planning_params_.opening_traversal_path_edge_length * std::cos(direction);
   p1.position.y = best_opening->pose.position.y + planning_params_.opening_traversal_path_edge_length * std::sin(direction);
   p1.position.z = best_opening->pose.position.z;
   p1.orientation = best_opening->pose.orientation;
   
 
-  geometry_msgs::Pose first_pose;
+  geometry_msgs::msg::Pose first_pose;
   if(getDistance(current_state_, p0) < getDistance(current_state_, p1)) {
     first_pose = p0;
   }
@@ -8417,7 +8418,7 @@ std::vector<geometry_msgs::Pose> Rrg::getOpeningTraversalPath() {
   ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Path direction set");
   ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG, "OPENING Mode (later): %d", opening_traversal_mode_);
 
-  geometry_msgs::Quaternion corrected_quat = best_opening->pose.orientation;
+  geometry_msgs::msg::Quaternion corrected_quat = best_opening->pose.orientation;
 
   if(getDistance(current_state_, p0) < getDistance(current_state_, p1)) {
       tf::Quaternion quat;
@@ -8473,7 +8474,7 @@ std::vector<geometry_msgs::Pose> Rrg::getOpeningTraversalPath() {
 
   ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Path set 1");
 
-  geometry_msgs::Pose current_pose;
+  geometry_msgs::msg::Pose current_pose;
   tf::Quaternion quat;
   quat.setEuler(0.0, 0.0, current_state_[3]);
   tf::Vector3 origin(current_state_[0], current_state_[1], current_state_[2]);
@@ -8482,7 +8483,7 @@ std::vector<geometry_msgs::Pose> Rrg::getOpeningTraversalPath() {
 
   ROS_INFO_COND(global_verbosity >= Verbosity::DEBUG, "Path set 2");
 
-  std::vector<geometry_msgs::Pose> connecting_path;
+  std::vector<geometry_msgs::msg::Pose> connecting_path;
   bool success = search(current_pose, first_pose, false, connecting_path);
   if(success) {
     // connecting_path.back().orientation = best_opening->pose.orientation;
@@ -8522,10 +8523,10 @@ std::vector<geometry_msgs::Pose> Rrg::getOpeningTraversalPath() {
 
 }
 
-std::vector<geometry_msgs::Pose> Rrg::calculateGlobalPath()
+std::vector<geometry_msgs::msg::Pose> Rrg::calculateGlobalPath()
 {
   visualization_->visualizeGlobalGraph(global_graph_);
-  std::vector<geometry_msgs::Pose> ret_path;
+  std::vector<geometry_msgs::msg::Pose> ret_path;
   ret_path.clear();
 
   // Check if the global planner exists
@@ -8739,7 +8740,7 @@ std::vector<geometry_msgs::Pose> Rrg::calculateGlobalPath()
       quat.setW(q_eigen.w());
       tf::Vector3 origin(state[0], state[1], state[2]);
       tf::Pose poseTF(quat, origin);
-      geometry_msgs::Pose pose;
+      geometry_msgs::msg::Pose pose;
       tf::poseTFToMsg(poseTF, pose);
       ret_path.push_back(pose);
     }
@@ -8778,7 +8779,7 @@ std::vector<geometry_msgs::Pose> Rrg::calculateGlobalPath()
   if (planning_params_.path_safety_enhance_enable) {
     ros::Time mod_time;
     START_TIMER(mod_time);
-    std::vector<geometry_msgs::Pose> mod_path;
+    std::vector<geometry_msgs::msg::Pose> mod_path;
     if (improveFreePath(ret_path, mod_path, true)) {
       ret_path = mod_path;
     }
@@ -8796,7 +8797,7 @@ std::vector<geometry_msgs::Pose> Rrg::calculateGlobalPath()
   // Path interpolation:
   const double kInterpolationDistance =
       planning_params_.path_interpolation_distance;
-  std::vector<geometry_msgs::Pose> interp_path;
+  std::vector<geometry_msgs::msg::Pose> interp_path;
   if (Trajectory::interpolatePath(ret_path, kInterpolationDistance,
                                   interp_path)) {
     ret_path = interp_path;
@@ -8807,11 +8808,11 @@ std::vector<geometry_msgs::Pose> Rrg::calculateGlobalPath()
   return ret_path;
 }
 
-std::vector<geometry_msgs::Pose> Rrg::reRunGlobalPlanner(int &status) {
+std::vector<geometry_msgs::msg::Pose> Rrg::reRunGlobalPlanner(int &status) {
   return runGlobalPlanner(current_global_vertex_id_, true, true, status);
 }
 
-std::vector<geometry_msgs::Pose> Rrg::runGlobalPlanner(int vertex_id,
+std::vector<geometry_msgs::msg::Pose> Rrg::runGlobalPlanner(int vertex_id,
                                                        bool not_check_frontier,
                                                        bool ignore_time,
                                                        int &status) {
@@ -8831,7 +8832,7 @@ std::vector<geometry_msgs::Pose> Rrg::runGlobalPlanner(int vertex_id,
   }
   
   
-  status = planner_msgs::planner_srv::Response::kRepositioning;
+  status = planner_msgs::srv::PlannerSrv::Response::K_REPOSITIONING;
 
   if(!vertex_id && planning_params_.enable_opening_traversal && planning_params_.exploration_only)  // Don't do opening traversal if asked to go to a specific vertex
   {
@@ -8840,7 +8841,7 @@ std::vector<geometry_msgs::Pose> Rrg::runGlobalPlanner(int vertex_id,
   }
 
   START_TIMER(ttime);
-  std::vector<geometry_msgs::Pose> ret_path;
+  std::vector<geometry_msgs::msg::Pose> ret_path;
   ret_path.clear();
 
   ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "1");
@@ -8902,7 +8903,7 @@ std::vector<geometry_msgs::Pose> Rrg::runGlobalPlanner(int vertex_id,
     } else {
       num_low_gain_iters_ = 0;
     }
-    status = planner_msgs::planner_srv::Response::kHoming;
+    status = planner_msgs::srv::PlannerSrv::Response::K_HOMING;
     return ret_path;
   }
 
@@ -9144,7 +9145,7 @@ std::vector<geometry_msgs::Pose> Rrg::runGlobalPlanner(int vertex_id,
       quat.setW(q_eigen.w());
       tf::Vector3 origin(state[0], state[1], state[2]);
       tf::Pose poseTF(quat, origin);
-      geometry_msgs::Pose pose;
+      geometry_msgs::msg::Pose pose;
       tf::poseTFToMsg(poseTF, pose);
       ret_path.push_back(pose);
     }
@@ -9183,7 +9184,7 @@ std::vector<geometry_msgs::Pose> Rrg::runGlobalPlanner(int vertex_id,
   if (planning_params_.path_safety_enhance_enable) {
     ros::Time mod_time;
     START_TIMER(mod_time);
-    std::vector<geometry_msgs::Pose> mod_path;
+    std::vector<geometry_msgs::msg::Pose> mod_path;
     if (improveFreePath(ret_path, mod_path, true)) {
       ret_path = mod_path;
     }
@@ -9201,7 +9202,7 @@ std::vector<geometry_msgs::Pose> Rrg::runGlobalPlanner(int vertex_id,
   // Path interpolation:
   const double kInterpolationDistance =
       planning_params_.path_interpolation_distance;
-  std::vector<geometry_msgs::Pose> interp_path;
+  std::vector<geometry_msgs::msg::Pose> interp_path;
   if (Trajectory::interpolatePath(ret_path, kInterpolationDistance,
                                   interp_path)) {
     ret_path = interp_path;
@@ -9212,7 +9213,7 @@ std::vector<geometry_msgs::Pose> Rrg::runGlobalPlanner(int vertex_id,
   return ret_path;
 }
 
-bool Rrg::removeGeofenceCallback(planner_msgs::planner_set_planning_mode::Request &req, planner_msgs::planner_set_planning_mode::Response &res)
+bool Rrg::removeGeofenceCallback(planner_msgs::srv::PlannerSetPlanningMode::Request &req, planner_msgs::srv::PlannerSetPlanningMode::Response &res)
 {
   geofence_manager_->removeGeofenceAreaWithID(req.planning_mode);
 
@@ -9220,13 +9221,13 @@ bool Rrg::removeGeofenceCallback(planner_msgs::planner_set_planning_mode::Reques
   return true;
 }
 
-void Rrg::eleMapCallback(const grid_map_msgs::GridMap& msg)
+void Rrg::eleMapCallback(const grid_map_msgs::msg::GridMap& msg)
 {
   grid_map::GridMapRosConverter::fromMessage(msg, ele_map_);
 }
 
 
-void Rrg::addGeofenceAreas(const geometry_msgs::PolygonStamped& polygon_msgs) {
+void Rrg::addGeofenceAreas(const geometry_msgs::msg::PolygonStamped& polygon_msgs) {
   if ((planning_params_.geofence_checking_enable)) {
     // Check if we need to convert to global coordinate to be compatible
     // with the whole planner.
@@ -9240,7 +9241,7 @@ void Rrg::addGeofenceAreas(const geometry_msgs::PolygonStamped& polygon_msgs) {
             planning_params_.global_frame_id)) {
       geofence_manager_->addGeofenceArea(polygon_msgs.polygon);
     } else {
-      geometry_msgs::Polygon polygon;
+      geometry_msgs::msg::Polygon polygon;
       // Look up the tf.
       tf::StampedTransform tf_to_global;
       tf::TransformListener listener;
@@ -9257,7 +9258,7 @@ void Rrg::addGeofenceAreas(const geometry_msgs::PolygonStamped& polygon_msgs) {
                                   polygon_msgs.polygon.points[i].y,
                                   polygon_msgs.polygon.points[i].z);
           poly_in_global = tf_to_global * poly_in_global;
-          geometry_msgs::Point32 p32;
+          geometry_msgs::msg::Point32 p32;
           p32.x = poly_in_global.x();
           p32.y = poly_in_global.y();
           p32.z = poly_in_global.z();
@@ -9335,7 +9336,7 @@ void Rrg::setGlobalFrame(std::string frame_id) {
   if (!frame_id.empty()) visualization_->setGlobalFrame(frame_id);
 }
 
-bool Rrg::isPathCollisionFree(const std::vector<geometry_msgs::Pose>& path,
+bool Rrg::isPathCollisionFree(const std::vector<geometry_msgs::msg::Pose>& path,
                               const Eigen::Vector3d& robot_size) {
   if (path.empty()) return true;  // nothing to check
 
@@ -9367,17 +9368,17 @@ bool Rrg::searchPathThroughCenterPoint(const StateVec& current_state,
                                        const Eigen::Vector3d& center,
                                        const double& heading,
                                        Eigen::Vector3d& robot_size,
-                                       std::vector<geometry_msgs::Pose>& path) {
+                                       std::vector<geometry_msgs::msg::Pose>& path) {
   path.clear();
 
   // Start searching a line to pass through
   double L_line = darpa_gate_params_.line_search_length;
   double rotation_step = darpa_gate_params_.line_search_step;
   int n_lines = (int)(darpa_gate_params_.line_search_range / rotation_step);
-  geometry_msgs::Pose current_pose;
+  geometry_msgs::msg::Pose current_pose;
   convertStateToPoseMsg(current_state, current_pose);
-  geometry_msgs::Pose start_pose;
-  geometry_msgs::Pose end_pose;
+  geometry_msgs::msg::Pose start_pose;
+  geometry_msgs::msg::Pose end_pose;
 
   Eigen::Vector3d start_point;
   Eigen::Vector3d end_point;
@@ -9433,8 +9434,8 @@ bool Rrg::searchPathThroughCenterPoint(const StateVec& current_state,
   return false;
 }
 
-std::vector<geometry_msgs::Pose> Rrg::searchPathToPassGate() {
-  std::vector<geometry_msgs::Pose> ret_path;
+std::vector<geometry_msgs::msg::Pose> Rrg::searchPathToPassGate() {
+  std::vector<geometry_msgs::msg::Pose> ret_path;
 
   // Check if this is allowed.
   if (!darpa_gate_params_.enable) {

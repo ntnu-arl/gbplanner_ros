@@ -133,7 +133,7 @@ BT::NodeStatus GlobalExploration::onStart()
     ++failed_exp_count_;
     if(failed_exp_count_ > max_global_planner_tries_)
     {
-      gbplanner_->out_srv_res_.status = planner_msgs::planner_srv::Response::kManualCustomPath;
+      gbplanner_->out_srv_res_.status = planner_msgs::srv::PlannerSrv::Response::K_MANUAL_CUSTOM_PATH;
       return BT::NodeStatus::SUCCESS;
     }
     else
@@ -176,7 +176,7 @@ BT::NodeStatus GlobalExpExhaustedCheck::tick()
     ROS_WARN("Global Exp Exhausted");
     return BT::NodeStatus::SUCCESS;
   }
-  gbplanner_->out_srv_res_.status = planner_msgs::planner_srv::Response::kAutoCustomPath;
+  gbplanner_->out_srv_res_.status = planner_msgs::srv::PlannerSrv::Response::K_AUTO_CUSTOM_PATH;
   return BT::NodeStatus::FAILURE;
 }
 /*******************************************************/
@@ -196,7 +196,7 @@ BT::NodeStatus CalculateGlobalPath::tick()
     ++failed_global_planner_count_;
     if(failed_global_planner_count_ > max_global_planner_tries_)
     {
-      gbplanner_->out_srv_res_.status = planner_msgs::planner_srv::Response::kManualCustomPath;
+      gbplanner_->out_srv_res_.status = planner_msgs::srv::PlannerSrv::Response::K_MANUAL_CUSTOM_PATH;
       return BT::NodeStatus::SUCCESS;
     }
     else
@@ -246,7 +246,7 @@ BT::NodeStatus Inspection::onStart()
     ++failed_inspection_count_;
     if(failed_inspection_count_ > max_inspection_tries_)
     {
-      gbplanner_->out_srv_res_.status = planner_msgs::planner_srv::Response::kManualCustomPath;
+      gbplanner_->out_srv_res_.status = planner_msgs::srv::PlannerSrv::Response::K_MANUAL_CUSTOM_PATH;
       return BT::NodeStatus::SUCCESS;
     }
     else
@@ -287,7 +287,7 @@ BT::NodeStatus CompartmentTransition::onStart()
     ++failed_compartment_transition_count_;
     if(failed_compartment_transition_count_ > max_compartment_transition_tries_)
     {
-      gbplanner_->out_srv_res_.status = planner_msgs::planner_srv::Response::kManualCustomPath;
+      gbplanner_->out_srv_res_.status = planner_msgs::srv::PlannerSrv::Response::K_MANUAL_CUSTOM_PATH;
       return BT::NodeStatus::SUCCESS;
     }
     else
@@ -328,7 +328,7 @@ BT::NodeStatus Homing::tick()
     ++failed_homing_count_;
     if(failed_homing_count_ > max_homing_tries_)
     {
-      gbplanner_->out_srv_res_.status = planner_msgs::planner_srv::Response::kManualCustomPath;
+      gbplanner_->out_srv_res_.status = planner_msgs::srv::PlannerSrv::Response::K_MANUAL_CUSTOM_PATH;
       return BT::NodeStatus::SUCCESS;
     }
     else
@@ -383,7 +383,7 @@ BT::NodeStatus CalculateHomingPath::tick()
     ++failed_homing_count_;
     if(failed_homing_count_ > max_homing_tries_)
     {
-      gbplanner_->out_srv_res_.status = planner_msgs::planner_srv::Response::kManualCustomPath;
+      gbplanner_->out_srv_res_.status = planner_msgs::srv::PlannerSrv::Response::K_MANUAL_CUSTOM_PATH;
       return BT::NodeStatus::SUCCESS;
     }
     else
@@ -586,7 +586,7 @@ BT::NodeStatus AllCompartmentsInspectedCheck::tick()
 /***************** Idle **************/
 BT::NodeStatus Idle::tick()
 {
-  gbplanner_->out_srv_res_.status = planner_msgs::planner_srv::Response::kManualCustomPath;  
+  gbplanner_->out_srv_res_.status = planner_msgs::srv::PlannerSrv::Response::K_MANUAL_CUSTOM_PATH;  
   gbplanner_->out_srv_res_.path.clear();
   return BT::NodeStatus::FAILURE;
 }

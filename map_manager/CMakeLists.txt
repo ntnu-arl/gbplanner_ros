@@ -1,29 +1,35 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.8)
 project(map_manager)
-
-add_definitions(-std=c++17 -Wall -Wno-sign-compare -Wno-unused-variable -Wno-unused-but-set-variable -Wno-format -Werror=return-type)
-
-# Ray casting: 
-#   0 - Original
-#   1 - Iterative ray casting
-add_definitions(-DRAY_CAST_METHOD=0)
-
-# Verify the values of the definitions
-get_directory_property( DirDefs COMPILE_DEFINITIONS ) 
-message( "COMPILE DEFINITIONS: ${DirDefs}" )
-
-find_package(catkin_simple REQUIRED)
-find_package(Boost REQUIRED)
-find_package(Eigen3 REQUIRED)
+# ROS 2 (ament) build of the GBPlanner port; sources are the ROS 1 ones with the ROS API ported.
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+add_compile_options(-Wall -Wno-sign-compare -Wno-unused-variable -Wno-unused-but-set-variable -Wno-format -Wno-unused-parameter -Wno-reorder -Werror=return-type)
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(ros1_compat REQUIRED)
 find_package(planner_common REQUIRED)
+find_package(planner_msgs REQUIRED)
+find_package(voxblox REQUIRED)
+find_package(voxblox_ros REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(pcl_conversions REQUIRED)
+find_package(Eigen3 REQUIRED)
+find_package(PCL REQUIRED)
+find_package(Boost REQUIRED)
+set(EXTRA_LIBS glog gflags)
+add_compile_definitions(RAY_CAST_METHOD=0)
+add_library(${PROJECT_NAME} SHARED src/map_manager.cpp src/voxblox/voxblox_common_impl.cpp src/voxblox/voxblox_alt_impl.cpp)
+target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:include> ${PCL_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME} ${PCL_LIBRARIES} ${EXTRA_LIBS})
+ament_target_dependencies(${PROJECT_NAME} rclcpp ros1_compat planner_common planner_msgs voxblox voxblox_ros sensor_msgs geometry_msgs visualization_msgs tf2 tf2_ros pcl_conversions)
+install(TARGETS ${PROJECT_NAME} EXPORT export_${PROJECT_NAME} LIBRARY DESTINATION lib ARCHIVE DESTINATION lib RUNTIME DESTINATION bin)
+ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
 
-catkin_simple(ALL_DEPS_REQUIRED)
-
-cs_add_library(${PROJECT_NAME}
-  src/map_manager.cpp
-  src/voxblox/voxblox_common_impl.cpp
-  src/voxblox/voxblox_alt_impl.cpp
-)
-
-cs_install()
-cs_export(LIBRARIES)
+install(DIRECTORY include/ DESTINATION include OPTIONAL)
+ament_export_include_directories(include)
+ament_export_dependencies(rclcpp ros1_compat planner_common planner_msgs voxblox voxblox_ros sensor_msgs geometry_msgs visualization_msgs tf2 tf2_ros pcl_conversions)
+ament_package()

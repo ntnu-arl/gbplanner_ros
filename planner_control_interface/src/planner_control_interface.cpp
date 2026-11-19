@@ -1,10 +1,13 @@
 
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <boost/bind/bind.hpp>
+using namespace boost::placeholders;
 #include "planner_control_interface/planner_control_interface.h"
 
 #include <chrono>
 #include <thread>
 
-#include <std_msgs/Bool.h>
+#include <std_msgs/msg/bool.hpp>
 
 namespace explorer {
 
@@ -12,9 +15,11 @@ PlannerControlInterface::PlannerControlInterface(
     ros::NodeHandle& nh, ros::NodeHandle& nh_private,
     std::shared_ptr<PCIManager> pci_manager)
     : nh_(nh), nh_private_(nh_private) {
-  reference_pub_ = nh_.advertise<visualization_msgs::Marker>("ref_pose", 5);
-  planner_status_pub_ = nh_.advertise<std_msgs::Bool>("gbplanner_status", 5);
-  stop_request_pub_ = nh_.advertise<std_msgs::Bool>(
+  tf_buffer_ = std::make_shared<tf2_ros::Buffer>(ros1_compat::node()->get_clock());
+  tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
+  reference_pub_ = nh_.advertise<visualization_msgs::msg::Marker>("ref_pose", 5);
+  planner_status_pub_ = nh_.advertise<std_msgs::msg::Bool>("gbplanner_status", 5);
+  stop_request_pub_ = nh_.advertise<std_msgs::msg::Bool>(
       "planner_control_interface/stop_request", 5);
 
   odometry_sub_ = nh_.subscribe(
@@ -45,7 +50,7 @@ PlannerControlInterface::PlannerControlInterface(
       "pci_initialization_trigger",
       &PlannerControlInterface::initializationCallback, this);
   
-  while (!(planner_client_ = nh.serviceClient<planner_msgs::planner_srv>(
+  while (!(planner_client_ = nh.serviceClient<planner_msgs::srv::PlannerSrv>(
                "planner_server", true))) {  // true for persistent
     ROS_WARN_COND(global_verbosity >= Verbosity::WARN,
                   "PCI: service planner_server is not available: waiting...");
@@ -54,7 +59,7 @@ PlannerControlInterface::PlannerControlInterface(
   ROS_INFO_COND(global_verbosity >= Verbosity::INFO,
                 "PCI: connected to service planner_server.");
   while (
-      !(planner_homing_client_ = nh.serviceClient<planner_msgs::planner_homing>(
+      !(planner_homing_client_ = nh.serviceClient<planner_msgs::srv::PlannerHoming>(
             "planner_homing_server", true))) {  // true for persistent
     ROS_WARN_COND(
         global_verbosity >= Verbosity::WARN,
@@ -71,22 +76,22 @@ PlannerControlInterface::PlannerControlInterface(
       "planner_control_interface/std_srvs/set_homing_position_here",
       &PlannerControlInterface::stdSrvSetHomingPositionHereCallback, this);
   planner_set_homing_pos_client_ =
-      nh.serviceClient<planner_msgs::planner_set_homing_pos>(
+      nh.serviceClient<planner_msgs::srv::PlannerSetHomingPos>(
           "gbplanner/set_homing_pos");
 
   planner_set_trigger_mode_client_ =
-      nh.serviceClient<planner_msgs::planner_set_planning_mode>(
+      nh.serviceClient<planner_msgs::srv::PlannerSetPlanningMode>(
           "/gbplanner/set_planning_trigger_mode");
 
   pci_search_server_ = nh_.advertiseService(
       "pci_search", &PlannerControlInterface::searchCallback, this);
   planner_search_client_ =
-      nh.serviceClient<planner_msgs::planner_search>("gbplanner/search");
+      nh.serviceClient<planner_msgs::srv::PlannerSearch>("gbplanner/search");
 
   pci_global_server_ = nh_.advertiseService(
       "pci_global", &PlannerControlInterface::globalPlannerCallback, this);
   planner_global_client_ =
-      nh.serviceClient<planner_msgs::planner_global>("gbplanner/global");
+      nh.serviceClient<planner_msgs::srv::PlannerGlobal>("gbplanner/global");
   pci_stop_server_ = nh_.advertiseService(
       "pci_stop", &PlannerControlInterface::stopPlannerCallback, this);
   pci_std_stop_server_ = nh_.advertiseService(
@@ -94,14 +99,14 @@ PlannerControlInterface::PlannerControlInterface(
       &PlannerControlInterface::stdSrvStopPlannerCallback, this);
 
   planner_geofence_client_ =
-      nh.serviceClient<planner_msgs::planner_geofence>("gbplanner/geofence");
+      nh.serviceClient<planner_msgs::srv::PlannerGeofence>("gbplanner/geofence");
   pci_geofence_server_ = nh_.advertiseService(
       "pci_geofence", &PlannerControlInterface::addGeofenceCallback, this);
   pci_to_waypoint_server_ = nh_.advertiseService(
       "pci_to_waypoint", &PlannerControlInterface::goToWaypointCallback, this);
 
   planner_passing_gate_client_ =
-      nh_.serviceClient<planner_msgs::planner_request_path>(
+      nh_.serviceClient<planner_msgs::srv::PlannerRequestPath>(
           "gbplanner/passing_gate");
   pci_passing_gate_server_ =
       nh_.advertiseService("planner_control_interface/std_srvs/pass_gate",
@@ -110,7 +115,7 @@ PlannerControlInterface::PlannerControlInterface(
       nh_.advertiseService("planner_control_interface/std_srvs/inspection_srv_trigger",
       &PlannerControlInterface::inspectionSrvCallback, this);
   planner_inspection_srv_client_ =
-      nh.serviceClient<planner_msgs::planner_srv>("/gbplanner/get_inspection_path");
+      nh.serviceClient<planner_msgs::srv::PlannerSrv>("/gbplanner/get_inspection_path");
   rotate_180_deg_server_ = 
       nh_.advertiseService("pci_rotate_180_trigger",
       &PlannerControlInterface::rotate180DegCallback, this);
@@ -121,15 +126,15 @@ PlannerControlInterface::PlannerControlInterface(
       this);
 
   planner_set_exp_mode_client_ =
-      nh_.serviceClient<planner_msgs::planner_set_exp_mode>(
+      nh_.serviceClient<planner_msgs::srv::PlannerSetExpMode>(
           "gbplanner/set_exp_mode");
 
   imarker_server_.reset(
-      new interactive_markers::InteractiveMarkerServer("waypoints", "", false));
+      new interactive_markers::InteractiveMarkerServer("waypoints", ros1_compat::node()));
 
   semantic_server.reset(
-      new interactive_markers::InteractiveMarkerServer("semantics", "", false));
-  semantic_pub = nh_.advertise<planner_semantic_msgs::SemanticPoint>(
+      new interactive_markers::InteractiveMarkerServer("semantics", ros1_compat::node()));
+  semantic_pub = nh_.advertise<planner_semantic_msgs::msg::SemanticPoint>(
       "semantic_location", 10);
 
   nav_goal_sub_ =
@@ -138,9 +143,9 @@ PlannerControlInterface::PlannerControlInterface(
   pose_goal_sub_ =
       nh_.subscribe("/global_planner/waypoint_request", 1,
                     &PlannerControlInterface::poseGoalCallback, this);
-  nav_goal_client_ = nh_.serviceClient<planner_msgs::planner_go_to_waypoint>(
+  nav_goal_client_ = nh_.serviceClient<planner_msgs::srv::PlannerGoToWaypoint>(
       "gbplanner/go_to_waypoint");
-  go_to_waypoint_visualization_pub_ = nh_.advertise<visualization_msgs::Marker>(
+  go_to_waypoint_visualization_pub_ = nh_.advertise<visualization_msgs::msg::Marker>(
       "gbplanner/go_to_waypoint_pose_visualization", 0);
 
   ROS_WARN_COND(global_verbosity >= Verbosity::WARN,
@@ -167,36 +172,33 @@ PlannerControlInterface::PlannerControlInterface(
 }
 
 void PlannerControlInterface::poseGoalCallback(
-    const geometry_msgs::PoseStamped& pose_msgs) {
+    const geometry_msgs::msg::PoseStamped& pose_msgs) {
   setGoal(pose_msgs);
 }
 
 void PlannerControlInterface::navGoalCallback(
-    const geometry_msgs::PoseStamped& nav_msgs) {
-  geometry_msgs::PoseStamped posest;
+    const geometry_msgs::msg::PoseStamped& nav_msgs) {
+  geometry_msgs::msg::PoseStamped posest;
   posest.header = nav_msgs.header;
   posest.pose = nav_msgs.pose;
   setGoal(posest);
 }
 
-void PlannerControlInterface::setGoal(const geometry_msgs::PoseStamped& pose) {
-  geometry_msgs::PoseStamped pose_in_world_frame;
+void PlannerControlInterface::setGoal(const geometry_msgs::msg::PoseStamped& pose) {
+  geometry_msgs::msg::PoseStamped pose_in_world_frame;
 
-  tf::Stamped<tf::Pose> pin, pout;
-  poseStampedMsgToTF(pose, pin);
-  tf::StampedTransform darpa_to_world_transform;
   try {
-    tf_listener_.lookupTransform(world_frame_id_, pose.header.frame_id,
-                                 ros::Time(0), darpa_to_world_transform);
-  } catch (tf::TransformException ex) {
+    // Latest available transform, as ROS 1 lookupTransform(..., ros::Time(0), ...).
+    geometry_msgs::msg::TransformStamped darpa_to_world_transform =
+        tf_buffer_->lookupTransform(world_frame_id_, pose.header.frame_id, tf2::TimePointZero);
+    tf2::doTransform(pose, pose_in_world_frame, darpa_to_world_transform);
+    pose_in_world_frame.header.stamp = darpa_to_world_transform.header.stamp;
+    pose_in_world_frame.header.frame_id = world_frame_id_;
+  } catch (const tf2::TransformException& ex) {
     ROS_ERROR_COND(global_verbosity >= Verbosity::ERROR,
                    "[gbplanner_pci::setGoal] %s", ex.what());
     return;
   }
-  pout.setData(darpa_to_world_transform * pin);
-  pout.stamp_ = darpa_to_world_transform.stamp_;
-  pout.frame_id_ = world_frame_id_;
-  poseStampedTFToMsg(pout, pose_in_world_frame);
 
   received_first_waypoint_to_go_ = true;
   go_to_waypoint_with_checking_ = true;
@@ -217,7 +219,7 @@ void PlannerControlInterface::setGoal(const geometry_msgs::PoseStamped& pose) {
 }
 
 bool PlannerControlInterface::passingGateCallback(
-    std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res) {
+    std_srvs::srv::Trigger::Request& req, std_srvs::srv::Trigger::Response& res) {
   if (!passing_gate_success_) {
     passing_gate_request_ = true;
     return true;
@@ -229,7 +231,7 @@ bool PlannerControlInterface::passingGateCallback(
 }
 
 bool PlannerControlInterface::inspectionSrvCallback(
-    std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res) {
+    std_srvs::srv::Trigger::Request& req, std_srvs::srv::Trigger::Response& res) {
   //
   if(!inspection_srv_request_) {
     inspection_srv_request_ = true;
@@ -259,10 +261,10 @@ void PlannerControlInterface::resetPlanner() {
 }
 
 bool PlannerControlInterface::rotate180DegCallback(
-    std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res) {
-  planner_msgs::planner_set_planning_mode planning_mode_srv;
+    std_srvs::srv::Trigger::Request& req, std_srvs::srv::Trigger::Response& res) {
+  ros1_compat::Srv<planner_msgs::srv::PlannerSetPlanningMode> planning_mode_srv;
   planning_mode_srv.request.planning_mode =
-      planner_msgs::planner_set_planning_mode::Request::kManual;
+      planner_msgs::srv::PlannerSetPlanningMode::Request::K_MANUAL;
   planner_set_trigger_mode_client_.call(planning_mode_srv);
 
   go_to_waypoint_request_ = true;
@@ -278,11 +280,11 @@ bool PlannerControlInterface::rotate180DegCallback(
 }
 
 bool PlannerControlInterface::goToWaypointCallback(
-    planner_msgs::pci_to_waypoint::Request& req,
-    planner_msgs::pci_to_waypoint::Response& res) {
-  planner_msgs::planner_set_planning_mode planning_mode_srv;
+    planner_msgs::srv::PciToWaypoint::Request& req,
+    planner_msgs::srv::PciToWaypoint::Response& res) {
+  ros1_compat::Srv<planner_msgs::srv::PlannerSetPlanningMode> planning_mode_srv;
   planning_mode_srv.request.planning_mode =
-      planner_msgs::planner_set_planning_mode::Request::kManual;
+      planner_msgs::srv::PlannerSetPlanningMode::Request::K_MANUAL;
   planner_set_trigger_mode_client_.call(planning_mode_srv);
 
   go_to_waypoint_request_ = true;
@@ -298,8 +300,8 @@ bool PlannerControlInterface::goToWaypointCallback(
 }
 
 bool PlannerControlInterface::searchCallback(
-    planner_msgs::pci_search::Request& req,
-    planner_msgs::pci_search::Response& res) {
+    planner_msgs::srv::PciSearch::Request& req,
+    planner_msgs::srv::PciSearch::Response& res) {
   search_request_ = true;
   exe_path_en_ = !req.not_exe_path;
   use_current_state_ = req.use_current_state;
@@ -308,8 +310,8 @@ bool PlannerControlInterface::searchCallback(
 }
 
 bool PlannerControlInterface::globalPlannerCallback(
-    planner_msgs::pci_global::Request& req,
-    planner_msgs::pci_global::Response& res) {
+    planner_msgs::srv::PciGlobal::Request& req,
+    planner_msgs::srv::PciGlobal::Response& res) {
   global_request_ = true;
   exe_path_en_ = !req.not_exe_path;
   bound_mode_ = req.bound_mode;
@@ -320,19 +322,19 @@ bool PlannerControlInterface::globalPlannerCallback(
 }
 
 bool PlannerControlInterface::stopPlannerCallback(
-    planner_msgs::pci_stop::Request& req,
-    planner_msgs::pci_stop::Response& res) {
+    planner_msgs::srv::PciStop::Request& req,
+    planner_msgs::srv::PciStop::Response& res) {
   ROS_INFO_COND(global_verbosity >= Verbosity::INFO,
                 "[PlannerControlInterface::stopPlannerCallback]");
-  std_msgs::Bool stop_msg;
+  std_msgs::msg::Bool stop_msg;
   stop_request_pub_.publish(stop_msg);
   pci_manager_->stopPCI();
   stop_planner_request_ = true;
   resetPlanner();
 
-  // planner_msgs::planner_set_planning_mode planning_mode_srv;
+  // ros1_compat::Srv<planner_msgs::srv::PlannerSetPlanningMode> planning_mode_srv;
   // planning_mode_srv.request.planning_mode =
-  //     planner_msgs::planner_set_planning_mode::Request::kManual;
+  //     planner_msgs::srv::PlannerSetPlanningMode::Request::K_MANUAL;
   // planner_set_trigger_mode_client_.call(planning_mode_srv);
 
   res.success = true;
@@ -341,9 +343,9 @@ bool PlannerControlInterface::stopPlannerCallback(
 }
 
 bool PlannerControlInterface::stdSrvStopPlannerCallback(
-    std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res) {
-  planner_msgs::pci_stop::Request stop_request;
-  planner_msgs::pci_stop::Response stop_response;
+    std_srvs::srv::Trigger::Request& req, std_srvs::srv::Trigger::Response& res) {
+  planner_msgs::srv::PciStop::Request stop_request;
+  planner_msgs::srv::PciStop::Response stop_response;
 
   res.success = stopPlannerCallback(stop_request, stop_response);
   res.success &= stop_response.success;
@@ -352,9 +354,9 @@ bool PlannerControlInterface::stdSrvStopPlannerCallback(
 }
 
 bool PlannerControlInterface::addGeofenceCallback(
-    planner_msgs::pci_geofence::Request& req,
-    planner_msgs::pci_geofence::Response& res) {
-  planner_msgs::planner_geofence plan_srv;
+    planner_msgs::srv::PciGeofence::Request& req,
+    planner_msgs::srv::PciGeofence::Response& res) {
+  ros1_compat::Srv<planner_msgs::srv::PlannerGeofence> plan_srv;
   plan_srv.request.rectangles = req.rectangles;
   if (planner_geofence_client_.call(plan_srv))
     res.success = plan_srv.response.success;
@@ -363,10 +365,10 @@ bool PlannerControlInterface::addGeofenceCallback(
 }
 
 bool PlannerControlInterface::setHomingPosCallback(
-    planner_msgs::pci_set_homing_pos::Request& req,
-    planner_msgs::pci_set_homing_pos::Response& res) {
+    planner_msgs::srv::PciSetHomingPos::Request& req,
+    planner_msgs::srv::PciSetHomingPos::Response& res) {
   // Bypass this request to the planner.
-  planner_msgs::planner_set_homing_pos plan_srv;
+  ros1_compat::Srv<planner_msgs::srv::PlannerSetHomingPos> plan_srv;
   if (planner_set_homing_pos_client_.call(plan_srv)) {
     res.success = plan_srv.response.success;
   }
@@ -374,9 +376,9 @@ bool PlannerControlInterface::setHomingPosCallback(
 }
 
 bool PlannerControlInterface::stdSrvSetHomingPositionHereCallback(
-    std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res) {
-  planner_msgs::pci_set_homing_pos::Request set_homing_pos_request;
-  planner_msgs::pci_set_homing_pos::Response set_homing_pos_response;
+    std_srvs::srv::Trigger::Request& req, std_srvs::srv::Trigger::Response& res) {
+  planner_msgs::srv::PciSetHomingPos::Request set_homing_pos_request;
+  planner_msgs::srv::PciSetHomingPos::Response set_homing_pos_response;
 
   res.success =
       setHomingPosCallback(set_homing_pos_request, set_homing_pos_response);
@@ -386,16 +388,16 @@ bool PlannerControlInterface::stdSrvSetHomingPositionHereCallback(
 }
 
 bool PlannerControlInterface::initializationCallback(
-    planner_msgs::pci_initialization::Request& req,
-    planner_msgs::pci_initialization::Response& res) {
+    planner_msgs::srv::PciInitialization::Request& req,
+    planner_msgs::srv::PciInitialization::Response& res) {
   init_request_ = true;
   res.success = true;
   return true;
 }
 
 bool PlannerControlInterface::homingCallback(
-    planner_msgs::pci_homing_trigger::Request& req,
-    planner_msgs::pci_homing_trigger::Response& res) {
+    planner_msgs::srv::PciHomingTrigger::Request& req,
+    planner_msgs::srv::PciHomingTrigger::Response& res) {
   exe_path_en_ = !req.not_exe_path;
   homing_request_ = true;
   res.success = true;
@@ -403,9 +405,9 @@ bool PlannerControlInterface::homingCallback(
 }
 
 bool PlannerControlInterface::stdSrvHomingCallback(
-    std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res) {
-  planner_msgs::pci_homing_trigger::Request homing_trigger_request;
-  planner_msgs::pci_homing_trigger::Response homing_trigger_response;
+    std_srvs::srv::Trigger::Request& req, std_srvs::srv::Trigger::Response& res) {
+  planner_msgs::srv::PciHomingTrigger::Request homing_trigger_request;
+  planner_msgs::srv::PciHomingTrigger::Response homing_trigger_response;
 
   homing_trigger_request.not_exe_path = false;
 
@@ -416,8 +418,8 @@ bool PlannerControlInterface::stdSrvHomingCallback(
 }
 
 bool PlannerControlInterface::triggerCallback(
-    planner_msgs::pci_trigger::Request& req,
-    planner_msgs::pci_trigger::Response& res) {
+    planner_msgs::srv::PciTrigger::Request& req,
+    planner_msgs::srv::PciTrigger::Response& res) {
   if (pci_manager_->getStatus() == PCIManager::PCIStatus::kError) {
     ROS_WARN_COND(
         global_verbosity >= Verbosity::WARN,
@@ -445,9 +447,9 @@ bool PlannerControlInterface::triggerCallback(
 }
 
 bool PlannerControlInterface::stdSrvsAutomaticPlanningCallback(
-    std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res) {
-  planner_msgs::pci_trigger::Request pci_trigger_request;
-  planner_msgs::pci_trigger::Response pci_trigger_response;
+    std_srvs::srv::Trigger::Request& req, std_srvs::srv::Trigger::Response& res) {
+  planner_msgs::srv::PciTrigger::Request pci_trigger_request;
+  planner_msgs::srv::PciTrigger::Response pci_trigger_response;
   pci_trigger_request.not_exe_path = false;
   pci_trigger_request.set_auto = true;
   pci_trigger_request.bound_mode = 0;
@@ -460,10 +462,10 @@ bool PlannerControlInterface::stdSrvsAutomaticPlanningCallback(
 }
 
 bool PlannerControlInterface::stdSrvGoToWaypointCallback(
-    std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res) {
-  planner_msgs::planner_set_planning_mode planning_mode_srv;
+    std_srvs::srv::Trigger::Request& req, std_srvs::srv::Trigger::Response& res) {
+  ros1_compat::Srv<planner_msgs::srv::PlannerSetPlanningMode> planning_mode_srv;
   planning_mode_srv.request.planning_mode =
-      planner_msgs::planner_set_planning_mode::Request::kManual;
+      planner_msgs::srv::PlannerSetPlanningMode::Request::K_MANUAL;
   planner_set_trigger_mode_client_.call(planning_mode_srv);
 
   if (received_first_waypoint_to_go_) {
@@ -480,9 +482,9 @@ bool PlannerControlInterface::stdSrvGoToWaypointCallback(
 }
 
 bool PlannerControlInterface::stdSrvsSinglePlanningCallback(
-    std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res) {
-  planner_msgs::pci_trigger::Request pci_trigger_request;
-  planner_msgs::pci_trigger::Response pci_trigger_response;
+    std_srvs::srv::Trigger::Request& req, std_srvs::srv::Trigger::Response& res) {
+  planner_msgs::srv::PciTrigger::Request pci_trigger_request;
+  planner_msgs::srv::PciTrigger::Response pci_trigger_response;
   pci_trigger_request.not_exe_path = false;
   pci_trigger_request.set_auto = false;
   pci_trigger_request.bound_mode = 0;
@@ -494,9 +496,9 @@ bool PlannerControlInterface::stdSrvsSinglePlanningCallback(
 }
 
 bool PlannerControlInterface::stdSrvReplanLastSpecifiedFrontierCallback(
-    std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res) {
-  planner_msgs::pci_global::Request pci_global_request;
-  planner_msgs::pci_global::Response pci_global_response;
+    std_srvs::srv::Trigger::Request& req, std_srvs::srv::Trigger::Response& res) {
+  planner_msgs::srv::PciGlobal::Request pci_global_request;
+  planner_msgs::srv::PciGlobal::Response pci_global_response;
   pci_global_request.not_exe_path = false;
   pci_global_request.set_auto = false;
   pci_global_request.bound_mode = 0;
@@ -517,8 +519,8 @@ bool PlannerControlInterface::init() {
   run_en_ = false;
   exe_path_en_ = true;
   pose_is_ready_ = false;
-  planner_msgs::planner_srv plan_srv_temp;
-  bound_mode_ = plan_srv_temp.request.kExtendedBound;
+  ros1_compat::Srv<planner_msgs::srv::PlannerSrv> plan_srv_temp;
+  bound_mode_ = plan_srv_temp.request.K_EXTENDED_BOUND;
   force_forward_ = true;
   init_request_ = false;
   search_request_ = false;
@@ -626,12 +628,12 @@ void PlannerControlInterface::runGlobalRepositioning() {
   ROS_INFO_COND(global_verbosity >= Verbosity::PLANNER_STATUS, "Global Repositioning %i",
                 planner_iteration_);
 
-  planner_msgs::planner_set_planning_mode planning_mode_srv;
+  ros1_compat::Srv<planner_msgs::srv::PlannerSetPlanningMode> planning_mode_srv;
   planning_mode_srv.request.planning_mode =
-      planner_msgs::planner_set_planning_mode::Request::kManual;
+      planner_msgs::srv::PlannerSetPlanningMode::Request::K_MANUAL;
   planner_set_trigger_mode_client_.call(planning_mode_srv);
 
-  planner_msgs::planner_go_to_waypoint planner_srv;
+  ros1_compat::Srv<planner_msgs::srv::PlannerGoToWaypoint> planner_srv;
   planner_srv.request.check_collision = true;
   planner_srv.request.waypoint.header = set_waypoint_stamped_.header;
   planner_srv.request.waypoint.pose = set_waypoint_stamped_.pose;
@@ -641,7 +643,7 @@ void PlannerControlInterface::runGlobalRepositioning() {
       // Execute path.
       current_path_.clear();
       // resetPlanner();
-      std::vector<geometry_msgs::Pose> path_to_be_exe;
+      std::vector<geometry_msgs::msg::Pose> path_to_be_exe;
       pci_manager_->executePath(planner_srv.response.path, path_to_be_exe,
                                 PCIManager::ExecutionPathType::kGlobalPath);
       current_path_ = path_to_be_exe;
@@ -659,36 +661,35 @@ void PlannerControlInterface::runGlobalRepositioning() {
 void PlannerControlInterface::runPassingGate() {
   bool success = true;
 
-  planner_msgs::planner_set_planning_mode planning_mode_srv;
+  ros1_compat::Srv<planner_msgs::srv::PlannerSetPlanningMode> planning_mode_srv;
   planning_mode_srv.request.planning_mode =
-      planner_msgs::planner_set_planning_mode::Request::kManual;
+      planner_msgs::srv::PlannerSetPlanningMode::Request::K_MANUAL;
   planner_set_trigger_mode_client_.call(planning_mode_srv);
 
-  planner_msgs::planner_request_path plan_srv;
+  ros1_compat::Srv<planner_msgs::srv::PlannerRequestPath> plan_srv;
   if ((!planner_passing_gate_client_.call(plan_srv)) ||
       (plan_srv.response.path.empty()))
     success = false;
 
-  std_msgs::Bool planner_success_msg;
+  std_msgs::msg::Bool planner_success_msg;
   planner_success_msg.data = success;
   planner_status_pub_.publish(planner_success_msg);
 
   if (success) {
     passing_gate_success_ = true;
-    std::vector<geometry_msgs::Pose> path_to_be_exe;
+    std::vector<geometry_msgs::msg::Pose> path_to_be_exe;
     pci_manager_->executePath(plan_srv.response.path, path_to_be_exe);
   }
 }
 
 void PlannerControlInterface::runInspection() {
-  planner_msgs::planner_srv plan_srv;
+  ros1_compat::Srv<planner_msgs::srv::PlannerSrv> plan_srv;
   plan_srv.request.header.stamp = ros::Time::now();
-  plan_srv.request.header.seq = planner_iteration_;
   plan_srv.request.header.frame_id = world_frame_id_;
   plan_srv.request.bound_mode = 0;
   ROS_WARN_COND(global_verbosity >= Verbosity::INFO,"[PCI]: Called inspection srv");
   if (planner_inspection_srv_client_.call(plan_srv)) {
-    std::vector<geometry_msgs::Pose> path_to_be_exe;
+    std::vector<geometry_msgs::msg::Pose> path_to_be_exe;
     pci_manager_->executePath(plan_srv.response.path, path_to_be_exe,
                               PCIManager::ExecutionPathType::kManualPath);
     current_path_ = path_to_be_exe;
@@ -700,12 +701,12 @@ void PlannerControlInterface::runGlobalPlanner(bool exe_path = false) {
   ROS_INFO_COND(global_verbosity >= Verbosity::PLANNER_STATUS, "Planning iteration %i",
                 planner_iteration_);
 
-  planner_msgs::planner_set_planning_mode planning_mode_srv;
+  ros1_compat::Srv<planner_msgs::srv::PlannerSetPlanningMode> planning_mode_srv;
   planning_mode_srv.request.planning_mode =
-      planner_msgs::planner_set_planning_mode::Request::kManual;
+      planner_msgs::srv::PlannerSetPlanningMode::Request::K_MANUAL;
   planner_set_trigger_mode_client_.call(planning_mode_srv);
 
-  planner_msgs::planner_global plan_srv;
+  ros1_compat::Srv<planner_msgs::srv::PlannerGlobal> plan_srv;
   plan_srv.request.id = pci_global_request_params_.id;
   plan_srv.request.not_check_frontier =
       pci_global_request_params_.not_check_frontier;
@@ -713,7 +714,7 @@ void PlannerControlInterface::runGlobalPlanner(bool exe_path = false) {
   if (planner_global_client_.call(plan_srv)) {
     if ((exe_path) && (!plan_srv.response.path.empty())) {
       // Execute path.
-      std::vector<geometry_msgs::Pose> path_to_be_exe;
+      std::vector<geometry_msgs::msg::Pose> path_to_be_exe;
       pci_manager_->executePath(plan_srv.response.path, path_to_be_exe,
                                 PCIManager::ExecutionPathType::kGlobalPath);
       current_path_ = path_to_be_exe;
@@ -732,13 +733,13 @@ void PlannerControlInterface::runPlanner(bool exe_path = false) {
   const int kBBoxLevel = 3;
   bool success = false;
 
-  // planner_msgs::planner_set_planning_mode planning_mode_srv;
+  // ros1_compat::Srv<planner_msgs::srv::PlannerSetPlanningMode> planning_mode_srv;
   // if (trigger_mode_ == PlannerTriggerModeType::kAuto) {
   //   planning_mode_srv.request.planning_mode =
-  //       planner_msgs::planner_set_planning_mode::Request::kAuto;
+  //       planner_msgs::srv::PlannerSetPlanningMode::Request::K_AUTO;
   // } else {
   //   planning_mode_srv.request.planning_mode =
-  //       planner_msgs::planner_set_planning_mode::Request::kManual;
+  //       planner_msgs::srv::PlannerSetPlanningMode::Request::K_MANUAL;
   // }
 
   // ROS_WARN("[PCI]: Called trigger mode srv");
@@ -753,9 +754,8 @@ void PlannerControlInterface::runPlanner(bool exe_path = false) {
     bound_mode_ = ind;
     ROS_INFO_COND(global_verbosity >= Verbosity::PLANNER_STATUS, "Planning iteration %i",
                   planner_iteration_);
-    planner_msgs::planner_srv plan_srv;
+    ros1_compat::Srv<planner_msgs::srv::PlannerSrv> plan_srv;
     plan_srv.request.header.stamp = ros::Time::now();
-    plan_srv.request.header.seq = planner_iteration_;
     plan_srv.request.header.frame_id = world_frame_id_;
     plan_srv.request.bound_mode = bound_mode_;
     plan_srv.request.root_pose = getPoseToStart();
@@ -775,7 +775,7 @@ void PlannerControlInterface::runPlanner(bool exe_path = false) {
         // Execute path.
         if (exe_path) {
           if ((!force_forward_) ||
-              (plan_srv.response.status != plan_srv.response.kBackward) ||
+              (plan_srv.response.status != plan_srv.response.K_BACKWARD) ||
               (ind == (kBBoxLevel - 1))) {
             if (ind == (kBBoxLevel - 1))
               ROS_WARN_COND(
@@ -783,24 +783,24 @@ void PlannerControlInterface::runPlanner(bool exe_path = false) {
                   "Using minimum bound, pick the current best one regardless "
                   "the direction.");
             current_path_.clear();
-            std::vector<geometry_msgs::Pose> path_to_be_exe;
+            std::vector<geometry_msgs::msg::Pose> path_to_be_exe;
             PCIManager::ExecutionPathType path_type =
                 PCIManager::ExecutionPathType::kLocalPath;
 
             ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG,"[PCI]: returned status: %d", plan_srv.response.status);
-            if (plan_srv.response.status == planner_msgs::planner_srv::Response::kHoming) {
+            if (plan_srv.response.status == planner_msgs::srv::PlannerSrv::Response::K_HOMING) {
               // Perform homing step, set back to manual mode, and stop all
               // current requests.
               resetPlanner();
               path_type = PCIManager::ExecutionPathType::kHomingPath;
             }
-            else if (plan_srv.response.status == planner_msgs::planner_srv::Response::kAutoCustomPath) {
+            else if (plan_srv.response.status == planner_msgs::srv::PlannerSrv::Response::K_AUTO_CUSTOM_PATH) {
               // Perform homing step, set back to manual mode, and stop all
               // current requests.
               ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG,"[PCI]: Auto Custom Path");
               path_type = PCIManager::ExecutionPathType::kManualPath;
             }
-            else if (plan_srv.response.status == planner_msgs::planner_srv::Response::kManualCustomPath) {
+            else if (plan_srv.response.status == planner_msgs::srv::PlannerSrv::Response::K_MANUAL_CUSTOM_PATH) {
               // Perform homing step, set back to manual mode, and stop all
               // current requests.
               ROS_WARN_COND(global_verbosity >= Verbosity::DEBUG,"[PCI]: Manual Custom Path");
@@ -826,7 +826,7 @@ void PlannerControlInterface::runPlanner(bool exe_path = false) {
       } else {
         publishPlannerStatus(plan_srv.response, false);
         ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "Planner returned an empty path");
-        if (plan_srv.response.status == plan_srv.response.kHoming || plan_srv.response.status == planner_msgs::planner_srv::Response::kManualCustomPath) {
+        if (plan_srv.response.status == plan_srv.response.K_HOMING || plan_srv.response.status == planner_msgs::srv::PlannerSrv::Response::K_MANUAL_CUSTOM_PATH) {
           // Ran out of time budget or already at home. Stop and reset planner
           resetPlanner();
           success = true;
@@ -846,20 +846,20 @@ void PlannerControlInterface::runPlanner(bool exe_path = false) {
 }
 
 void PlannerControlInterface::publishPlannerStatus(
-    const planner_msgs::planner_srv::Response& res, bool success) {
-  std_msgs::Bool planner_success_msg;
+    const planner_msgs::srv::PlannerSrv::Response& res, bool success) {
+  std_msgs::msg::Bool planner_success_msg;
   planner_success_msg.data = success;
   planner_status_pub_.publish(planner_success_msg);
 }
 
 void PlannerControlInterface::publishGoToWaypointVisualization(
-    const geometry_msgs::PoseStamped& poseStamped) {
-  visualization_msgs::Marker marker;
+    const geometry_msgs::msg::PoseStamped& poseStamped) {
+  visualization_msgs::msg::Marker marker;
   marker.header.frame_id = poseStamped.header.frame_id;
   marker.header.stamp = poseStamped.header.stamp;
   marker.id = 0;
-  marker.type = visualization_msgs::Marker::ARROW;
-  marker.action = visualization_msgs::Marker::ADD;
+  marker.type = visualization_msgs::msg::Marker::ARROW;
+  marker.action = visualization_msgs::msg::Marker::ADD;
   marker.pose = poseStamped.pose;
   marker.pose.position.z += 0.5;
   marker.scale.x = 4.0;
@@ -873,9 +873,8 @@ void PlannerControlInterface::publishGoToWaypointVisualization(
 }
 
 void PlannerControlInterface::runHoming(bool exe_path) {
-  planner_msgs::planner_homing plan_srv;
+  ros1_compat::Srv<planner_msgs::srv::PlannerHoming> plan_srv;
   plan_srv.request.header.stamp = ros::Time::now();
-  plan_srv.request.header.seq = planner_iteration_;
   plan_srv.request.header.frame_id = world_frame_id_;
   trigger_mode_ = PlannerTriggerModeType::kAuto;
   if (planner_homing_client_.call(plan_srv)) {
@@ -886,9 +885,9 @@ void PlannerControlInterface::runHoming(bool exe_path) {
 void PlannerControlInterface::runInitialization() {
   ROS_WARN_COND(global_verbosity >= Verbosity::WARN,
                 "Start initialization ...");
-  planner_msgs::planner_set_planning_mode planning_mode_srv;
+  ros1_compat::Srv<planner_msgs::srv::PlannerSetPlanningMode> planning_mode_srv;
   planning_mode_srv.request.planning_mode =
-      planner_msgs::planner_set_planning_mode::Request::kManual;
+      planner_msgs::srv::PlannerSetPlanningMode::Request::K_MANUAL;
   planner_set_trigger_mode_client_.call(planning_mode_srv);
 
   pci_manager_->initMotion();
@@ -897,14 +896,13 @@ void PlannerControlInterface::runInitialization() {
 void PlannerControlInterface::runSearch(bool exe_path) {
   ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "Start searching ...");
 
-  planner_msgs::planner_set_planning_mode planning_mode_srv;
+  ros1_compat::Srv<planner_msgs::srv::PlannerSetPlanningMode> planning_mode_srv;
   planning_mode_srv.request.planning_mode =
-      planner_msgs::planner_set_planning_mode::Request::kManual;
+      planner_msgs::srv::PlannerSetPlanningMode::Request::K_MANUAL;
   planner_set_trigger_mode_client_.call(planning_mode_srv);
 
-  planner_msgs::planner_search plan_srv;
+  ros1_compat::Srv<planner_msgs::srv::PlannerSearch> plan_srv;
   plan_srv.request.header.stamp = ros::Time::now();
-  plan_srv.request.header.seq = planner_iteration_;
   plan_srv.request.header.frame_id = world_frame_id_;
   plan_srv.request.use_current_state = use_current_state_;
   plan_srv.request.bound_mode = bound_mode_;
@@ -937,7 +935,7 @@ void PlannerControlInterface::runSearch(bool exe_path) {
   if (planner_search_client_.call(plan_srv)) {
     if (!plan_srv.response.path.empty()) {
       if (exe_path) {
-        std::vector<geometry_msgs::Pose> path_to_be_exe;
+        std::vector<geometry_msgs::msg::Pose> path_to_be_exe;
         pci_manager_->executePath(plan_srv.response.path, path_to_be_exe);
         current_path_ = path_to_be_exe;
       }
@@ -951,8 +949,8 @@ void PlannerControlInterface::runSearch(bool exe_path) {
   planner_iteration_++;
 }
 
-geometry_msgs::Pose PlannerControlInterface::getPoseToStart() {
-  geometry_msgs::Pose ret;
+geometry_msgs::msg::Pose PlannerControlInterface::getPoseToStart() {
+  geometry_msgs::msg::Pose ret;
   // use current state as default
   ret.position.x = 0.0;
   ret.position.y = 0.0;
@@ -1002,7 +1000,7 @@ bool PlannerControlInterface::loadParams() {
   return true;
 }
 
-void PlannerControlInterface::odometryCallback(const nav_msgs::Odometry& odo) {
+void PlannerControlInterface::odometryCallback(const nav_msgs::msg::Odometry& odo) {
   current_pose_.position.x = odo.pose.pose.position.x;
   current_pose_.position.y = odo.pose.pose.position.y;
   current_pose_.position.z = odo.pose.pose.position.z;
@@ -1024,7 +1022,7 @@ void PlannerControlInterface::odometryCallback(const nav_msgs::Odometry& odo) {
     const double kMinDist = 5.0;
     if ((prev_state - curr_state).norm() > kMinDist) {
       if (menu_initialized) {
-        geometry_msgs::Pose new_pose;
+        geometry_msgs::msg::Pose new_pose;
         new_pose.position = current_pose_.position;
         new_pose.orientation.x = 0.0;
         new_pose.orientation.y = 0.0;
@@ -1040,16 +1038,16 @@ void PlannerControlInterface::odometryCallback(const nav_msgs::Odometry& odo) {
 }
 
 void PlannerControlInterface::poseCallback(
-    const geometry_msgs::PoseWithCovarianceStamped& pose) {
+    const geometry_msgs::msg::PoseWithCovarianceStamped& pose) {
   processPose(pose.pose.pose);
 }
 
 void PlannerControlInterface::poseStampedCallback(
-    const geometry_msgs::PoseStamped& pose) {
+    const geometry_msgs::msg::PoseStamped& pose) {
   processPose(pose.pose);
 }
 
-void PlannerControlInterface::processPose(const geometry_msgs::Pose& pose) {
+void PlannerControlInterface::processPose(const geometry_msgs::msg::Pose& pose) {
   current_pose_.position.x = pose.position.x;
   current_pose_.position.y = pose.position.y;
   current_pose_.position.z = pose.position.z;
@@ -1070,7 +1068,7 @@ void PlannerControlInterface::processPose(const geometry_msgs::Pose& pose) {
     const double kMinDist = 5.0;
     if ((prev_state - curr_state).norm() > kMinDist) {
       if (menu_initialized) {
-        geometry_msgs::Pose new_pose;
+        geometry_msgs::msg::Pose new_pose;
         new_pose.position = current_pose_.position;
         new_pose.orientation.x = 0.0;
         new_pose.orientation.y = 0.0;
@@ -1088,7 +1086,7 @@ void PlannerControlInterface::processPose(const geometry_msgs::Pose& pose) {
 void PlannerControlInterface::initIMarker() {
   {
     // create an interactive marker for our server
-    visualization_msgs::InteractiveMarker int_marker;
+    visualization_msgs::msg::InteractiveMarker int_marker;
     int_marker.header.frame_id = world_frame_id_;
     int_marker.header.stamp = ros::Time::now();
     int_marker.name = source_marker_name;
@@ -1100,8 +1098,8 @@ void PlannerControlInterface::initIMarker() {
     tf::pointTFToMsg(position, int_marker.pose.position);
 
     // create a grey box marker
-    visualization_msgs::Marker box_marker;
-    box_marker.type = visualization_msgs::Marker::CUBE;
+    visualization_msgs::msg::Marker box_marker;
+    box_marker.type = visualization_msgs::msg::Marker::CUBE;
     box_marker.scale.x = 0.45;
     box_marker.scale.y = 0.45;
     box_marker.scale.z = 0.45;
@@ -1111,7 +1109,7 @@ void PlannerControlInterface::initIMarker() {
     box_marker.color.a = 1.0;
 
     // create a non-interactive control which contains the box
-    visualization_msgs::InteractiveMarkerControl box_control;
+    visualization_msgs::msg::InteractiveMarkerControl box_control;
     box_control.always_visible = true;
     box_control.markers.push_back(box_marker);
 
@@ -1121,14 +1119,14 @@ void PlannerControlInterface::initIMarker() {
     // create a control which will move the box
     // this control does not contain any markers,
     // which will cause RViz to insert two arrows
-    visualization_msgs::InteractiveMarkerControl control;
+    visualization_msgs::msg::InteractiveMarkerControl control;
 
     tf::Quaternion orien(0.0, 1.0, 0.0, 1.0);
     orien.normalize();
     tf::quaternionTFToMsg(orien, control.orientation);
     control.name = "move_xy";
     control.interaction_mode =
-        visualization_msgs::InteractiveMarkerControl::MOVE_PLANE;
+        visualization_msgs::msg::InteractiveMarkerControl::MOVE_PLANE;
     int_marker.controls.push_back(control);
 
     orien = tf::Quaternion(0.0, 1.0, 0.0, 1.0);
@@ -1136,7 +1134,7 @@ void PlannerControlInterface::initIMarker() {
     tf::quaternionTFToMsg(orien, control.orientation);
     control.name = "move_z";
     control.interaction_mode =
-        visualization_msgs::InteractiveMarkerControl::MOVE_AXIS;
+        visualization_msgs::msg::InteractiveMarkerControl::MOVE_AXIS;
     int_marker.controls.push_back(control);
 
     // add the interactive marker to our collection &
@@ -1148,7 +1146,7 @@ void PlannerControlInterface::initIMarker() {
   }
   {
     // create an interactive marker for our server
-    visualization_msgs::InteractiveMarker int_marker;
+    visualization_msgs::msg::InteractiveMarker int_marker;
     int_marker.header.frame_id = world_frame_id_;
     int_marker.header.stamp = ros::Time::now();
     int_marker.name = target_marker_name;
@@ -1160,8 +1158,8 @@ void PlannerControlInterface::initIMarker() {
     tf::pointTFToMsg(position, int_marker.pose.position);
 
     // create a grey box marker
-    visualization_msgs::Marker box_marker;
-    box_marker.type = visualization_msgs::Marker::CUBE;
+    visualization_msgs::msg::Marker box_marker;
+    box_marker.type = visualization_msgs::msg::Marker::CUBE;
     box_marker.scale.x = 0.45;
     box_marker.scale.y = 0.45;
     box_marker.scale.z = 0.45;
@@ -1171,7 +1169,7 @@ void PlannerControlInterface::initIMarker() {
     box_marker.color.a = 1.0;
 
     // create a non-interactive control which contains the box
-    visualization_msgs::InteractiveMarkerControl box_control;
+    visualization_msgs::msg::InteractiveMarkerControl box_control;
     box_control.always_visible = true;
     box_control.markers.push_back(box_marker);
 
@@ -1181,14 +1179,14 @@ void PlannerControlInterface::initIMarker() {
     // create a control which will move the box
     // this control does not contain any markers,
     // which will cause RViz to insert two arrows
-    visualization_msgs::InteractiveMarkerControl control;
+    visualization_msgs::msg::InteractiveMarkerControl control;
 
     tf::Quaternion orien(0.0, 1.0, 0.0, 1.0);
     orien.normalize();
     tf::quaternionTFToMsg(orien, control.orientation);
     control.name = "move_xy";
     control.interaction_mode =
-        visualization_msgs::InteractiveMarkerControl::MOVE_PLANE;
+        visualization_msgs::msg::InteractiveMarkerControl::MOVE_PLANE;
     int_marker.controls.push_back(control);
 
     orien = tf::Quaternion(0.0, 1.0, 0.0, 1.0);
@@ -1196,7 +1194,7 @@ void PlannerControlInterface::initIMarker() {
     tf::quaternionTFToMsg(orien, control.orientation);
     control.name = "move_z";
     control.interaction_mode =
-        visualization_msgs::InteractiveMarkerControl::MOVE_AXIS;
+        visualization_msgs::msg::InteractiveMarkerControl::MOVE_AXIS;
     int_marker.controls.push_back(control);
 
     // add the interactive marker to our collection &
@@ -1211,7 +1209,7 @@ void PlannerControlInterface::initIMarker() {
 }
 
 void PlannerControlInterface::processFeedback(
-    const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback) {
+    const visualization_msgs::msg::InteractiveMarkerFeedback::ConstSharedPtr& feedback) {
   if (!feedback->marker_name.compare(source_marker_name)) {
     // update source wp.
     source_setpoint_.position.x = feedback->pose.position.x;
@@ -1235,7 +1233,7 @@ void PlannerControlInterface::processFeedback(
 
 // Semantics
 void PlannerControlInterface::initSemanticIMarker() {
-  visualization_msgs::InteractiveMarker int_marker;
+  visualization_msgs::msg::InteractiveMarker int_marker;
   int_marker.header.frame_id = world_frame_id_;
   int_marker.header.stamp = ros::Time::now();
   int_marker.name = "semantic";
@@ -1245,34 +1243,34 @@ void PlannerControlInterface::initSemanticIMarker() {
   int_marker.pose.position.z = current_pose_.position.z;
   int_marker.scale = control_size;
 
-  visualization_msgs::InteractiveMarkerControl x_control;
+  visualization_msgs::msg::InteractiveMarkerControl x_control;
   x_control.name = "x_control";
   x_control.interaction_mode =
-      visualization_msgs::InteractiveMarkerControl::MOVE_AXIS;
+      visualization_msgs::msg::InteractiveMarkerControl::MOVE_AXIS;
   int_marker.controls.push_back(x_control);
 
-  visualization_msgs::InteractiveMarkerControl y_control;
+  visualization_msgs::msg::InteractiveMarkerControl y_control;
   y_control.name = "y_control";
   y_control.interaction_mode =
-      visualization_msgs::InteractiveMarkerControl::MOVE_AXIS;
+      visualization_msgs::msg::InteractiveMarkerControl::MOVE_AXIS;
   y_control.orientation.x = 0;
   y_control.orientation.y = 0;
   y_control.orientation.z = 0.707;
   y_control.orientation.w = 0.707;
   int_marker.controls.push_back(y_control);
 
-  visualization_msgs::InteractiveMarkerControl z_control;
+  visualization_msgs::msg::InteractiveMarkerControl z_control;
   z_control.name = "z_control";
   z_control.interaction_mode =
-      visualization_msgs::InteractiveMarkerControl::MOVE_AXIS;
+      visualization_msgs::msg::InteractiveMarkerControl::MOVE_AXIS;
   z_control.orientation.x = 0;
   z_control.orientation.y = 0.707;
   z_control.orientation.z = 0;
   z_control.orientation.w = 0.707;
   int_marker.controls.push_back(z_control);
 
-  visualization_msgs::Marker button_box_marker;
-  button_box_marker.type = visualization_msgs::Marker::CUBE;
+  visualization_msgs::msg::Marker button_box_marker;
+  button_box_marker.type = visualization_msgs::msg::Marker::CUBE;
   button_box_marker.scale.x = 1.0;
   button_box_marker.scale.y = 1.0;
   button_box_marker.scale.z = 1.0;
@@ -1281,9 +1279,9 @@ void PlannerControlInterface::initSemanticIMarker() {
   button_box_marker.color.b = 0.5;
   button_box_marker.color.a = 0.65;
 
-  visualization_msgs::InteractiveMarkerControl button_control;
+  visualization_msgs::msg::InteractiveMarkerControl button_control;
   button_control.interaction_mode =
-      visualization_msgs::InteractiveMarkerControl::BUTTON;
+      visualization_msgs::msg::InteractiveMarkerControl::BUTTON;
   button_control.name = "button_control";
   button_control.description = "menu_button";
   button_control.markers.push_back(button_box_marker);
@@ -1323,8 +1321,8 @@ void PlannerControlInterface::initSemanticIMarker() {
 }
 
 void PlannerControlInterface::semanticMarkerFeedback(
-    const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback) {
-  visualization_msgs::InteractiveMarker marker;
+    const visualization_msgs::msg::InteractiveMarkerFeedback::ConstSharedPtr& feedback) {
+  visualization_msgs::msg::InteractiveMarker marker;
   semantic_server->get("semantic", marker);
 
   semantic_position.x = marker.pose.position.x;
@@ -1333,8 +1331,8 @@ void PlannerControlInterface::semanticMarkerFeedback(
 }
 
 void PlannerControlInterface::acceptButtonFeedback(
-    const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback) {
-  visualization_msgs::InteractiveMarker marker;
+    const visualization_msgs::msg::InteractiveMarkerFeedback::ConstSharedPtr& feedback) {
+  visualization_msgs::msg::InteractiveMarker marker;
   semantic_server->get("semantic", marker);
 
   semantic_position.x = marker.pose.position.x;
@@ -1348,8 +1346,8 @@ void PlannerControlInterface::acceptButtonFeedback(
 }
 
 void PlannerControlInterface::selectSemanticsFeedback(
-    const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback) {
-  visualization_msgs::InteractiveMarker marker;
+    const visualization_msgs::msg::InteractiveMarkerFeedback::ConstSharedPtr& feedback) {
+  visualization_msgs::msg::InteractiveMarker marker;
   semantic_server->get("semantic", marker);
 
   menu_handler.setCheckState(sub_class_entry_handle,
@@ -1363,11 +1361,11 @@ void PlannerControlInterface::selectSemanticsFeedback(
   menu_handler.getTitle(sub_class_entry_handle, semantic_class);
   if (!semantic_class.compare(kStaircaseStr))
     current_semantic_class_.value =
-        planner_semantic_msgs::SemanticClass::kStaircase;
+        planner_semantic_msgs::msg::SemanticClass::K_STAIRCASE;
   else if (!semantic_class.compare(kDoorStr))
-    current_semantic_class_.value = planner_semantic_msgs::SemanticClass::kDoor;
+    current_semantic_class_.value = planner_semantic_msgs::msg::SemanticClass::K_DOOR;
   else
-    current_semantic_class_.value = planner_semantic_msgs::SemanticClass::kNone;
+    current_semantic_class_.value = planner_semantic_msgs::msg::SemanticClass::K_NONE;
 }
 
 }  // namespace explorer

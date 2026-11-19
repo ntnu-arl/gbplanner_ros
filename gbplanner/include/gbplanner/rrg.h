@@ -9,9 +9,9 @@
 #include <unordered_map>
 
 #include <eigen3/Eigen/Dense>
-#include <geometry_msgs/PointStamped.h>
-#include <geometry_msgs/Polygon.h>
-#include <geometry_msgs/PolygonStamped.h>
+#include <geometry_msgs/msg/point_stamped.hpp>
+#include <geometry_msgs/msg/polygon.hpp>
+#include <geometry_msgs/msg/polygon_stamped.hpp>
 #include <kdtree/kdtree.h>
 #include <pcl/common/distances.h>
 #include <pcl/filters/crop_box.h>
@@ -21,17 +21,18 @@
 #include <pcl/point_types.h>
 #include <pcl/surface/convex_hull.h>
 #include <pcl_conversions/pcl_conversions.h>
-#include <pcl_ros/point_cloud.h>
-#include <pcl_ros/transforms.h>
-#include <geometry_msgs/PointStamped.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <std_msgs/Bool.h>
-#include <std_msgs/Float32MultiArray.h>
-#include <std_srvs/Trigger.h>
-#include <std_srvs/SetBool.h>
-#include <sensor_msgs/JointState.h>
-#include <tf/transform_datatypes.h>
-#include <tf/transform_listener.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <ros1_compat/tf_listener.h>
+#include <geometry_msgs/msg/point_stamped.hpp>
+#include <sensor_msgs/msg/point_cloud2.hpp>
+#include <std_msgs/msg/bool.hpp>
+#include <std_msgs/msg/float32_multi_array.hpp>
+#include <std_srvs/srv/trigger.hpp>
+#include <std_srvs/srv/set_bool.hpp>
+#include <sensor_msgs/msg/joint_state.hpp>
+#include <ros1_compat/ros1_compat.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
 
 #include "adaptive_obb/adaptive_obb.h"
 #include "gbplanner/gbplanner_rviz.h"
@@ -44,18 +45,18 @@
 #include "planner_common/trajectory.h"
 #include "planner_common/utils.h"
 #include "map_manager/map_manager.h"
-#include "planner_msgs/PlanningBound.h"
-#include "planner_msgs/PlanningMode.h"
-#include "planner_msgs/planner_dynamic_global_bound.h"
-#include "planner_msgs/planner_srv.h"
-#include "planner_semantic_msgs/SemanticPoint.h"
-#include "planner_msgs/OpeningDetection.h"
-#include "planner_msgs/MultipleOpeningDetections.h"
-#include "planner_msgs/planner_opening_approval.h"
-#include "planner_msgs/planner_set_planning_mode.h"
+#include <planner_msgs/msg/planning_bound.hpp>
+#include <planner_msgs/msg/planning_mode.hpp>
+#include <planner_msgs/srv/planner_dynamic_global_bound.hpp>
+#include <planner_msgs/srv/planner_srv.hpp>
+#include <planner_semantic_msgs/msg/semantic_point.hpp>
+#include <planner_msgs/msg/opening_detection.hpp>
+#include <planner_msgs/msg/multiple_opening_detections.hpp>
+#include <planner_msgs/srv/planner_opening_approval.hpp>
+#include <planner_msgs/srv/planner_set_planning_mode.hpp>
 
 #include <grid_map_ros/grid_map_ros.hpp>
-#include <grid_map_msgs/GridMap.h>
+#include <grid_map_msgs/msg/grid_map.hpp>
 #include <grid_map_ros/GridMapRosConverter.hpp>
 
 // #include "opening_detector/opening_detector.hpp"
@@ -86,9 +87,9 @@ class RobotStateHistory {
 
 struct Opening {
   int id;
-  geometry_msgs::Pose pose;
+  geometry_msgs::msg::Pose pose;
   bool active = true;
-  std::vector<geometry_msgs::Pose> through_path;
+  std::vector<geometry_msgs::msg::Pose> through_path;
   int num_tries = 0;
   bool exists = true;
 };
@@ -198,29 +199,29 @@ class Rrg {
 
   // Search a path to connect two arbitrary states in the whole map.
   // Build a graph and find Dijkstra shortest path.
-  bool search(geometry_msgs::Pose source_pose, geometry_msgs::Pose target_pose,
+  bool search(geometry_msgs::msg::Pose source_pose, geometry_msgs::msg::Pose target_pose,
               bool use_current_state,
-              std::vector<geometry_msgs::Pose>& path_ret);
+              std::vector<geometry_msgs::msg::Pose>& path_ret);
   ConnectStatus findPathToConnect(StateVec& source, StateVec& target,
                                   std::shared_ptr<GraphManager> graph_manager,
                                   RandomSamplingParams& params,
                                   int& final_target_id,
-                                  std::vector<geometry_msgs::Pose>& path_ret);
+                                  std::vector<geometry_msgs::msg::Pose>& path_ret);
 
-  std::vector<geometry_msgs::Pose> runGlobalPlanner(int vertex_id,
+  std::vector<geometry_msgs::msg::Pose> runGlobalPlanner(int vertex_id,
                                                     bool not_check_frontier,
                                                     bool ignore_time,
                                                     int &status);
   // In case the global planner was to be retrigered while executing the global
   // path
-  std::vector<geometry_msgs::Pose> reRunGlobalPlanner(int &status);
-  std::vector<geometry_msgs::Pose> calculateGlobalPath();
+  std::vector<geometry_msgs::msg::Pose> reRunGlobalPlanner(int &status);
+  std::vector<geometry_msgs::msg::Pose> calculateGlobalPath();
 
   // Remove edges violating geofences
   void cleanViolatedEdgesInGraph(std::shared_ptr<GraphManager> graph_manager);
 
   // Some utilities
-  void addGeofenceAreas(const geometry_msgs::PolygonStamped& polygon_msgs);
+  void addGeofenceAreas(const geometry_msgs::msg::PolygonStamped& polygon_msgs);
   void clearUntraversableZones();
   void setState(StateVec& state);
   void setBoundMode(BoundModeType bmode);
@@ -245,48 +246,48 @@ class Rrg {
                   Eigen::Vector3d& p0, Eigen::Vector3d& p1,
                   Eigen::Vector3d& p1_mod);
 
-  bool improveFreePath(const std::vector<geometry_msgs::Pose>& path_orig,
-                       std::vector<geometry_msgs::Pose>& path_mod, bool);
+  bool improveFreePath(const std::vector<geometry_msgs::msg::Pose>& path_orig,
+                       std::vector<geometry_msgs::msg::Pose>& path_mod, bool);
 
   // Return the best path
-  std::vector<geometry_msgs::Pose> getBestPath(std::string tgt_frame,
+  std::vector<geometry_msgs::msg::Pose> getBestPath(std::string tgt_frame,
                                                int& status);
-  std::vector<geometry_msgs::Pose> getBestPathSimplified();
+  std::vector<geometry_msgs::msg::Pose> getBestPathSimplified();
 
-  bool homingRequired(std::vector<geometry_msgs::Pose> &homing_path);
-  std::vector<geometry_msgs::Pose> searchHomingPath(std::string tgt_frame,
+  bool homingRequired(std::vector<geometry_msgs::msg::Pose> &homing_path);
+  std::vector<geometry_msgs::msg::Pose> searchHomingPath(std::string tgt_frame,
                                                     const StateVec& cur_state);
-  std::vector<geometry_msgs::Pose> getHomingPath(std::string tgt_frame);
-  std::vector<geometry_msgs::Pose> getGlobalPath(
-      geometry_msgs::PoseStamped& waypoint);
+  std::vector<geometry_msgs::msg::Pose> getHomingPath(std::string tgt_frame);
+  std::vector<geometry_msgs::msg::Pose> getGlobalPath(
+      geometry_msgs::msg::PoseStamped& waypoint);
 
-  std::vector<geometry_msgs::Pose> getOpeningTraversalPath();
-  std::vector<geometry_msgs::Pose> getOpeningTraversalPath(OpeningTraversalMode mode, OpeningTraversalStatus &status);
+  std::vector<geometry_msgs::msg::Pose> getOpeningTraversalPath();
+  std::vector<geometry_msgs::msg::Pose> getOpeningTraversalPath(OpeningTraversalMode mode, OpeningTraversalStatus &status);
   void setNextCompartmentCenter(Eigen::Vector3d &center);
   void setNextCompartmentIndex(int ind) {next_compartment_index_ = ind;}
 
   // Set current position as homing.
   bool setHomingPos();
 
-  void setRootStateForPlanning(const geometry_msgs::Pose& root_pose);
+  void setRootStateForPlanning(const geometry_msgs::msg::Pose& root_pose);
 
   void setTimeRemaining(double t) { current_battery_time_remaining_ = t; }
 
-  std::vector<geometry_msgs::Pose> searchPathToPassGate();
+  std::vector<geometry_msgs::msg::Pose> searchPathToPassGate();
   bool searchPathThroughCenterPoint(const StateVec& current_state,
                                     const Eigen::Vector3d& center,
                                     const double& heading,
                                     Eigen::Vector3d& robot_size,
-                                    std::vector<geometry_msgs::Pose>& path);
+                                    std::vector<geometry_msgs::msg::Pose>& path);
 
-  bool isPathCollisionFree(const std::vector<geometry_msgs::Pose>& path,
+  bool isPathCollisionFree(const std::vector<geometry_msgs::msg::Pose>& path,
                            const Eigen::Vector3d& robot_size);
 
-  bool setGlobalBound(planner_msgs::PlanningBound& bound,
+  bool setGlobalBound(planner_msgs::msg::PlanningBound& bound,
                       bool reset_to_default = false);
   bool setGlobalBound(
-      planner_msgs::planner_dynamic_global_bound::Request bound);
-  void getGlobalBound(planner_msgs::PlanningBound& bound);
+      planner_msgs::srv::PlannerDynamicGlobalBound::Request bound);
+  void getGlobalBound(planner_msgs::msg::PlanningBound& bound);
   void getGlobalBoundParams(BoundedSpaceParams& global_space) {
     global_space = global_space_params_;
   }
@@ -306,16 +307,16 @@ class Rrg {
     local_goal_progress_fail_iters_ = 0;
   }
 
-  std::vector<geometry_msgs::Pose> getInspectionPath();
-  std::vector<geometry_msgs::Pose> getInspectionPathBasic();
+  std::vector<geometry_msgs::msg::Pose> getInspectionPath();
+  std::vector<geometry_msgs::msg::Pose> getInspectionPathBasic();
 
   void generateCostMatrix(std::vector<int> nodes, std::vector<std::vector<int>> &cost_matrix, std::map<int, ShortestPathsReport> &path_rep_map);
   double calculateTourCost(const std::vector<int>& tour, const std::vector<std::vector<double>>& costMatrix);
   void twoOptSwap(std::vector<int>& tour, int i, int k);
   std::vector<int> solveTSP(const std::vector<std::vector<double>>& costMatrix);
   std::vector<int> doTSP(std::vector<int> &nodes, std::vector<std::vector<int>> &cost_matrix);
-  std::vector<geometry_msgs::Pose> connectTSPOrder(std::vector<int> &tsp_nodes, std::map<int, ShortestPathsReport> &path_rep_map, std::shared_ptr<GraphManager> graph);
-  std::vector<geometry_msgs::Pose> connectTSPOrderWithSubvertices(std::vector<std::pair<int, std::vector<int>>> &tsp_nodes, std::map<int, ShortestPathsReport> &path_rep_map, std::shared_ptr<GraphManager> graph);
+  std::vector<geometry_msgs::msg::Pose> connectTSPOrder(std::vector<int> &tsp_nodes, std::map<int, ShortestPathsReport> &path_rep_map, std::shared_ptr<GraphManager> graph);
+  std::vector<geometry_msgs::msg::Pose> connectTSPOrderWithSubvertices(std::vector<std::pair<int, std::vector<int>>> &tsp_nodes, std::map<int, ShortestPathsReport> &path_rep_map, std::shared_ptr<GraphManager> graph);
 
   void generateGridSamples(std::vector<int> &viewpoint_ids);
   void generateGridSamplesBasic(std::vector<int> &viewpoint_ids);
@@ -395,7 +396,7 @@ class Rrg {
   // Add frontiers from the local graph to the global graph
   void addFrontiers(int best_vertex_id);
 
-  void semanticsCallback(const planner_semantic_msgs::SemanticPoint& semantic);
+  void semanticsCallback(const planner_semantic_msgs::msg::SemanticPoint& semantic);
 
   std::string world_frame_ = "world";
 
@@ -428,19 +429,19 @@ class Rrg {
   ros::ServiceServer query_srv_;
   ros::ServiceServer remove_geofence_srv_;
 
-  bool resetTimerCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
-  bool getOpeningPathCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
-  bool approvePassingCallback(planner_msgs::planner_opening_approval::Request &req, planner_msgs::planner_opening_approval::Response &res);
-  bool resetMapCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
-  bool queryCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
-  bool removeGeofenceCallback(planner_msgs::planner_set_planning_mode::Request &req, planner_msgs::planner_set_planning_mode::Response &res);
+  bool resetTimerCallback(std_srvs::srv::Trigger::Request &req, std_srvs::srv::Trigger::Response &res);
+  bool getOpeningPathCallback(std_srvs::srv::Trigger::Request &req, std_srvs::srv::Trigger::Response &res);
+  bool approvePassingCallback(planner_msgs::srv::PlannerOpeningApproval::Request &req, planner_msgs::srv::PlannerOpeningApproval::Response &res);
+  bool resetMapCallback(std_srvs::srv::Trigger::Request &req, std_srvs::srv::Trigger::Response &res);
+  bool queryCallback(std_srvs::srv::Trigger::Request &req, std_srvs::srv::Trigger::Response &res);
+  bool removeGeofenceCallback(planner_msgs::srv::PlannerSetPlanningMode::Request &req, planner_msgs::srv::PlannerSetPlanningMode::Response &res);
 
-  void stopMsgCallback(const std_msgs::Bool& msg);
-  void queryPtCallback(const geometry_msgs::PoseStamped& pose);
-  void camPitchCallback(const sensor_msgs::JointState &state);
-  void eleMapCallback(const grid_map_msgs::GridMap& msg);
+  void stopMsgCallback(const std_msgs::msg::Bool& msg);
+  void queryPtCallback(const geometry_msgs::msg::PoseStamped& pose);
+  void camPitchCallback(const sensor_msgs::msg::JointState &state);
+  void eleMapCallback(const grid_map_msgs::msg::GridMap& msg);
 
-  void openingDetectionCallback(const planner_msgs::MultipleOpeningDetections &detections);
+  void openingDetectionCallback(const planner_msgs::msg::MultipleOpeningDetections &detections);
 
   // Graphs.
   std::shared_ptr<GraphManager> local_graph_;
@@ -461,7 +462,7 @@ class Rrg {
   bool addRefPathToGraph(const std::shared_ptr<GraphManager> graph_manager,
                          const std::vector<Vertex*>& vertices);
   bool addRefPathToGraph(const std::shared_ptr<GraphManager> graph_manager,
-                         const std::vector<geometry_msgs::Pose>& path);
+                         const std::vector<geometry_msgs::msg::Pose>& path);
   bool connectStateToGraph(std::shared_ptr<GraphManager> graph,
                            StateVec& cur_state, Vertex*& v_added,
                            double dist_ignore_collision_check);
@@ -505,10 +506,10 @@ class Rrg {
   // Compare 2 angles within a threshold (positive).
   bool compareAngles(double dir_angle_a, double dir_angle_b, double thres);
   bool comparePathWithDirectionApprioximately(
-      const std::vector<geometry_msgs::Pose>& path, double yaw);
+      const std::vector<geometry_msgs::msg::Pose>& path, double yaw);
 
-  bool reconnectPathBlindly(std::vector<geometry_msgs::Pose>& ref_path,
-                            std::vector<geometry_msgs::Pose>& mod_path);
+  bool reconnectPathBlindly(std::vector<geometry_msgs::msg::Pose>& ref_path,
+                            std::vector<geometry_msgs::msg::Pose>& mod_path);
 
   std::vector<int> performShortestPathsClustering(
       const std::shared_ptr<GraphManager> graph_manager,
@@ -534,18 +535,18 @@ class Rrg {
     }
   }
 
-  inline double getDistance(const geometry_msgs::Pose &p1, const geometry_msgs::Pose &p2) {
+  inline double getDistance(const geometry_msgs::msg::Pose &p1, const geometry_msgs::msg::Pose &p2) {
     Eigen::Vector3d v1(p1.position.x, p1.position.y, p1.position.z);
     Eigen::Vector3d v2(p2.position.x, p2.position.y, p2.position.z);
     return (v2 - v1).norm();
   }
 
-  inline double getDistance(const StateVec &v1, const geometry_msgs::Pose &p2) {
+  inline double getDistance(const StateVec &v1, const geometry_msgs::msg::Pose &p2) {
     Eigen::Vector3d v2(p2.position.x, p2.position.y, p2.position.z);
     return (v2 - v1.head(3)).norm();
   }
 
-  void convertStateToPoseMsg(const StateVec& state, geometry_msgs::Pose& pose) {
+  void convertStateToPoseMsg(const StateVec& state, geometry_msgs::msg::Pose& pose) {
     tf::Quaternion quat;
     quat.setEuler(0.0, state[4], state[3]);
     tf::Vector3 origin(state[0], state[1], state[2]);
@@ -553,7 +554,7 @@ class Rrg {
     tf::poseTFToMsg(poseTF, pose);
   }
 
-  void convertPoseMsgToState(const geometry_msgs::Pose& pose, StateVec& state) {
+  void convertPoseMsgToState(const geometry_msgs::msg::Pose& pose, StateVec& state) {
     state[0] = pose.position.x;
     state[1] = pose.position.y;
     state[2] = pose.position.z;
@@ -569,7 +570,7 @@ class Rrg {
     state[4] = euler[1];
   }
 
-  void convertPointToEigen(const geometry_msgs::Point& point,
+  void convertPointToEigen(const geometry_msgs::msg::Point& point,
                            Eigen::Vector3d& vec) {
     vec(0) = point.x;
     vec(1) = point.y;
@@ -577,7 +578,7 @@ class Rrg {
   }
 
   void publishTimings(std::shared_ptr<SampleStatistic> stat) {
-    std_msgs::Float32MultiArray time_log;
+    std_msgs::msg::Float32MultiArray time_log;
     time_log.data.push_back(stat->build_graph_time);
     time_log.data.push_back(stat->compute_exp_gain_time);
     time_log.data.push_back(stat->shortest_path_time);

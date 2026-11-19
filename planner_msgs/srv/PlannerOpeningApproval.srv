@@ -1,0 +1,7 @@
+int32 K_APPROVED = 0
+int32 K_REJECTED = 1
+int32 K_RE_EVALUATE = 2
+
+int32 approval
+
+---

@@ -9,7 +9,8 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
-#include <ros/ros.h>
+#include <ros1_compat/node_handle.h>
+#include <planner_msgs/ros2_service_traits.hpp>
 #include <voxblox/interpolator/interpolator.h>
 #include <voxblox/utils/layer_utils.h>
 #include <voxblox/utils/planning_utils.h>

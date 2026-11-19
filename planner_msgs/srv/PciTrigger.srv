@@ -8,5 +8,5 @@ uint8 bound_mode
 
 # Max velocity allowed.
 float32 vel_max
--------
+---
 bool success
