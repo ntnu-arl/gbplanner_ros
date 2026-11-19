@@ -1,18 +1,22 @@
 <?xml version="1.0"?>
-<package format="2">
+<package format="3">
   <name>planner_control_interface</name>
   <version>0.0.0</version>
   <description>Interface</description>
   <maintainer email="tung.dang@nevada.unr.edu">Tung Dang</maintainer>
   <license>None</license>
-
-  <buildtool_depend>catkin</buildtool_depend>
-  <buildtool_depend>catkin_simple</buildtool_depend>
-  <depend>roscpp</depend>
-  <depend>tf</depend>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>rclcpp</depend>
+  <depend>ros1_compat</depend>
   <depend>planner_msgs</depend>
   <depend>planner_semantic_msgs</depend>
-  <depend>interactive_markers</depend>
   <depend>std_srvs</depend>
-
+  <depend>geometry_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>visualization_msgs</depend>
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
+  <depend>tf2_geometry_msgs</depend>
+  <depend>interactive_markers</depend>
+  <export><build_type>ament_cmake</build_type></export>
 </package>

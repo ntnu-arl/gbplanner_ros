@@ -15,7 +15,7 @@ Polygon2d::Polygon2d(std::vector<Eigen::Vector2d> points) {
   bg::correct(polygon_);
 }
 
-Polygon2d::Polygon2d(const geometry_msgs::Polygon& poly_msg) {
+Polygon2d::Polygon2d(const geometry_msgs::msg::Polygon& poly_msg) {
   for (auto p = poly_msg.points.begin(); p != poly_msg.points.end(); ++p) {
     bg::append(polygon_.outer(), Point2dType(p->x, p->y));
   }
@@ -75,7 +75,7 @@ void Polygon2d::convertEigenToPoint(Eigen::Vector2d& e, Point2dType& p) {
   bg::assign_values(p, e.x(), e.y());
 }
 
-void GeofenceManager::addGeofenceArea(const geometry_msgs::Polygon poly_msg,
+void GeofenceManager::addGeofenceArea(const geometry_msgs::msg::Polygon poly_msg,
                                       bool merge) {
   ROS_WARN_COND(global_verbosity >= Verbosity::WARN, "Added new geofence area.");
   Polygon2d poly2d(poly_msg);

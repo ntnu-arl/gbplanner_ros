@@ -17,14 +17,14 @@ MapManagerVoxblox<voxblox::EsdfServer, voxblox::EsdfVoxel>::getSDFLayer() {
 template <typename SDFServerType, typename SDFVoxelType>
 MapManagerVoxblox<SDFServerType, SDFVoxelType>::MapManagerVoxblox(
     ros::NodeHandle& nh, ros::NodeHandle& nh_private)
-    : sdf_server_(nh, nh_private),
+    : sdf_server_(ros1_compat::node()),
       occupancy_distance_voxelsize_factor_(1.0F) {
   sdf_layer_ = getSDFLayer();
   CHECK_NOTNULL(sdf_layer_);
   interpolator_ = new voxblox::Interpolator<SDFVoxelType>(sdf_layer_);
 
   // Get local parameters from passed nodehandle
-  if (!nh_private.getParam("occupancy_distance_voxelsize_factor",
+  if (!ros1_compat::getParam("occupancy_distance_voxelsize_factor",
                            occupancy_distance_voxelsize_factor_)) {
     ROS_INFO_COND(global_verbosity >= Verbosity::INFO,
                   "MapManagerVoxblox: failed to find parameter for "
@@ -35,9 +35,9 @@ MapManagerVoxblox<SDFServerType, SDFVoxelType>::MapManagerVoxblox(
   // Setup E/TsdfIntegratorBase::Config and object separately (also called in
   // e/tsdf_server_ ctor)
   tsdf_integrator_config_ =
-      voxblox::getTsdfIntegratorConfigFromRosParam(nh_private);
+      voxblox::getTsdfIntegratorConfigFromRosParam();
   esdf_integrator_config_ =
-      voxblox::getEsdfIntegratorConfigFromRosParam(nh_private);
+      voxblox::getEsdfIntegratorConfigFromRosParam();
 
 #if (COL_CHECK_METHOD == 0)
   ROS_INFO_COND(global_verbosity >= Verbosity::INFO,

@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>ros1_compat</name>
+  <version>0.0.0</version>
+  <description>Header-only ROS 1 API shim (logging, params, time, tf math) for the GBPlanner ROS 2 port</description>
+  <maintainer email="hg.kim@inha.edu">Hogyun Kim</maintainer>
+  <license>BSD-3-Clause</license>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>rclcpp</depend>
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
+  <depend>geometry_msgs</depend>
+  <depend>std_srvs</depend>
+  <depend>ament_index_cpp</depend>
+  <export><build_type>ament_cmake</build_type></export>
+</package>

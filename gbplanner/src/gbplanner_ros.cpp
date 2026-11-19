@@ -14,8 +14,8 @@ GbplannerRos::GbplannerRos(const ros::NodeHandle& nh, const ros::NodeHandle& nh_
   registerTree();
 }
 
-bool GbplannerRos::plannerServiceCallback(planner_msgs::planner_srv::Request& req,
-                              planner_msgs::planner_srv::Response& res)
+bool GbplannerRos::plannerServiceCallback(planner_msgs::srv::PlannerSrv::Request& req,
+                              planner_msgs::srv::PlannerSrv::Response& res)
 {
   gbplanner_->setPlannerSrvReq(req);
   
@@ -27,16 +27,16 @@ bool GbplannerRos::plannerServiceCallback(planner_msgs::planner_srv::Request& re
   return true;
 }
 
-bool GbplannerRos::plannerHomingServiceCallback(planner_msgs::planner_homing::Request& req,
-                              planner_msgs::planner_homing::Response& res)
+bool GbplannerRos::plannerHomingServiceCallback(planner_msgs::srv::PlannerHoming::Request& req,
+                              planner_msgs::srv::PlannerHoming::Response& res)
 {
   ROS_WARN("Homing through BT");
   gbplanner_->bt_states_.homing_required = true;
 
-  // planner_msgs::planner_srv::Request req_planner;
-  // planner_msgs::planner_srv::Response res_planner;
+  // planner_msgs::srv::PlannerSrv::Request req_planner;
+  // planner_msgs::srv::PlannerSrv::Response res_planner;
   // req_planner.header = req.header;
-  // req_planner.bound_mode = planner_msgs::BoundMode::kExtendedBound;
+  // req_planner.bound_mode = planner_msgs::msg::BoundMode::K_EXTENDED_BOUND;
 
   // gbplanner_->setPlannerSrvReq(req_planner);
   // tree_.tickOnce();

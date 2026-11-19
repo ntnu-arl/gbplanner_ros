@@ -12,6 +12,6 @@ geometry_msgs/Point left    # Vertex on the left of center when looking along th
 geometry_msgs/Point front   # Vertex in the front of center when looking along the vector of the bb
 geometry_msgs/Point up      # Vertex above center when looking along the vector of the bb
 
-------
+---
 
 bool success

@@ -2,14 +2,15 @@
 #define GBPLANNER_RVIZ_H_
 
 #include <eigen3/Eigen/Dense>
-#include <geometry_msgs/PolygonStamped.h>
-#include <geometry_msgs/PoseArray.h>
+#include <geometry_msgs/msg/polygon_stamped.hpp>
+#include <geometry_msgs/msg/pose_array.hpp>
 #include <pcl/point_cloud.h>
 #include <pcl_conversions/pcl_conversions.h>
-#include <ros/ros.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <visualization_msgs/Marker.h>
-#include <visualization_msgs/MarkerArray.h>
+#include <ros1_compat/node_handle.h>
+#include <planner_msgs/ros2_service_traits.hpp>
+#include <sensor_msgs/msg/point_cloud2.hpp>
+#include <visualization_msgs/msg/marker.hpp>
+#include <visualization_msgs/msg/marker_array.hpp>
 
 #include "planner_common/geofence_manager.h"
 #include "planner_common/graph.h"
@@ -59,9 +60,9 @@ class Visualization {
                           const ShortestPathsReport& graph_rep, int n,
                           int best_vertex_id);
   // Visualize executing path.
-  void visualizeRefPath(const std::vector<geometry_msgs::Pose>& path);
+  void visualizeRefPath(const std::vector<geometry_msgs::msg::Pose>& path);
   // Visualize executing path. Option to change color (0=red, 1=green, 2=blue)
-  void visualizeRefPath(const std::vector<geometry_msgs::Pose>& path,
+  void visualizeRefPath(const std::vector<geometry_msgs::msg::Pose>& path,
                         int color);
   // Visualize volumetric gain.
   void visualizeVolumetricGain(
@@ -107,10 +108,10 @@ class Visualization {
   void visualizeHyperplanes(Eigen::Vector3d& center,
                             std::vector<Eigen::Vector3d>& hyperplane_list,
                             std::vector<Eigen::Vector3d>& tangent_point_list);
-  void visualizeModPath(const std::vector<geometry_msgs::Pose>& path);
-  void visualizeBlindModPath(const std::vector<geometry_msgs::Pose>& path);
+  void visualizeModPath(const std::vector<geometry_msgs::msg::Pose>& path);
+  void visualizeBlindModPath(const std::vector<geometry_msgs::msg::Pose>& path);
 
-  void visualizeOpeningTraversalPath(const std::vector<geometry_msgs::Pose>& path);
+  void visualizeOpeningTraversalPath(const std::vector<geometry_msgs::msg::Pose>& path);
 
   // Set the fixed frame of the mission for visualization
   void setGlobalFrame(std::string frame_id) { world_frame_id = frame_id; }

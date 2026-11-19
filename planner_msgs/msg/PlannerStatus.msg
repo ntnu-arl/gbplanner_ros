@@ -1,4 +1,4 @@
-Header header
+std_msgs/Header header
 
 bool success
 planner_msgs/TriggerMode trigger_mode

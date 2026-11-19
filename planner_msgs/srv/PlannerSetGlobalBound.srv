@@ -9,7 +9,7 @@ bool get_current_bound
 bool reset_to_default
 
 planner_msgs/PlanningBound bound
--------
+---
 bool success
 
 # Return the actual value inside planner after calling this service

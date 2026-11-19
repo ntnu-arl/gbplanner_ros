@@ -10,7 +10,7 @@
 #include <boost/geometry/geometries/polygon.hpp>
 #include <boost/geometry/geometry.hpp>
 #include <eigen3/Eigen/Dense>
-#include <geometry_msgs/Polygon.h>
+#include <geometry_msgs/msg/polygon.hpp>
 
 #include "planner_common/params.h"
 
@@ -28,7 +28,7 @@ class Polygon2d {
 
   Polygon2d() {}
   Polygon2d(std::vector<Eigen::Vector2d> points);
-  Polygon2d(const geometry_msgs::Polygon& poly_msg);
+  Polygon2d(const geometry_msgs::msg::Polygon& poly_msg);
   Polygon2d(Polygon2dType& poly2d);
 
   void getCenter(Eigen::Vector2d& center);
@@ -84,7 +84,7 @@ class GeofenceManager {
  public:
   enum CoordinateStatus { kOK = 0, kViolated = 1 };
   GeofenceManager() : geofence_id_num_(0) {}
-  void addGeofenceArea(const geometry_msgs::Polygon poly_msg,
+  void addGeofenceArea(const geometry_msgs::msg::Polygon poly_msg,
                        bool merge = false);
   void addGeofenceArea(Polygon2d& poly, bool merge = false);
   void addGeofenceAreas(std::vector<Polygon2d>& poly_list, bool merge = false);

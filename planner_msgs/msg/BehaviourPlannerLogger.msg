@@ -1,4 +1,4 @@
-Header header
+std_msgs/Header header
 
 float32 total_time
 bool planner

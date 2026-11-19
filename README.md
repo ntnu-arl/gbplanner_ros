@@ -138,6 +138,45 @@ catkin build
 source ~/omniplanner_dev_env/omniplanner_ws/devel/setup.sh
 ```
 
+## ROS 2 (Jazzy)
+
+This branch builds on ROS 2 Jazzy with colcon. Companion branches are needed for the other repositories:
+
+| Package(s) | Source |
+|---|---|
+| `voxblox`, `voxblox_msgs`, `voxblox_ros` (+ `voxblox_proto`, `minkindr`) | ntnu-arl/voxblox, branch `ros2-jazzy` (PR) |
+| `pci_general` | ntnu-arl/pci_general, branch `ros2-jazzy` (PR) |
+| `adaptive_obb` | ntnu-arl/adaptive_obb_ros, branch `ros2-jazzy` (PR) |
+| `mav_msgs` | ethz-asl/mav_comm, branch `ros2` |
+
+System packages: `ros-jazzy-{pcl-ros,grid-map,behaviortree-cpp,interactive-markers,tf2-geometry-msgs}`,
+`libgoogle-glog-dev libgflags-dev libprotobuf-dev protobuf-compiler libzmq3-dev`.
+
+```bash
+colcon build --packages-up-to gbplanner pci_general
+ros2 launch gbplanner gbplanner_ros2.launch.py config_folder:=ugv/gzc/urban_exploration \
+    odometry_topic:=/odometry pointcloud_topic:=/pointcloud
+ros2 service call /planner_control_interface/std_srvs/automatic_planning std_srvs/srv/Trigger
+```
+
+The existing YAML configs are used as they are: the launch file converts them to ROS 2 parameter files
+(`scripts/ros1_params_to_ros2.py` evaluates `rad()`/`deg()` and normalises list types).
+
+Notes on the port:
+- Planner code is unchanged; ROS API use goes through `ros1_compat`, a header-only layer for logging,
+  parameters, time, tf math, NodeHandle-style publishers/subscribers/services/timers and tf listeners.
+- Callbacks are processed one at a time inside `spin()`/`spinOnce()`, as with ROS 1; service-client
+  responses are received on a separate thread, so the synchronous PCI -> planner calls work.
+  `ros::spinOnce()` called from inside a callback does nothing (ROS 2 executors are not re-entrant).
+- Interface names follow rosidl rules: `pci_geofence.srv` -> `PciGeofence.srv`, `kManual` -> `K_MANUAL`.
+- Fix: `Gbplanner::odometryCallback`/`processPose` left the pitch `state[4]` uninitialised; it is now zero.
+  The value tilts the sensor frustum used for the exploration gain, so it changed results between builds.
+
+Equivalence with the ROS 1 version (same voxblox map, elevation map, pose and sampler seed, with the
+pitch fix applied to both; 3 seeds): identical graphs, best-path gains and paths. With the same input bag,
+both integrate the same point-cloud sequence and give voxblox maps that differ only as much as two ROS 1
+runs do (the `fast` integrator is multi-threaded).
+
 ## Citation
 
 ```bibtex

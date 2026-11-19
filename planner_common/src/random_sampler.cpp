@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include "planner_common/random_sampler.h"
 
 RandomSamplerBase::RandomSamplerBase() {
@@ -156,8 +157,13 @@ void RandomSamplerBase::setPDF(RandomSamplerBase::RandomDistributionType pdf_typ
 }
 
 void RandomSamplerBase::reset() {
-  std::random_device rd;
-  generator_.seed(rd());
+  // GBPLANNER_SEED fixes the sampler seed (equivalence tests); default: random_device.
+  if (const char* seed = std::getenv("GBPLANNER_SEED")) {
+    generator_.seed(static_cast<unsigned>(std::atoi(seed)));
+  } else {
+    std::random_device rd;
+    generator_.seed(rd());
+  }
   if (pdf_type_ == RandomDistributionType::kUniform) {
     uniform_pdf_.reset(new std::uniform_real_distribution<>(min_val_, max_val_));
   } else if (pdf_type_ == RandomDistributionType::kNormal) {
@@ -306,8 +312,13 @@ void RandomSampler::setSTD(){
 }
 
 void RandomSampler::setPDF(RandomSamplerBase::RandomDistributionType pdf_type, int axis){
-  std::random_device rd;
-  generator_.seed(rd());
+  // GBPLANNER_SEED fixes the sampler seed (equivalence tests); default: random_device.
+  if (const char* seed = std::getenv("GBPLANNER_SEED")) {
+    generator_.seed(static_cast<unsigned>(std::atoi(seed)));
+  } else {
+    std::random_device rd;
+    generator_.seed(rd());
+  }
   chi_squared_.reset(new std::chi_squared_distribution<>(1));
   random_sampler_base_[axis].setPDF(pdf_type);
   random_sampler_base_[axis].reset();
@@ -335,8 +346,13 @@ int RandomSampler::getInvalidSamplesNum(){
 }
 
 void RandomSampler::RandomSampler::reset() {
-  std::random_device rd;
-  generator_.seed(rd());
+  // GBPLANNER_SEED fixes the sampler seed (equivalence tests); default: random_device.
+  if (const char* seed = std::getenv("GBPLANNER_SEED")) {
+    generator_.seed(static_cast<unsigned>(std::atoi(seed)));
+  } else {
+    std::random_device rd;
+    generator_.seed(rd());
+  }
   chi_squared_.reset(new std::chi_squared_distribution<>(1));
   for (int i = 0; i < 5; ++i) {
     random_sampler_base_[i].reset();

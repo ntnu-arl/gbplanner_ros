@@ -7,10 +7,10 @@
 
 #include <eigen3/Eigen/Dense>
 #include <kdtree/kdtree.h>
-#include <planner_msgs/Edge.h>
-#include <planner_msgs/Graph.h>
-#include <planner_msgs/Vertex.h>
-#include <tf/transform_datatypes.h>
+#include <planner_msgs/msg/edge.hpp>
+#include <planner_msgs/msg/graph.hpp>
+#include <planner_msgs/msg/vertex.hpp>
+#include <ros1_compat/ros1_compat.h>
 
 #include "planner_common/graph.h"
 #include "planner_common/graph_base.h"
@@ -67,8 +67,8 @@ class GraphManager {
 
   void updateVertexTypeInRange(StateVec& state, double range);
 
-  void convertGraphToMsg(planner_msgs::Graph& graph_msg);
-  void convertMsgToGraph(const planner_msgs::Graph& graph_msg);
+  void convertGraphToMsg(planner_msgs::msg::Graph& graph_msg);
+  void convertMsgToGraph(const planner_msgs::msg::Graph& graph_msg);
 
   void saveGraph(const std::string& path);
   void loadGraph(const std::string& path);

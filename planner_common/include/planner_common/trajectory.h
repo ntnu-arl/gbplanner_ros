@@ -1,7 +1,7 @@
 #ifndef TRAJECTORY_H_
 #define TRAJECTORY_H_
 
-#include <nav_msgs/Path.h>
+#include <nav_msgs/msg/path.hpp>
 
 #include "planner_common/params.h"
 
@@ -10,9 +10,9 @@ class Trajectory {
  public:
   // For now test with simple Pose msg.
   // But later should use stamped msg with header frame instead.
-  typedef geometry_msgs::Pose WayPointType;
+  typedef geometry_msgs::msg::Pose WayPointType;
   typedef std::vector<WayPointType> TrajectoryType;
-  typedef geometry_msgs::PoseStamped WayPointStampedType;
+  typedef geometry_msgs::msg::PoseStamped WayPointStampedType;
   typedef std::vector<WayPointStampedType> TrajectoryStampedType;
   // Consider other types without orientation.
   typedef Eigen::Vector3d VectorType;

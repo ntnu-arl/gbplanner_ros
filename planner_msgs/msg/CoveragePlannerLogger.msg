@@ -1,4 +1,4 @@
-Header header
+std_msgs/Header header
 
 float32 graph_build_time
 float32 total_time

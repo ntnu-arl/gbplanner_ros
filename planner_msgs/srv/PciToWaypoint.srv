@@ -1,5 +1,7 @@
 # Force the robot to go to a waypoint
-Header header
+std_msgs/Header header
 
 # Return best path.
 geometry_msgs/Pose waypoint
+
+---
