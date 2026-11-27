@@ -1,0 +1,3477 @@
+<?xml version="1.0" ?>
+<sdf version='1.7'>
+  <world name='default'>
+    <light name='sun' type='directional'>
+      <cast_shadows>1</cast_shadows>
+      <pose>0 0 10 0 -0 0</pose>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <attenuation>
+        <range>1000</range>
+        <constant>0.9</constant>
+        <linear>0.01</linear>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+      <direction>-0.5 0.1 -0.9</direction>
+      <spot>
+        <inner_angle>0</inner_angle>
+        <outer_angle>0</outer_angle>
+        <falloff>0</falloff>
+      </spot>
+    </light>
+    <plugin name='ros_interface_plugin' filename='librotors_gazebo_ros_interface_plugin.so'/>
+    <gravity>0 0 -9.8</gravity>
+    <magnetic_field>6e-06 2.3e-05 -4.2e-05</magnetic_field>
+    <atmosphere type='adiabatic'/>
+    <physics type='ode'>
+      <max_step_size>0.004</max_step_size>
+      <real_time_factor>2</real_time_factor>
+      <real_time_update_rate>1000</real_time_update_rate>
+    </physics>
+    <scene>
+      <ambient>0.4 0.4 0.4 1</ambient>
+      <background>0.7 0.7 0.7 1</background>
+      <shadows>1</shadows>
+    </scene>
+    <wind/>
+    <spherical_coordinates>
+      <surface_model>EARTH_WGS84</surface_model>
+      <latitude_deg>0</latitude_deg>
+      <longitude_deg>0</longitude_deg>
+      <elevation>0</elevation>
+      <heading_deg>0</heading_deg>
+    </spherical_coordinates>
+    <model name='megacaverns'>
+      <static>1</static>
+      <link name='base_link'>
+        <collision name='collision'>
+          <pose>0 0 0 0 -0 0</pose>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <scale>1 1 1</scale>
+            </mesh>
+          </geometry>
+          <max_contacts>10</max_contacts>
+          <surface>
+            <contact>
+              <ode/>
+            </contact>
+            <bounce/>
+            <friction>
+              <torsional>
+                <ode/>
+              </torsional>
+              <ode/>
+            </friction>
+          </surface>
+        </collision>
+        <visual name='Colors_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Colors</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Colors.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='difuserockcolormodified_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>difuserockcolormodified</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/difuserockcolormodified.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='ugfmehgfa_2K_Albedo_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>ugfmehgfa_2K_Albedo</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/ugfmehgfa_2K_Albedo.jpg</albedo_map>
+                <normal_map>materials/textures/ugfmehgfa_2K_Normal_LOD1.jpg</normal_map>
+                <roughness_map>materials/textures/ugfmehgfa_2K_Gloss.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='emegencylight_emergencylight_BaseColor_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>emegencylight_emergencylight_BaseColor</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/emegencylight_emergencylight_BaseColor.jpg</albedo_map>
+                <roughness_map>materials/textures/emegencylight_emergencylight_Roughness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='concrete_wall_tunel_B_Diffuse_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>concrete_wall_tunel_B_Diffuse</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/concrete_wall_tunel_B_Diffuse.jpg</albedo_map>
+                <normal_map>materials/textures/concrete_wall_tunel_B_Normal.jpg</normal_map>
+                <metalness_map>materials/textures/concrete_wall_tunel_B_Specular.jpg</metalness_map>
+                <roughness_map>materials/textures/concrete_wall_tunel_B_Glossiness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='udqjbg1qx_LOD2_DefaultMaterial_BaseColor_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>udqjbg1qx_LOD2_DefaultMaterial_BaseColor</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/udqjbg1qx_LOD2_DefaultMaterial_BaseColor.jpg</albedo_map>
+                <normal_map>materials/textures/udqjbg1qx_2K_Normal_LOD2.jpg</normal_map>
+                <metalness_map>materials/textures/udqjbg1qx_2K_Specular.jpg</metalness_map>
+                <roughness_map>materials/textures/udqjbg1qx_2K_Gloss.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='skoaK_LOD2_DefaultMaterial_BaseColor_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>skoaK_LOD2_DefaultMaterial_BaseColor</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/skoaK_LOD2_DefaultMaterial_BaseColor.jpg</albedo_map>
+                <normal_map>materials/textures/skoaK_2K_Normal_LOD2 - Copy.jpg</normal_map>
+                <roughness_map>materials/textures/skoaK_2K_Gloss.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='uddjeelqx_LOD2_DefaultMaterial_BaseColor_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>uddjeelqx_LOD2_DefaultMaterial_BaseColor</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/uddjeelqx_LOD2_DefaultMaterial_BaseColor.jpg</albedo_map>
+                <normal_map>materials/textures/uddjeelqx_2K_Normal_LOD2.jpg</normal_map>
+                <metalness_map>materials/textures/uddjeelqx_2K_Specular.jpg</metalness_map>
+                <roughness_map>materials/textures/uddjeelqx_2K_Gloss.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='tlzkdilva_2K_Albedo_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>tlzkdilva_2K_Albedo</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/tlzkdilva_2K_Albedo.jpg</albedo_map>
+                <normal_map>materials/textures/tlzkdilva_2K_Normal_LOD2.jpg</normal_map>
+                <metalness_map>materials/textures/tlzkdilva_2K_Specular.jpg</metalness_map>
+                <roughness_map>materials/textures/tlzkdilva_2K_Gloss.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='texcdfcda_2K_Albedo_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>texcdfcda_2K_Albedo</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/texcdfcda_2K_Albedo.jpg</albedo_map>
+                <normal_map>materials/textures/texcdfcda_2K_Normal_LOD2.jpg</normal_map>
+                <roughness_map>materials/textures/texcdfcda_2K_Roughness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='vbokechga_LOD2_DefaultMaterial_BaseColor_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>vbokechga_LOD2_DefaultMaterial_BaseColor</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/vbokechga_LOD2_DefaultMaterial_BaseColor.jpg</albedo_map>
+                <normal_map>materials/textures/vbokechga_2K_Normal_LOD2.jpg</normal_map>
+                <roughness_map>materials/textures/vbokechga_2K_Gloss.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='uh2ucdkfa_2K_Albedo_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>uh2ucdkfa_2K_Albedo</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/uh2ucdkfa_2K_Albedo.jpg</albedo_map>
+                <normal_map>materials/textures/uh2ucdkfa_2K_Normal_LOD1.jpg</normal_map>
+                <roughness_map>materials/textures/uh2ucdkfa_2K_Gloss.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='bench_t15_bencht15_BaseColor_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>bench_t15_bencht15_BaseColor</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/bench_t15_bencht15_BaseColor.jpg</albedo_map>
+                <normal_map>materials/textures/bench_t15_bencht15_Normal.jpg</normal_map>
+                <roughness_map>materials/textures/bench_t15_bencht15_Roughness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='work_Cart_work_cart_tunnel_BaseColor_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>work_Cart_work_cart_tunnel_BaseColor</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/work_Cart_work_cart_tunnel_BaseColor.jpg</albedo_map>
+                <normal_map>materials/textures/work_Cart_work_cart_tunnel_Normal.jpg</normal_map>
+                <roughness_map>materials/textures/work_Cart_work_cart_tunnel_Roughness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='uiujbcxva_2K_Albedo_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>uiujbcxva_2K_Albedo</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/uiujbcxva_2K_Albedo.jpg</albedo_map>
+                <normal_map>materials/textures/uiujbcxva_2K_Normal_LOD1.jpg</normal_map>
+                <metalness_map>materials/textures/uiujbcxva_2K_Specular.jpg</metalness_map>
+                <roughness_map>materials/textures/uiujbcxva_2K_Gloss.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='DrumRusted_DefaultMaterial_Diffuse_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>DrumRusted_DefaultMaterial_Diffuse</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Drum Rusted_DefaultMaterial_Diffuse.jpg</albedo_map>
+                <normal_map>materials/textures/Drum Rusted_DefaultMaterial_Normal.jpg</normal_map>
+                <roughness_map>materials/textures/Drum Rusted_DefaultMaterial_Glossiness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='DrumBlack_DefaultMaterial_Diffuse_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>DrumBlack_DefaultMaterial_Diffuse</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Drum Black_DefaultMaterial_Diffuse.jpg</albedo_map>
+                <normal_map>materials/textures/Drum Black_DefaultMaterial_Normal.jpg</normal_map>
+                <roughness_map>materials/textures/Drum Black_DefaultMaterial_Glossiness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='concreterockt18_Diffuse_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>concreterockt18_Diffuse</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/concreterockt18_Diffuse.jpg</albedo_map>
+                <normal_map>materials/textures/concreterockt18_Normal.jpg</normal_map>
+                <metalness_map>materials/textures/concreterockt18_Specular.jpg</metalness_map>
+                <roughness_map>materials/textures/concreterockt18_Glossiness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='cage_lamp_DefaultMaterial_BaseColor_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>cage_lamp_DefaultMaterial_BaseColor</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/cage_lamp_DefaultMaterial_BaseColor.jpg</albedo_map>
+                <normal_map>materials/textures/cage_lamp_DefaultMaterial_Normal.jpg</normal_map>
+                <roughness_map>materials/textures/cage_lamp_DefaultMaterial_Roughness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='RailCar_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>RailCar</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/textureminecart_IV_Base_Color.jpg</albedo_map>
+                <normal_map>materials/textures/textureminecart_IV_Normal.jpg</normal_map>
+                <roughness_map>materials/textures/textureminecart_IV_Roughness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='SIGNAGE_V1_IV_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>SIGNAGE_V1_IV</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/SIGNAGE_V1_IV_1.jpg</albedo_map>
+                <roughness_map>materials/textures/SIGNAGE_V1_IV_1A.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='SIGNAGE_V1_IV_ncl1_1_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>SIGNAGE_V1_IV_ncl1_1</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/SIGNAGE_V1_IV_2.jpg</albedo_map>
+                <roughness_map>materials/textures/SIGNAGE_V1_IV_2B.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Retro_Flashlight_Dirty_HDRP_BaseColor_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Retro_Flashlight_Dirty_HDRP_BaseColor</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Retro_Flashlight_Dirty_HDRP_BaseColor.jpg</albedo_map>
+                <normal_map>materials/textures/Retro_Flashlight_Dirty_HDRP_Normal.jpg</normal_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Bricks02_COL_VAR1_1K_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Bricks02_COL_VAR1_1K</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Bricks02_COL_VAR1_1K.jpg</albedo_map>
+                <normal_map>materials/textures/Bricks02_COL_VAR1_1K_normals.jpg</normal_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Entrance_signs_noentry_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Entrance_signs_noentry</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Entrance_signs_noentry.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='cctvgraphic_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>cctvgraphic</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/cctvgraphic.PNG</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='tkhgcesg_2K_Albedo_visual_1'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>tkhgcesg_2K_Albedo</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/tkhgcesg_2K_Albedo.jpg</albedo_map>
+                <normal_map>materials/textures/tkhgcesg_2K_Normal.jpg</normal_map>
+                <roughness_map>materials/textures/tkhgcesg_2K_Roughness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='job_box_iv_1_Nuovo_BaseColor_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>job_box_iv_1_Nuovo_BaseColor</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/job_box_iv_1_Nuovo_BaseColor.jpg</albedo_map>
+                <normal_map>materials/textures/job_box_iv_1_Nuovo_Normal.jpg</normal_map>
+                <roughness_map>materials/textures/job_box_iv_1_Nuovo_Roughness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='power_pntsmall2_electricgenerator_s_BaseColor_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>power_pntsmall2_electricgenerator_s_BaseColor</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/power_pntsmall2_electricgenerator_s_BaseColor.jpg</albedo_map>
+                <normal_map>materials/textures/power_pntsmall2_electricgenerator_s_Normal.jpg</normal_map>
+                <roughness_map>materials/textures/power_pntsmall2_electricgenerator_s_Roughness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='power_pntsmall_electricgenerator_big_BaseColor_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>power_pntsmall_electricgenerator_big_BaseColor</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/power_pntsmall_electricgenerator_big_BaseColor.jpg</albedo_map>
+                <normal_map>materials/textures/power_pntsmall_electricgenerator_big_Normal.jpg</normal_map>
+                <roughness_map>materials/textures/power_pntsmall_electricgenerator_big_Roughness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='blower_iv_CarpetBlower_CB-900W_blue_BaseColor_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>blower_iv_CarpetBlower_CB-900W_blue_BaseColor</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/blower_iv_Carpet Blower_CB-900W_blue_BaseColor.jpg</albedo_map>
+                <normal_map>materials/textures/blower_iv_Carpet Blower_CB-900W_blue_Normal.jpg</normal_map>
+                <roughness_map>materials/textures/blower_iv_Carpet Blower_CB-900W_blue_Roughness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='emegencylight_emergencylightgreen_BaseColor_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>emegencylight_emergencylightgreen_BaseColor</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/emegencylight_emergencylightgreen_BaseColor.jpg</albedo_map>
+                <roughness_map>materials/textures/emegencylight_emergencylightgreen_Roughness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='water_high_ground_iv_2_Diffuse_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>water_high_ground_iv_2_Diffuse</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/water_high_ground_iv_2_Diffuse.jpg</albedo_map>
+                <normal_map>materials/textures/water_high_ground_iv_2_Normal.jpg</normal_map>
+                <metalness_map>materials/textures/water_high_ground_iv_2_Specular Level.jpg</metalness_map>
+                <roughness_map>materials/textures/water_high_ground_iv_2_Glossiness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='dry_ground_iv_2_Diffuse_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>dry_ground_iv_2_Diffuse</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/dry_ground_iv_2_Diffuse.jpg</albedo_map>
+                <normal_map>materials/textures/dry_ground_iv_2_Normal.jpg</normal_map>
+                <metalness_map>materials/textures/dry_ground_iv_2_Specular.jpg</metalness_map>
+                <roughness_map>materials/textures/dry_ground_iv_2_Glossiness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='T09_rail_beans_DefaultMaterial_BaseColor_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>T09_rail_beans_DefaultMaterial_BaseColor</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/T09_rail_beans_DefaultMaterial_BaseColor.jpg</albedo_map>
+                <normal_map>materials/textures/T09_rail_beans_DefaultMaterial_Normal.jpg</normal_map>
+                <roughness_map>materials/textures/T09_rail_beans_DefaultMaterial_Roughness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='tarp18_DefaultMaterial_BaseColor_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>tarp18_DefaultMaterial_BaseColor</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/tarp18_DefaultMaterial_BaseColor.jpg</albedo_map>
+                <normal_map>materials/textures/tarp18_DefaultMaterial_Normal.jpg</normal_map>
+                <roughness_map>materials/textures/tarp18_DefaultMaterial_opacity.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Drum_DefaultMaterial_Diffuse_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Drum_DefaultMaterial_Diffuse</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Drum_DefaultMaterial_Diffuse.jpg</albedo_map>
+                <normal_map>materials/textures/Drum_DefaultMaterial_Normal.jpg</normal_map>
+                <roughness_map>materials/textures/Drum_DefaultMaterial_Glossiness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Aset_wood_board_M_ricaS_LOD2_DefaultMaterial_BaseColor_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Aset_wood_board_M_ricaS_LOD2_DefaultMaterial_BaseColor</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Aset_wood_board_M_ricaS_LOD2_DefaultMaterial_BaseColor.jpg</albedo_map>
+                <normal_map>materials/textures/Aset_wood_board_M_ricaS_2K_Normal_LOD2.jpg</normal_map>
+                <metalness_map>materials/textures/Aset_wood_board_M_ricaS_2K_Specular.jpg</metalness_map>
+                <roughness_map>materials/textures/Aset_wood_board_M_ricaS_2K_Gloss.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Aset_wood_board_M_rhkc2_LOD2_DefaultMaterial_BaseColor_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Aset_wood_board_M_rhkc2_LOD2_DefaultMaterial_BaseColor</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Aset_wood_board_M_rhkc2_LOD2_DefaultMaterial_BaseColor.jpg</albedo_map>
+                <normal_map>materials/textures/Aset_wood_board_M_rhkc2_2K_Normal_LOD2.jpg</normal_map>
+                <metalness_map>materials/textures/Aset_wood_board_M_rhkc2_2K_Specular.jpg</metalness_map>
+                <roughness_map>materials/textures/Aset_wood_board_M_rhkc2_2K_Gloss.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Metal_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Metal</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Metal024_1K_Color.jpg</albedo_map>
+                <normal_map>materials/textures/Metal024_1K_Normal.jpg</normal_map>
+                <metalness_map>materials/textures/Metal024_1K_Metalness.jpg</metalness_map>
+                <roughness_map>materials/textures/Metal024_1K_Roughness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='boxcrib_DefaultMaterial_BaseColor_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>boxcrib_DefaultMaterial_BaseColor</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/boxcrib_DefaultMaterial_BaseColor1001.jpg</albedo_map>
+                <normal_map>materials/textures/boxcrib_DefaultMaterial_Normal1001.jpg</normal_map>
+                <roughness_map>materials/textures/boxcrib_DefaultMaterial_Roughness1001.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='PaperLine_DefaultMaterial_Diffuse_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>PaperLine_DefaultMaterial_Diffuse</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Paper Line_DefaultMaterial_Diffuse.jpg</albedo_map>
+                <normal_map>materials/textures/Paper Line_DefaultMaterial_Normal.jpg</normal_map>
+                <roughness_map>materials/textures/Paper Line_DefaultMaterial_Glossiness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='SodaCanPep1Dirty_DefaultMaterial_Diffuse_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>SodaCanPep1Dirty_DefaultMaterial_Diffuse</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Soda Can Pep1 Dirty_DefaultMaterial_Diffuse.jpg</albedo_map>
+                <normal_map>materials/textures/Soda Can Pep1 Dirty_DefaultMaterial_Normal.jpg</normal_map>
+                <roughness_map>materials/textures/Soda Can Pep1 Dirty_DefaultMaterial_Glossiness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Bottle1_DefaultMaterial_Diffuse_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Bottle1_DefaultMaterial_Diffuse</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Bottle 1_DefaultMaterial_Diffuse.jpg</albedo_map>
+                <normal_map>materials/textures/Bottle 1_DefaultMaterial_Normal.jpg</normal_map>
+                <roughness_map>materials/textures/Bottle 1_DefaultMaterial_Glossiness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='CoffeeCup_DefaultMaterial_Diffuse_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>CoffeeCup_DefaultMaterial_Diffuse</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Coffee Cup_DefaultMaterial_Diffuse.jpg</albedo_map>
+                <normal_map>materials/textures/Coffee Cup_DefaultMaterial_Normal.jpg</normal_map>
+                <roughness_map>materials/textures/Coffee Cup_DefaultMaterial_Glossiness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Wood_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Wood</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Wood062_1K_Color.jpg</albedo_map>
+                <normal_map>materials/textures/Wood062_1K_Normal.jpg</normal_map>
+                <roughness_map>materials/textures/Wood062_1K_Roughness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='BucketMainLessOld_DefaultMaterial_Diffuse_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>BucketMainLessOld_DefaultMaterial_Diffuse</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Bucket Main Less Old_DefaultMaterial_Diffuse.jpg</albedo_map>
+                <roughness_map>materials/textures/Bucket Main Less Old_DefaultMaterial_Glossiness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='BucketMain_DefaultMaterial_Diffuse_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>BucketMain_DefaultMaterial_Diffuse</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Bucket Main_DefaultMaterial_Diffuse.jpg</albedo_map>
+                <normal_map>materials/textures/Bucket Main_DefaultMaterial_Normal.jpg</normal_map>
+                <roughness_map>materials/textures/Bucket Main_DefaultMaterial_Glossiness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='DrumBlue_DefaultMaterial_Diffuse_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>DrumBlue_DefaultMaterial_Diffuse</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Drum Blue_DefaultMaterial_Diffuse.jpg</albedo_map>
+                <normal_map>materials/textures/Drum Blue_DefaultMaterial_Normal.jpg</normal_map>
+                <roughness_map>materials/textures/Drum Blue_DefaultMaterial_Glossiness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='T06_steelpanels_metalfenceruined_BaseColor_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>T06_steelpanels_metalfenceruined_BaseColor</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/T06_steelpanels_metalfenceruined_BaseColor.jpg</albedo_map>
+                <normal_map>materials/textures/T06_steelpanels_metalfenceruined_Normal.jpg</normal_map>
+                <roughness_map>materials/textures/T06_steelpanels_metalfenceruined_Roughness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='crushedmetalv_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>crushedmetalv</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/crushed metalv.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='C16_25_clift_2_Diffusemodifyed_IV_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>C16_25_clift_2_Diffusemodifyed_IV</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/C16_25_clift_2_Diffusemodifyed_IV.jpg</albedo_map>
+                <normal_map>materials/textures/C21_23clift_Normal.jpg</normal_map>
+                <roughness_map>materials/textures/C21_23clift_Roughness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='rockwall_porus_c40_Diffuse_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>rockwall_porus_c40_Diffuse</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/rockwall_porus_c40_Diffuse.jpg</albedo_map>
+                <normal_map>materials/textures/rockwall_porus_c40_Normal.jpg</normal_map>
+                <roughness_map>materials/textures/rockwall_porus_c40_Roughness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='tkhgcesg_2K_Albedo_ncl1_1_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>tkhgcesg_2K_Albedo_ncl1_1</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/tkhgcesg_2K_Albedo.jpg</albedo_map>
+                <normal_map>materials/textures/tkhgcesg_2K_Normal.jpg</normal_map>
+                <roughness_map>materials/textures/tkhgcesg_2K_Roughness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Uneven_mud_drycracked_iv_v1_Diffuse_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Uneven_mud_drycracked_iv_v1_Diffuse</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Uneven_mud_drycracked_iv_v1_Diffuse.jpg</albedo_map>
+                <normal_map>materials/textures/Uneven_mud_drycracked_iv_v1_Normal.jpg</normal_map>
+                <roughness_map>materials/textures/Uneven_mud_drycracked_iv_v1_Roughness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='C12_14_floor_mud_v1_iv_Diffuse_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>C12_14_floor_mud_v1_iv_Diffuse</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/C12_14_floor_mud_v1_iv_Diffuse.jpg</albedo_map>
+                <normal_map>materials/textures/C12_14_floor_mud_v1_iv_Normal.jpg</normal_map>
+                <roughness_map>materials/textures/C12_14_floor_mud_v1_iv_Glossiness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='wallc014_VFBXASC033_Iv_Diffuse_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>wallc014_VFBXASC033_Iv_Diffuse</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/wallc014_V!_Iv_Diffuse.jpg</albedo_map>
+                <normal_map>materials/textures/wallc014_V!_Iv_Normal.jpg</normal_map>
+                <roughness_map>materials/textures/wallc014_V!_Iv_Glossiness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='C12_mixfloor_Diffuse_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>C12_mixfloor_Diffuse</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/C12_mixfloor_Diffuse.jpg</albedo_map>
+                <normal_map>materials/textures/C12_mixfloor_Normal.jpg</normal_map>
+                <metalness_map>materials/textures/C12_mixfloor_Specular.jpg</metalness_map>
+                <roughness_map>materials/textures/C12_mixfloor_Glossiness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='watergroundmediumlevel_Diffuse_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>watergroundmediumlevel_Diffuse</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/watergroundmediumlevel_Diffuse.jpg</albedo_map>
+                <normal_map>materials/textures/watergroundmediumlevel_Normal.jpg</normal_map>
+                <metalness_map>materials/textures/watergroundmediumlevel_Specular.jpg</metalness_map>
+                <roughness_map>materials/textures/watergroundmediumlevel_Roughness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='steel_glossy_Diffuse_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>steel_glossy_Diffuse</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/steel_glossy_Base Color.jpg</albedo_map>
+                <metalness_map>materials/textures/steel_glossy_Specular.jpg</metalness_map>
+                <roughness_map>materials/textures/steel_glossy_Roughness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='cave_darkwall_c49_c53_BaseColor_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>cave_darkwall_c49_c53_BaseColor</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/cave_darkwall_c49_c53_Base Color.jpg</albedo_map>
+                <normal_map>materials/textures/cave_darkwall_c49_c53_Normal.jpg</normal_map>
+                <metalness_map>materials/textures/cave_darkwall_c49_c53_Specular.jpg</metalness_map>
+                <roughness_map>materials/textures/cave_darkwall_c49_c53_Glossiness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='vclgff3lw_2K_Albedo_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>vclgff3lw_2K_Albedo</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/vclgff3lw_2K_Albedo.jpg</albedo_map>
+                <normal_map>materials/textures/vclgff3lw_2K_Normal.jpg</normal_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='dry_ground_iv_2_Diffuse_ncl1_1_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>dry_ground_iv_2_Diffuse_ncl1_1</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/dry_ground_iv_2_Diffuse.jpg</albedo_map>
+                <normal_map>materials/textures/dry_ground_iv_2_Normal.jpg</normal_map>
+                <metalness_map>materials/textures/dry_ground_iv_2_Specular.jpg</metalness_map>
+                <roughness_map>materials/textures/dry_ground_iv_2_Glossiness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='ue2ldi0s_2K_Albedo_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>ue2ldi0s_2K_Albedo</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/ue2ldi0s_2K_Albedo.jpg</albedo_map>
+                <normal_map>materials/textures/ue2ldi0s_2K_Normal.jpg</normal_map>
+                <roughness_map>materials/textures/ue2ldi0s_2K_Roughness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='U1-U4_001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>U1-U4_001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/U1-U4_4897.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='A_baseTexBaked001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>A_baseTexBaked001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/A_baseTexBaked.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='AsetStreet_baseTexBaked001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>AsetStreet_baseTexBaked001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/AsetStreet_baseTexBaked.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Metal_Albedo_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Metal_Albedo</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Metal_Albedo.jpg</albedo_map>
+                <metalness_map>materials/textures/Metal_Metalness.jpg</metalness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Door_Texture_grey_old_industrial_BaseColor001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Door_Texture_grey_old_industrial_BaseColor001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Door_Texture_grey_old_industrial_Base Color.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='u1_floor_roof_for_substance_U1floor_roof_BaseColor001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>u1_floor_roof_for_substance_U1floor_roof_BaseColor001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/u1_floor_roof_for_substance_U1floor_roof_BaseColor.jpg</albedo_map>
+                <normal_map>materials/textures/u1_floor_roof_for_substance_U1floor_roof_Normal.jpg</normal_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='LiftMesh_Lift_BaseColor001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>LiftMesh_Lift_BaseColor001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/LiftMesh_Lift_BaseColor.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='U01_Sign_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>U01_Sign</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/162967 Urban - U01 - Pedway Entree Signage-01.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='thefutureisnow001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>thefutureisnow001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/thefutureisnow.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='subway_map001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>subway_map001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/subway_map.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Pipe_baseTexBaked001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Pipe_baseTexBaked001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Metal024_1K_Color.jpg</albedo_map>
+                <normal_map>materials/textures/Metal024_1K_Normal.jpg</normal_map>
+                <metalness_map>materials/textures/Metal024_1K_Metalness.jpg</metalness_map>
+                <roughness_map>materials/textures/Metal024_1K_Roughness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Lighttexture_glare_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Lighttexture_glare</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Colors.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='LightSmall_baseTexBaked001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>LightSmall_baseTexBaked001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/LightSmall_baseTexBaked.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='WetFloorSign_01_8-bit_Diffuse001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>WetFloorSign_01_8-bit_Diffuse001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/WetFloorSign_01_8-bit_Diffuse.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Wall_baseTexBaked001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Wall_baseTexBaked001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Wall_baseTexBaked.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='WallsFloors_baseTexBaked001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>WallsFloors_baseTexBaked001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/WallsFloors_baseTexBaked.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='U05-08-walls_v3_U05-08-walls_v3_BaseColor001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>U05-08-walls_v3_U05-08-walls_v3_BaseColor001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/U05-08-walls_v3_U05-08-walls_v3_BaseColor.jpg</albedo_map>
+                <normal_map>materials/textures/U05-08-walls_v3_DefaultMaterial_Normal.jpg</normal_map>
+                <metalness_map>materials/textures/U05-08-walls_v3_DefaultMaterial_Metallic.jpg</metalness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='chem_label001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>chem_label001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/chem_label.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Hard_Hat_Diffuse001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Hard_Hat_Diffuse001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Hard_Hat_Diffuse.jpg</albedo_map>
+                <normal_map>materials/textures/Hard_Hat_Normal.jpg</normal_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='U09-Walls_U09Walls_BaseColor001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>U09-Walls_U09Walls_BaseColor001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/U09-Walls_U09Walls_BaseColor.jpg</albedo_map>
+                <normal_map>materials/textures/U09-Walls_U09Walls_Normal.jpg</normal_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Bin_Metal_DefaultMaterial_Diffuse001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Bin_Metal_DefaultMaterial_Diffuse001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Bin_Metal_DefaultMaterial_Diffuse.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Main_Diffuse001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Main_Diffuse001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Main_Diffuse.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Plastic_Diffuse001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Plastic_Diffuse001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Plastic_Diffuse.jpg</albedo_map>
+                <normal_map>materials/textures/Plastic_Normal.jpg</normal_map>
+                <metalness_map>materials/textures/Plastic_Specular.jpg</metalness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Cooler_Diffuse001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Cooler_Diffuse001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Cooler_Diffuse.jpg</albedo_map>
+                <normal_map>materials/textures/Cooler_Normal.jpg</normal_map>
+                <metalness_map>materials/textures/Cooler_Specular.jpg</metalness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='wipes_can001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>wipes_can001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/wipes_can.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='WoodenWorkbench_Diff001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>WoodenWorkbench_Diff001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/WoodenWorkbench_Diff.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Default_Material001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Default_Material001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/concretefloor2_Base Color.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='U10-13_U10-13_Diffuse001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>U10-13_U10-13_Diffuse001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/U10-13_U10-13_Diffuse.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Lights_Base_Color001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Lights_Base_Color001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Lights_Base_Color.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Colors_ncl1_1_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Colors_ncl1_1</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Colors.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Metal_ncl1_1_visua1'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Metal_ncl1_1</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Metal024_1K_Color.jpg</albedo_map>
+                <normal_map>materials/textures/Metal024_1K_Normal.jpg</normal_map>
+                <metalness_map>materials/textures/Metal024_1K_Metalness.jpg</metalness_map>
+                <roughness_map>materials/textures/Metal024_1K_Roughness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='LockSafeSet_Base_Color001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>LockSafeSet_Base_Color001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/LockSafeSet_Base_Color.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='ComputerSet_Base_Color001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>ComputerSet_Base_Color001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/ComputerSet_Base_Color.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Barrels_Base_Color001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Barrels_Base_Color001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Barrels_Base_Color.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='authorizedpersonnel-001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>authorizedpersonnel-001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/authorizedpersonnel-01.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Boiler_Base_Color001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Boiler_Base_Color001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Boiler_Base_Color.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Pallet_Base_Color001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Pallet_Base_Color001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Pallet_Base_Color.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='pipes_U14_pipes_BaseColor001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>pipes_U14_pipes_BaseColor001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/pipes_U14_pipes_BaseColor.jpg</albedo_map>
+                <normal_map>materials/textures/u14 pies_DefaultMaterial_Normal.jpg</normal_map>
+                <roughness_map>materials/textures/u14 pies_DefaultMaterial_Roughness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='oilbarrel_Barrel1_BaseColor001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>oilbarrel_Barrel1_BaseColor001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/oil barrel_Barrel1_BaseColor.jpg</albedo_map>
+                <normal_map>materials/textures/oil barrel_Barrel_Normal.jpg</normal_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Industrial_shelf_Industrial_shelf_BaseColor001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Industrial_shelf_Industrial_shelf_BaseColor001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Industrial_shelf_Industrial_shelf_BaseColor.jpg</albedo_map>
+                <normal_map>materials/textures/Industrial_shelf_Industrial_shelf_Normal.jpg</normal_map>
+                <metalness_map>materials/textures/Industrial_shelf_Industrial_shelf_Metallic.jpg</metalness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='T_CardBoxD_D001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>T_CardBoxD_D001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/T_CardBoxD_D.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='T_CardBoxB_D001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>T_CardBoxB_D001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/T_CardBoxB_D.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='T_CardBoxC_D001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>T_CardBoxC_D001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/T_CardBoxC_D.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Metal038_2K_Color001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Metal038_2K_Color001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Metal038_2K_Color.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Netceiling_BaseColor001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Netceiling_BaseColor001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Netceiling_Base Color.jpg</albedo_map>
+                <normal_map>materials/textures/Netceiling_Normal.jpg</normal_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='U15_electricalbox_ElectricalBox_BaseColor001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>U15_electricalbox_ElectricalBox_BaseColor001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/U15_electricalbox_ElectricalBox_BaseColor.jpg</albedo_map>
+                <normal_map>materials/textures/U15_electricalbox_ElectricalBox_Normal.jpg</normal_map>
+                <roughness_map>materials/textures/U15_electricalbox_ElectricalBox_Roughness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='U15and16tracks_metal_U15and16tracks_metal_BaseColor001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>U15and16tracks_metal_U15and16tracks_metal_BaseColor001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/U15 and 16 tracks_metal_U15and16tracks_metal_BaseColor.jpg</albedo_map>
+                <normal_map>materials/textures/U15 and 16 tracks_metal_U15and16tracks_metal_Normal.jpg</normal_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='tarp_BaseColor001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>tarp_BaseColor001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/tarp_Base Color.jpg</albedo_map>
+                <normal_map>materials/textures/tarp_Normal.jpg</normal_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='tractor_albedo001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>tractor_albedo001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/tractor_albedo.jpg</albedo_map>
+                <normal_map>materials/textures/tractor_normal.jpg</normal_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='CoffeeCup_DefaultMaterial_Diffuse001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>CoffeeCup_DefaultMaterial_Diffuse001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Coffee Cup_DefaultMaterial_Diffuse.jpg</albedo_map>
+                <normal_map>materials/textures/Coffee Cup_DefaultMaterial_Normal.jpg</normal_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='U18-20_floor_Floor_U18-20_BaseColor001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>U18-20_floor_Floor_U18-20_BaseColor001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/U18-20_floor_Floor_U18-20_BaseColor.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='U18-20_graffitiwall_Graffitti_Wall_BaseColor001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>U18-20_graffitiwall_Graffitti_Wall_BaseColor001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/U18-20_graffitiwall_Graffitti_Wall_BaseColor.jpg</albedo_map>
+                <normal_map>materials/textures/U18-20_graffitiwall_Graffitti_Wall_Normal.jpg</normal_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Wood_ncl1_1_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Wood_ncl1_1</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Wood062_1K_Color.jpg</albedo_map>
+                <normal_map>materials/textures/Wood062_1K_Normal.jpg</normal_map>
+                <roughness_map>materials/textures/Wood062_1K_Roughness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Turnstile_Turnstile_BaseColor001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Turnstile_Turnstile_BaseColor001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Turnstile_Turnstile_BaseColor.jpg</albedo_map>
+                <normal_map>materials/textures/Turnstile_Turnstile_Normal.jpg</normal_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='U18-20_18-20Walls_BaseColor001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>U18-20_18-20Walls_BaseColor001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/U18-20_18-20 Walls_BaseColor.jpg</albedo_map>
+                <normal_map>materials/textures/U18-20_18-20 Walls_Normal.jpg</normal_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='t_vending_newspaper_BC001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>t_vending_newspaper_BC001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/t_vending_newspaper_BC.jpg</albedo_map>
+                <normal_map>materials/textures/t_vending_newspaper_N.jpg</normal_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Bottle1_DefaultMaterial_Diffuse001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Bottle1_DefaultMaterial_Diffuse001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Bottle 1_DefaultMaterial_Diffuse.jpg</albedo_map>
+                <normal_map>materials/textures/Bottle 1_DefaultMaterial_Normal.jpg</normal_map>
+                <roughness_map>materials/textures/Bottle 1_DefaultMaterial_Glossiness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='industrialsink_diffuse001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>industrialsink_diffuse001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/industrialsink_diffuse.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='SodaCanCocaDirty_DefaultMaterial_Diffuse001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>SodaCanCocaDirty_DefaultMaterial_Diffuse001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Soda Can Coca Dirty_DefaultMaterial_Diffuse.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='SprayBColor001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>SprayBColor001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Spray Y Normal Map.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='SprayColor001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>SprayColor001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Spray Color.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='SprayYColor001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>SprayYColor001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Spray Y Color.jpg</albedo_map>
+                <normal_map>materials/textures/Spray Y Normal Map.jpg</normal_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='staircase_U21-Staircase_BaseColor001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>staircase_U21-Staircase_BaseColor001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/staircase_U21-Staircase_BaseColor.jpg</albedo_map>
+                <normal_map>materials/textures/staircase_U21-Staircase_Normal.jpg</normal_map>
+                <metalness_map>materials/textures/staircase_U21-Staircase_Metallic.jpg</metalness_map>
+                <roughness_map>materials/textures/staircase_U21-Staircase_Roughness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='U21_Graffiti_Wall_A001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>U21_Graffiti_Wall_A001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/U21_Graffiti_Wall_A.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='U21_Graffiti_Wall_B001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>U21_Graffiti_Wall_B001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/U21_Graffiti_Wall_B.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='U21_Graffiti_Wall_C001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>U21_Graffiti_Wall_C001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/U21_Graffiti_Wall_C.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='U23_Walls_U23_Walls_BaseColor001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>U23_Walls_U23_Walls_BaseColor001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/U23_Walls_U23_Walls_BaseColor.jpg</albedo_map>
+                <normal_map>materials/textures/U23_Walls_U23_Walls_Normal.jpg</normal_map>
+                <roughness_map>materials/textures/U23_Walls_U23_Walls_Roughness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='concretoivan_2K_difuse001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>concretoivan_2K_difuse001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/concretoivan_2K_difuse.jpg</albedo_map>
+                <normal_map>materials/textures/sdwocfwa_2K_Normal.jpg</normal_map>
+                <roughness_map>materials/textures/sdwocfwa_2K_Roughness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='greyfabricceiling_BaseColor001'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>greyfabricceiling_BaseColor001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/greyfabricceiling_Base Color.jpg</albedo_map>
+                <normal_map>materials/textures/greyfabricceiling_Normal.jpg</normal_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='U21_Graffiti-001_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>U21_Graffiti-001</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/U21_Graffiti-04.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='concretefloor2_BaseColor_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>concretefloor2_BaseColor</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/concretefloor2_Base Color.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='T_CardBoxA_D_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>T_CardBoxA_D</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/T_CardBoxA_D.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Signs_03_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Signs_03</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Urban_Uline_Signage_Albedo.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Signs_02_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Signs_02</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Signs_02_Albedo.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Signs_01_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Signs_01</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/OutputName_Albedo.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Object004_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Object004</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/rock_08_diff_4k.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='Object002_visual'>
+          <geometry>
+            <mesh>
+              <uri>model://megacavern/2/meshes/megacaverns.dae</uri>
+              <submesh>
+                <name>Object002</name>
+                <center>0</center>
+              </submesh>
+            </mesh>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <pbr>
+              <metal>
+                <albedo_map>materials/textures/Ground_Dirt_Albedo.jpg</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <self_collide>0</self_collide>
+        <enable_wind>0</enable_wind>
+        <kinematic>0</kinematic>
+      </link>
+      <pose>-0.98928 -44.0139 0 0 -0 0</pose>
+    </model>
+    <model name='grey_wall'>
+      <static>1</static>
+      <link name='link'>
+        <pose>0 0 0 0 -0 1.57</pose>
+        <collision name='collision'>
+          <geometry>
+            <box>
+              <size>7 0.2 7</size>
+            </box>
+          </geometry>
+          <max_contacts>10</max_contacts>
+          <surface>
+            <contact>
+              <ode/>
+            </contact>
+            <bounce/>
+            <friction>
+              <torsional>
+                <ode/>
+              </torsional>
+              <ode/>
+            </friction>
+          </surface>
+        </collision>
+        <visual name='visual'>
+          <cast_shadows>0</cast_shadows>
+          <geometry>
+            <box>
+              <size>7 0.2 7</size>
+            </box>
+          </geometry>
+          <material>
+            <script>
+              <uri>model://grey_wall/materials/scripts</uri>
+              <uri>model://grey_wall/materials/textures</uri>
+              <name>vrc/grey_wall</name>
+            </script>
+          </material>
+        </visual>
+        <self_collide>0</self_collide>
+        <enable_wind>0</enable_wind>
+        <kinematic>0</kinematic>
+      </link>
+      <pose>-4.25211 0.18776 0 0 -0 0</pose>
+    </model>
+    <model name='grey_wall_clone'>
+      <static>1</static>
+      <link name='link'>
+        <pose>0 0 0 0 -0 1.57</pose>
+        <collision name='collision'>
+          <geometry>
+            <box>
+              <size>7 0.2 7</size>
+            </box>
+          </geometry>
+          <max_contacts>10</max_contacts>
+          <surface>
+            <contact>
+              <ode/>
+            </contact>
+            <bounce/>
+            <friction>
+              <torsional>
+                <ode/>
+              </torsional>
+              <ode/>
+            </friction>
+          </surface>
+        </collision>
+        <visual name='visual'>
+          <cast_shadows>0</cast_shadows>
+          <geometry>
+            <box>
+              <size>7 0.2 7</size>
+            </box>
+          </geometry>
+          <material>
+            <script>
+              <uri>model://grey_wall/materials/scripts</uri>
+              <uri>model://grey_wall/materials/textures</uri>
+              <name>vrc/grey_wall</name>
+            </script>
+          </material>
+        </visual>
+        <self_collide>0</self_collide>
+        <enable_wind>0</enable_wind>
+        <kinematic>0</kinematic>
+      </link>
+      <pose>-3.33195 -0.086325 2.80388 0 -0 0.066136</pose>
+    </model>
+    <model name='grey_wall_clone_clone'>
+      <static>1</static>
+      <link name='link'>
+        <pose>0 0 0 0 -0 1.57</pose>
+        <collision name='collision'>
+          <geometry>
+            <box>
+              <size>7 0.2 7</size>
+            </box>
+          </geometry>
+          <max_contacts>10</max_contacts>
+          <surface>
+            <contact>
+              <ode/>
+            </contact>
+            <bounce/>
+            <friction>
+              <torsional>
+                <ode/>
+              </torsional>
+              <ode/>
+            </friction>
+          </surface>
+        </collision>
+        <visual name='visual'>
+          <cast_shadows>0</cast_shadows>
+          <geometry>
+            <box>
+              <size>7 0.2 7</size>
+            </box>
+          </geometry>
+          <material>
+            <script>
+              <uri>model://grey_wall/materials/scripts</uri>
+              <uri>model://grey_wall/materials/textures</uri>
+              <name>vrc/grey_wall</name>
+            </script>
+          </material>
+        </visual>
+        <self_collide>0</self_collide>
+        <enable_wind>0</enable_wind>
+        <kinematic>0</kinematic>
+      </link>
+      <pose>-0.789169 3.46124 2.80388 0 -0 1.62041</pose>
+    </model>
+    <model name='grey_wall_0'>
+      <static>1</static>
+      <link name='link'>
+        <pose>0 0 0 0 -0 1.57</pose>
+        <collision name='collision'>
+          <geometry>
+            <box>
+              <size>7 0.2 3</size>
+            </box>
+          </geometry>
+          <max_contacts>10</max_contacts>
+          <surface>
+            <contact>
+              <ode/>
+            </contact>
+            <bounce/>
+            <friction>
+              <torsional>
+                <ode/>
+              </torsional>
+              <ode/>
+            </friction>
+          </surface>
+        </collision>
+        <visual name='visual'>
+          <cast_shadows>0</cast_shadows>
+          <geometry>
+            <box>
+              <size>7 0.2 3</size>
+            </box>
+          </geometry>
+          <material>
+            <script>
+              <uri>model://grey_wall/materials/scripts</uri>
+              <uri>model://grey_wall/materials/textures</uri>
+              <name>vrc/grey_wall</name>
+            </script>
+          </material>
+        </visual>
+        <self_collide>0</self_collide>
+        <enable_wind>0</enable_wind>
+        <kinematic>0</kinematic>
+      </link>
+      <pose>2.8837 0.111936 0 0 -0 0</pose>
+    </model>
+    <model name='grey_wall_1'>
+      <static>1</static>
+      <link name='link'>
+        <pose>0 0 0 0 -0 1.57</pose>
+        <collision name='collision'>
+          <geometry>
+            <box>
+              <size>2 0.2 4</size>
+            </box>
+          </geometry>
+          <max_contacts>10</max_contacts>
+          <surface>
+            <contact>
+              <ode/>
+            </contact>
+            <bounce/>
+            <friction>
+              <torsional>
+                <ode/>
+              </torsional>
+              <ode/>
+            </friction>
+          </surface>
+        </collision>
+        <visual name='visual'>
+          <cast_shadows>0</cast_shadows>
+          <geometry>
+            <box>
+              <size>2 0.2 4</size>
+            </box>
+          </geometry>
+          <material>
+            <script>
+              <uri>model://grey_wall/materials/scripts</uri>
+              <uri>model://grey_wall/materials/textures</uri>
+              <name>vrc/grey_wall</name>
+            </script>
+          </material>
+        </visual>
+        <self_collide>0</self_collide>
+        <enable_wind>0</enable_wind>
+        <kinematic>0</kinematic>
+      </link>
+      <pose>2.33411 -2.76593 0 0 -0 0</pose>
+    </model>
+    <model name='grey_wall_1_clone'>
+      <static>1</static>
+      <link name='link'>
+        <pose>0 0 0 0 -0 1.57</pose>
+        <collision name='collision'>
+          <geometry>
+            <box>
+              <size>2 0.2 4</size>
+            </box>
+          </geometry>
+          <max_contacts>10</max_contacts>
+          <surface>
+            <contact>
+              <ode/>
+            </contact>
+            <bounce/>
+            <friction>
+              <torsional>
+                <ode/>
+              </torsional>
+              <ode/>
+            </friction>
+          </surface>
+        </collision>
+        <visual name='visual'>
+          <cast_shadows>0</cast_shadows>
+          <geometry>
+            <box>
+              <size>2 0.2 4</size>
+            </box>
+          </geometry>
+          <material>
+            <script>
+              <uri>model://grey_wall/materials/scripts</uri>
+              <uri>model://grey_wall/materials/textures</uri>
+              <name>vrc/grey_wall</name>
+            </script>
+          </material>
+        </visual>
+        <self_collide>0</self_collide>
+        <enable_wind>0</enable_wind>
+        <kinematic>0</kinematic>
+      </link>
+      <pose>2.4951 2.76369 1.18435 0 -0 0</pose>
+    </model>
+    <model name='grey_wall_2'>
+      <static>1</static>
+      <link name='link'>
+        <pose>0 0 0 1.57 -0 1.57</pose>
+        <collision name='collision'>
+          <geometry>
+            <box>
+              <size>7 0.2 7</size>
+            </box>
+          </geometry>
+          <max_contacts>10</max_contacts>
+          <surface>
+            <contact>
+              <ode/>
+            </contact>
+            <bounce/>
+            <friction>
+              <torsional>
+                <ode/>
+              </torsional>
+              <ode/>
+            </friction>
+          </surface>
+        </collision>
+        <visual name='visual'>
+          <cast_shadows>0</cast_shadows>
+          <geometry>
+            <box>
+              <size>7 0.2 7</size>
+            </box>
+          </geometry>
+          <material>
+            <script>
+              <uri>model://grey_wall/materials/scripts</uri>
+              <uri>model://grey_wall/materials/textures</uri>
+              <name>vrc/grey_wall</name>
+            </script>
+          </material>
+        </visual>
+        <self_collide>0</self_collide>
+        <enable_wind>0</enable_wind>
+        <kinematic>0</kinematic>
+      </link>
+      <pose>-0.764572 0.232564 0 0 -0 0</pose>
+    </model>
+    <state world_name='default'>
+      <sim_time>875 944000000</sim_time>
+      <real_time>910 827744267</real_time>
+      <wall_time>1633815572 205738524</wall_time>
+      <iterations>875944</iterations>
+      <model name='grey_wall'>
+        <pose>-4.21474 -0.21131 2.80388 0 -0 0.066136</pose>
+        <scale>1 1 1</scale>
+        <link name='link'>
+          <pose>-4.21474 -0.21131 2.80388 0 -0 1.63614</pose>
+          <velocity>0 0 0 0 -0 0</velocity>
+          <acceleration>0 0 0 0 -0 0</acceleration>
+          <wrench>0 0 0 0 -0 0</wrench>
+        </link>
+      </model>
+      <model name='grey_wall_0'>
+        <pose>2.8837 0.111936 4.63934 0 -0 0.052805</pose>
+        <scale>1 1 1</scale>
+        <link name='link'>
+          <pose>2.8837 0.111936 4.63934 0 -0 1.62281</pose>
+          <velocity>0 0 0 0 -0 0</velocity>
+          <acceleration>0 0 0 0 -0 0</acceleration>
+          <wrench>0 0 0 0 -0 0</wrench>
+        </link>
+      </model>
+      <model name='grey_wall_1'>
+        <pose>2.92834 -2.58106 1.18435 0 -0 0.042939</pose>
+        <scale>1 1 1</scale>
+        <link name='link'>
+          <pose>2.92834 -2.58106 1.18435 0 -0 1.61294</pose>
+          <velocity>0 0 0 0 -0 0</velocity>
+          <acceleration>0 0 0 0 -0 0</acceleration>
+          <wrench>0 0 0 0 -0 0</wrench>
+        </link>
+      </model>
+      <model name='grey_wall_1_clone'>
+        <pose>2.84535 2.76369 1.18435 0 -0 0.066263</pose>
+        <scale>1 1 1</scale>
+        <link name='link'>
+          <pose>2.84535 2.76369 1.18435 0 -0 1.63626</pose>
+          <velocity>0 0 0 0 -0 0</velocity>
+          <acceleration>0 0 0 0 -0 0</acceleration>
+          <wrench>0 0 0 0 -0 0</wrench>
+        </link>
+      </model>
+      <model name='grey_wall_2'>
+        <pose>-0.748455 -0.059649 6.04997 0 -0 0.0551</pose>
+        <scale>1 1 1</scale>
+        <link name='link'>
+          <pose>-0.748455 -0.059649 6.04997 1.57 -0 1.6251</pose>
+          <velocity>0 0 0 0 -0 0</velocity>
+          <acceleration>0 0 0 0 -0 0</acceleration>
+          <wrench>0 0 0 0 -0 0</wrench>
+        </link>
+      </model>
+      <model name='grey_wall_clone'>
+        <pose>-0.45009 -3.58157 2.80388 0 -0 1.62041</pose>
+        <scale>1 1 1</scale>
+        <link name='link'>
+          <pose>-0.45009 -3.58157 2.80388 0 -0 -3.09278</pose>
+          <velocity>0 0 0 0 -0 0</velocity>
+          <acceleration>0 0 0 0 -0 0</acceleration>
+          <wrench>0 0 0 0 -0 0</wrench>
+        </link>
+      </model>
+      <model name='grey_wall_clone_clone'>
+        <pose>-0.789169 3.46124 2.80388 0 -0 1.62041</pose>
+        <scale>1 1 1</scale>
+        <link name='link'>
+          <pose>-0.789169 3.46124 2.80388 0 -0 -3.09278</pose>
+          <velocity>0 0 0 0 -0 0</velocity>
+          <acceleration>0 0 0 0 -0 0</acceleration>
+          <wrench>0 0 0 0 -0 0</wrench>
+        </link>
+      </model>
+      <model name='megacaverns'>
+        <pose>93.2946 -32.4555 -1 0 -0 1.16032</pose>
+        <scale>1 1 1</scale>
+        <link name='base_link'>
+          <pose>93.2946 -32.4555 -1 0 -0 1.16032</pose>
+          <velocity>0 0 0 0 -0 0</velocity>
+          <acceleration>0 0 0 0 -0 0</acceleration>
+          <wrench>0 0 0 0 -0 0</wrench>
+        </link>
+      </model>
+      <light name='sun'>
+        <pose>0 0 10 0 -0 0</pose>
+      </light>
+    </state>
+    <gui fullscreen='0'>
+      <camera name='user_camera'>
+        <pose>-33.3171 42.583 105.969 0 1.0698 0.108222</pose>
+        <view_controller>orbit</view_controller>
+        <projection_type>perspective</projection_type>
+      </camera>
+    </gui>
+  </world>
+</sdf>

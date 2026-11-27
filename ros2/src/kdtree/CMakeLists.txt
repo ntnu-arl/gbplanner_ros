@@ -1,0 +1,13 @@
+cmake_minimum_required(VERSION 3.16)
+project(kdtree C)
+find_package(ament_cmake REQUIRED)
+add_library(kdtree SHARED src/kdtree.c)
+target_include_directories(kdtree PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:include>)
+target_link_libraries(kdtree m)
+install(TARGETS kdtree EXPORT kdtreeTargets LIBRARY DESTINATION lib)
+install(DIRECTORY include/ DESTINATION include)
+ament_export_targets(kdtreeTargets HAS_LIBRARY_TARGET)
+ament_export_include_directories(include)
+ament_export_libraries(kdtree)
+ament_package()

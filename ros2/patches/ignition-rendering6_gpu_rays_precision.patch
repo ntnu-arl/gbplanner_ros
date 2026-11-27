@@ -1,0 +1,46 @@
+--- a/ogre2/src/Ogre2GpuRays.cc
++++ b/ogre2/src/Ogre2GpuRays.cc
+@@ -15,6 +15,9 @@
+  *
+ */
+ 
++#include <cstdlib>
++#include <stdexcept>
++#include <string>
+ #include <gz/math/Vector2.hh>
+ #include <gz/math/Vector3.hh>
+ 
+@@ -613,6 +616,22 @@
+   // requirement, e.g. a single ray lidar only needs 1x1 texture. Look for ways
+   // to compute the optimal min texture size
+   unsigned int min1stPassSamples = 128u;
++  // Project-local precision setting: refine the internal depth cubemap only.
++  // The published ray counts, ideal angles, FOV, range and noise are unchanged.
++  // Sparse 360-degree lidars otherwise use 128px faces, whose nearest-pixel
++  // directions can differ materially from the ideal output rays at grazing
++  // incidence. Leave the upstream default intact unless explicitly requested.
++  const char *projectMin = std::getenv("GBPLANNER_GPU_RAYS_MIN_CUBEMAP_SIZE");
++  if (projectMin != nullptr)
++  {
++    const std::string value(projectMin);
++    if (value == "128") min1stPassSamples = 128u;
++    else if (value == "256") min1stPassSamples = 256u;
++    else if (value == "512") min1stPassSamples = 512u;
++    else if (value == "1024") min1stPassSamples = 1024u;
++    else throw std::invalid_argument(
++        "GBPLANNER_GPU_RAYS_MIN_CUBEMAP_SIZE must be 128, 256, 512 or 1024");
++  }
+ 
+   // limit max texture size to 1024
+   unsigned int max1stPassSamples = 1024u;
+@@ -620,6 +639,10 @@
+       std::clamp(v, min1stPassSamples, max1stPassSamples);
+ 
+   this->Set1stTextureSize(samples1stPass, samples1stPass);
++  if (projectMin != nullptr)
++    ignmsg << "GBPlanner GPU rays internal cubemap " << samples1stPass
++          << "x" << samples1stPass << ", output " << this->RangeCount()
++          << "x" << this->VerticalRangeCount() << std::endl;
+ 
+   // Configure second pass texture size
+   this->SetRangeCount(this->RangeCount(), this->VerticalRangeCount());

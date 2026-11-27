@@ -1,0 +1,100 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+  - Class: rviz_common/Views
+    Name: Views
+Visualization Manager:
+  Class: ""
+  Global Options:
+    Background Color: 245; 247; 250
+    Fixed Frame: map
+    Frame Rate: 20
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Name: Grid
+      Enabled: true
+      Cell Size: 1
+      Plane Cell Count: 20
+      Color: 180; 185; 190
+    - Class: rviz_default_plugins/InteractiveMarkers
+      Name: Search source and target
+      Enabled: true
+      Update Topic: /search_waypoints/update
+      Show Axes: false
+      Show Descriptions: true
+      Show Visual Aids: true
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Observed voxel snapshot
+      Enabled: true
+      Topic:
+        Value: /accepted_voxel_map
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+      Style: Points
+      Size (Pixels): 2
+      Position Transformer: XYZ
+      Color Transformer: AxisColor
+      Axis: Z
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Search graph nodes and connections
+      Enabled: true
+      Topic:
+        Value: /vis/search_graph
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+    - Class: rviz_default_plugins/Path
+      Name: Search candidate
+      Enabled: true
+      Color: 30; 110; 195
+      Line Style: Lines
+      Line Width: 0.04
+      Topic:
+        Value: /search_path
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+    - Class: rviz_default_plugins/Path
+      Name: Current command
+      Enabled: true
+      Color: 210; 55; 35
+      Line Style: Lines
+      Line Width: 0.07
+      Topic:
+        Value: /command_path
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+    - Class: rviz_default_plugins/Path
+      Name: Timed execution path
+      Enabled: true
+      Color: 160; 45; 180
+      Line Style: Lines
+      Line Width: 0.04
+      Topic:
+        Value: /execution_path
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+  Tools:
+    - Class: rviz_default_plugins/Interact
+      Hide Inactive Objects: true
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/Select
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 14
+      Focal Point: {X: 0, Y: 0, Z: 0}
+      Pitch: 0.85
+      Yaw: 0.6
+      Name: Current View
+Window Geometry:
+  Width: 1280
+  Height: 800

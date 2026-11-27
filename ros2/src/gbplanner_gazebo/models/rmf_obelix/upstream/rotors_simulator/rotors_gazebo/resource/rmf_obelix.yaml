@@ -1,0 +1,16 @@
+# RMF Obelix vehicle parameters
+mass: 0.5265 #0.5
+inertia: {xx: 0.01, xy: 0.0, xz: 0.0, yy: 0.01, yz: 0.0, zz: 0.01}
+
+# angle should be expressed in rad
+# direction 1 means counter clockwise, -1 clockwise
+# The order of the rotors matters for the calculation of the allocation matrix.
+rotor_configuration:
+#  '0': {angle: -0.785398, arm_length: 0.070, rotor_force_constant: 0.02246, rotor_moment_constant: 1.6e-2, direction: 1.0}
+#  '1': {angle: 2.35619, arm_length: 0.07, rotor_force_constant: 0.02246, rotor_moment_constant: 1.6e-2, direction: 1.0}
+#  '2': {angle: 0.78539, arm_length: 0.07, rotor_force_constant: 0.02246, rotor_moment_constant: 1.6e-2, direction: -1.0}
+#  '3': {angle: -2.35619, arm_length: 0.07, rotor_force_constant: 0.02246, rotor_moment_constant: 1.6e-2, direction: -1.0}
+  '0': {angle: -0.785398, arm_length: 0.1, rotor_force_constant: 8.54858e-06, rotor_moment_constant: 1.6e-2, direction: 1.0}
+  '1': {angle: 2.35619, arm_length: 0.1, rotor_force_constant: 8.54858e-06, rotor_moment_constant: 1.6e-2, direction: 1.0}
+  '2': {angle: 0.78539, arm_length: 0.1, rotor_force_constant: 8.54858e-06, rotor_moment_constant: 1.6e-2, direction: -1.0}
+  '3': {angle: -2.35619, arm_length: 0.1, rotor_force_constant: 8.54858e-06, rotor_moment_constant: 1.6e-2, direction: -1.0}  

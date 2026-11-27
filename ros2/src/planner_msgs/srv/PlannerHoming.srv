@@ -1,0 +1,7 @@
+# Request the planner get the shortest path to go home.
+std_msgs/Header header
+# ROS 2 extension: collision-body mode for this homing route (default: exact size).
+int32 bound_mode 3
+---
+# Return shortest path to go home.
+geometry_msgs/Pose[] path

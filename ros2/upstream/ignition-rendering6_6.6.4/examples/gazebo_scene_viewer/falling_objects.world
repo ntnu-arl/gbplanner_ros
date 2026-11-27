@@ -1,0 +1,398 @@
+<?xml version="1.0"?>
+
+<sdf version="1.5">
+  <world name="default">
+
+    <!-- physics variables -->
+    <physics type="ode">
+      <real_time_factor>1.0</real_time_factor>
+      <real_time_update_rate>125</real_time_update_rate>
+    </physics>
+
+    <!-- scene variables -->
+    <scene>
+      <ambient>0.5 0.5 0.5 1</ambient>
+      <background>0 0 0 1</background>
+      <shadows>1</shadows>
+    </scene>
+
+    <!-- A global light source -->
+    <include>
+      <uri>model://sun</uri>
+    </include>
+
+    <include>
+      <uri>model://double_pendulum_with_base</uri>
+      <pose>9 0 2 0 0 0</pose>
+    </include>
+
+    <model name="north_model">
+      <pose>0 0 0 0 0 0</pose>
+      <static>false</static>
+
+      <link name="north_link">
+        <pose>7 0 2 0 0 0</pose>
+
+        <collision name="north_collision">
+
+          <geometry>
+            <sphere>
+              <radius>0.25</radius>
+            </sphere>
+          </geometry>
+
+        </collision>
+
+        <visual name="north_visual">
+
+          <geometry>
+            <sphere>
+              <radius>0.25</radius>
+            </sphere>
+          </geometry>
+
+          <material>
+            <ambient>0.2 0.0 0.4 1</ambient>
+            <diffuse>0.3 0.0 0.6 1</diffuse>
+            <specular>0.5 0.5 0.5 1</specular>
+          </material>
+
+        </visual>
+
+      </link>
+    </model>
+
+    <model name="center_model">
+      <pose>0 0 0 0 0 0</pose>
+      <static>false</static>
+
+      <link name="center_link">
+        <pose>7 0.1 0 0 0 0</pose>
+
+        <collision name="center_collision">
+
+          <geometry>
+            <sphere>
+              <radius>0.5</radius>
+            </sphere>
+          </geometry>
+
+        </collision>
+
+        <visual name="center_visual">
+
+          <geometry>
+            <sphere>
+              <radius>0.5</radius>
+            </sphere>
+          </geometry>
+
+          <material>
+            <ambient>0.0 0.0 0.3 1</ambient>
+            <diffuse>0.0 0.0 0.7 1</diffuse>
+            <specular>0.5 0.5 0.5 1</specular>
+          </material>
+
+        </visual>
+
+      </link>
+    </model>
+
+    <model name="south_model">
+      <pose>0 0 0 0 0 0</pose>
+      <static>false</static>
+
+      <link name="south_link">
+        <pose>7 0 -2 0 0 0</pose>
+
+        <collision name="south_collision">
+
+          <geometry>
+            <sphere>
+              <radius>0.75</radius>
+            </sphere>
+          </geometry>
+
+        </collision>
+
+        <visual name="south_visual">
+
+          <geometry>
+            <sphere>
+              <radius>0.75</radius>
+            </sphere>
+          </geometry>
+
+          <material>
+            <ambient>0.3 0.0 0.0 1</ambient>
+            <diffuse>0.7 0.0 0.0 1</diffuse>
+            <specular>0.5 0.5 0.5 1</specular>
+          </material>
+
+        </visual>
+
+      </link>
+    </model>
+
+    <model name="northwest_model">
+      <pose>0 0 0 0 0 0</pose>
+      <static>false</static>
+
+      <link name="northwest_link">
+        <pose>7 2 2 0 0 0</pose>
+
+        <collision name="northwest_collision">
+
+          <geometry>
+            <cylinder>
+              <radius>0.25</radius>
+              <length>2</length>
+            </cylinder>
+          </geometry>
+
+        </collision>
+
+        <visual name="northwest_visual">
+
+          <geometry>
+            <cylinder>
+              <radius>0.25</radius>
+              <length>2</length>
+            </cylinder>
+          </geometry>
+
+          <material>
+            <ambient>0 0.4 0 1</ambient>
+            <diffuse>0 0.6 0 1</diffuse>
+            <specular>0.5 0.5 0.5 1</specular>
+          </material>
+
+        </visual>
+
+      </link>
+    </model>
+
+    <model name="west_model">
+      <pose>0 0 0 0 0 0</pose>
+      <static>false</static>
+
+      <link name="west_link">
+        <pose>7 2.1 0 0 -0.7 0</pose>
+
+        <collision name="west_collision">
+
+          <geometry>
+            <cylinder>
+              <radius>0.5</radius>
+              <length>1</length>
+            </cylinder>
+          </geometry>
+
+        </collision>
+
+        <visual name="west_visual">
+
+          <geometry>
+            <cylinder>
+              <radius>0.5</radius>
+              <length>1</length>
+            </cylinder>
+          </geometry>
+
+          <material>
+            <ambient>0.1 0.1 0.1 1</ambient>
+            <diffuse>0.2 0.2 0.2 1</diffuse>
+            <specular>0.5 0.5 0.5 1</specular>
+          </material>
+
+        </visual>
+
+      </link>
+    </model>
+
+    <model name="southwest_model">
+      <pose>0 0 0 0 0 0</pose>
+      <static>false</static>
+
+      <link name="southwest_link">
+        <pose>7 2 -2 0 0 0</pose>
+
+        <collision name="southeast_collision">
+
+          <geometry>
+            <cylinder>
+              <radius>0.75</radius>
+              <length>0.5</length>
+            </cylinder>
+          </geometry>
+
+        </collision>
+
+        <visual name="southwest_visual">
+
+          <geometry>
+            <cylinder>
+              <radius>0.75</radius>
+              <length>0.5</length>
+            </cylinder>
+          </geometry>
+
+          <material>
+            <ambient>0.4 0.4 0 1</ambient>
+            <diffuse>0.6 0.6 0 1</diffuse>
+            <specular>0.5 0.5 0.5 1</specular>
+          </material>
+
+        </visual>
+
+      </link>
+    </model>
+
+    <model name="northeast_model">
+      <pose>0 0 0 0 0 0</pose>
+      <static>false</static>
+
+      <link name="northeast_link">
+        <pose>7 -2 2 0 0 0</pose>
+
+        <collision name="southeast_collision">
+
+          <geometry>
+            <box>
+              <size>2 1 1</size>
+            </box>
+          </geometry>
+
+        </collision>
+
+        <visual name="northeast_visual">
+
+          <geometry>
+            <box>
+              <size>2 1 1</size>
+            </box>
+          </geometry>
+
+          <material>
+            <ambient>0.4 0.2 0 1</ambient>
+            <diffuse>0.6 0.3 0 1</diffuse>
+            <specular>0.5 0.5 0.5 1</specular>
+          </material>
+
+        </visual>
+
+      </link>
+    </model>
+
+    <model name="east_model">
+      <pose>0 0 0 0 0 0</pose>
+      <static>false</static>
+
+      <link name="east_link">
+        <pose>7 -2.1 0 0.7 0 0</pose>
+
+        <collision name="east_collision">
+
+          <geometry>
+            <box>
+              <size>1 2 1</size>
+            </box>
+          </geometry>
+
+        </collision>
+
+        <visual name="east_visual">
+
+          <geometry>
+            <box>
+              <size>1 2 1</size>
+            </box>
+          </geometry>
+
+          <material>
+            <ambient>0 0.4 0.4 1</ambient>
+            <diffuse>0 0.6 0.6 1</diffuse>
+            <specular>0.5 0.5 0.5 1</specular>
+          </material>
+
+        </visual>
+
+      </link>
+    </model>
+
+    <model name="southeast_model">
+      <pose>0 0 0 0 0 0</pose>
+      <static>false</static>
+
+      <link name="southeast_link">
+        <pose>7 -2 -2 0 0 0</pose>
+
+        <collision name="southeast_collision">
+
+          <geometry>
+            <box>
+              <size>1 1 2</size>
+            </box>
+          </geometry>
+
+        </collision>
+
+        <visual name="southeast_visual">
+
+          <geometry>
+            <box>
+              <size>1 1 2</size>
+            </box>
+          </geometry>
+
+          <material>
+            <ambient>0.4 0 0.4 1</ambient>
+            <diffuse>0.6 0 0.6 1</diffuse>
+            <specular>0.5 0.5 0.5 1</specular>
+          </material>
+
+        </visual>
+
+      </link>
+    </model>
+
+    <model name="floor_model">
+      <pose>0 0 0 0 0 0</pose>
+      <static>true</static>
+
+      <link name="floor_link">
+        <pose>0 0 -4 0 0 0</pose>
+
+        <collision name="floor_collision">
+
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+
+        </collision>
+
+        <visual name="floor_visual">
+
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+
+          <material>
+            <ambient>0.25 0.25 0.25 1</ambient>
+            <diffuse>0.65 0.65 0.65 1</diffuse>
+            <specular>0.5 0.5 0.5 1</specular>
+          </material>
+
+        </visual>
+
+      </link>
+    </model>
+
+  </world>
+</sdf>

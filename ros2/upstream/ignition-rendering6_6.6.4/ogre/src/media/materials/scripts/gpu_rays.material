@@ -1,0 +1,65 @@
+vertex_program GpuRaysScan1stVS glsl
+{
+  source gpu_rays_1st_pass_vs.glsl
+}
+
+fragment_program GpuRaysScan1stFS glsl
+{
+  source gpu_rays_1st_pass_fs.glsl
+
+  default_params
+  {
+    param_named retro float 0.0
+    param_named max float 0.0
+    param_named min float 0.0
+    param_named_auto near near_clip_distance
+    param_named_auto far far_clip_distance
+  }
+}
+
+material GpuRaysScan1st
+{
+  technique
+  {
+    pass gpu_rays_tex
+    {
+      separate_scene_blend one zero one zero
+
+      vertex_program_ref GpuRaysScan1stVS { }
+      fragment_program_ref GpuRaysScan1stFS { }
+    }
+  }
+}
+
+vertex_program GpuRaysScan2ndVS glsl
+{
+  source gpu_rays_2nd_pass_vs.glsl
+}
+
+fragment_program GpuRaysScan2ndFS glsl
+{
+  source gpu_rays_2nd_pass_fs.glsl
+
+  default_params
+  {
+    param_named tex1 int 0
+    param_named tex2 int 1
+    param_named tex3 int 2
+    param_named_auto texSize texture_size 0
+  }
+}
+
+material GpuRaysScan2nd
+{
+  technique
+  {
+    pass gpu_rays_tex_2nd
+    {
+      separate_scene_blend one zero one zero
+
+      vertex_program_ref GpuRaysScan2ndVS { }
+      fragment_program_ref GpuRaysScan2ndFS { }
+    }
+  }
+}
+

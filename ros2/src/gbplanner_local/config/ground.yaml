@@ -1,0 +1,42 @@
+gbplanner_local:
+  ros__parameters:
+    frame_id: map
+    robot.type: kGround
+    robot.size: [0.4, 0.4, 0.4]
+    robot.center_offset: [0.0, 0.0, 0.0]
+    # Pose/odometry messages carry base height; graph states use planning height.
+    ground.robot_height: 0.55
+    ground.max_ground_height: 0.8
+    ground.max_inclination: 0.85
+    ground.max_negative_inclination: 0.85
+    ground.projection_max_length: 4.0
+    ground.hanging_vertex_penalty: 0.0
+    map.resolution: 0.1
+    map.origin: [-4.0, -3.0, -1.0]
+    map.dimensions: [80, 60, 40]
+    sampling.seed: 42
+    sampling.min: [-0.3, -1.5, -0.1]
+    sampling.max: [4.1, 1.5, 0.8]
+    planning.max_vertices: 80
+    planning.max_edges: 1000
+    planning.max_attempts: 3000
+    planning.edge_min: 0.2
+    planning.edge_max: 1.0
+    planning.overshoot: 0.1
+    planning.neighbor_radius: 1.5
+    planning.neighbor_min: 0.2
+    planning.neighbor_max: 1.5
+    planning.path_length_penalty: 0.07
+    planning.path_direction_penalty: 0.0
+    sensor.range: 3.0
+    sensor.horizontal_fov: 6.283185307179586
+    sensor.vertical_fov: 1.0471975511965976
+    sensor.horizontal_resolution: 0.2617993877991494
+    sensor.vertical_resolution: 0.2617993877991494
+    gain.unknown: 1.0
+    gain.free: 0.0
+    gain.occupied: 0.0
+    global.enable: true
+    global.auto_home: true
+    global.background_enable: false
+    global.background_attempts: 100

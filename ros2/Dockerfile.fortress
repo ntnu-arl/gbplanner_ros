@@ -1,0 +1,14 @@
+ARG BASE_IMAGE=gbplanner2-humble:local
+FROM ${BASE_IMAGE}
+
+# Optional native Gazebo environment; keep the existing Bullet image usable.
+RUN apt-get -o Acquire::Retries=3 update -qq \
+    && DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::Retries=3 install -y --no-install-recommends \
+       ros-humble-ros-gz-sim ros-humble-ros-gz-bridge libignition-gazebo6-dev \
+       ros-humble-actuator-msgs ros-humble-xacro \
+       ros-humble-ign-ros2-control ros-humble-diff-drive-controller \
+       ros-humble-joint-state-broadcaster libegl1-mesa libgl1-mesa-dri \
+       libpcl-filters1.12 \
+    && apt-get clean
+WORKDIR /work/gbplanner_ros2/ros2
+CMD ["bash"]

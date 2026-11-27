@@ -1,0 +1,145 @@
+
+#include "/media/matias/Datos/SyntaxHighlightingMisc.h"
+
+//To render a 2x2 (quads) terrain:
+//You'll normally need 6 vertices per line + 2 for degenerates.
+//You'll need 8 vertices per line.
+//So you'll need a total of 16 vertices.
+
+//To render a 4x2 (quads) terrain:
+//You'll need 10 vertices per line.
+//If we include degenerate vertices, you'll need 12 per line
+//So you'll need a total of 24 vertices.
+//in int inVs_vertexId;
+
+@piece( DefaultTerraHeaderVS )
+	// START UNIFORM DECLARATION
+	@insertpiece( PassStructDecl )
+	@insertpiece( TerraInstanceStructDecl )
+	@property( hlms_shadowcaster )
+		@insertpiece( TerraMaterialStructDecl )
+		#define material materialArray[0]
+	@end
+	@insertpiece( custom_vs_uniformStructDeclaration )
+	// END UNIFORM DECLARATION
+@end
+
+@piece( VertexTerraTransform )
+	//Lighting is in view space
+	@property( !hlms_shadowcaster )
+		outVs.pos = mul( float4(worldPos.xyz, 1.0f), passBuf.view ).xyz;
+	@end
+	@property( !hlms_dual_paraboloid_mapping )
+		@property( !hlms_instanced_stereo )
+			outVs_Position = mul( float4(worldPos.xyz, 1.0f), passBuf.viewProj );
+		@else
+			outVs_Position = mul( float4(worldPos.xyz, 1.0f), passBuf.viewProj[(inVs_stereoDrawId & 0x01u)] );
+			@property( hlms_forwardplus )
+				outVs.cullCamPosXY.xyz = mul( float4( outVs.pos.xyz, 1.0f ),
+											  passBuf.leftEyeViewSpaceToCullCamClipSpace ).xyw;
+			@end
+		@end
+	@else
+		//Dual Paraboloid Mapping
+		outVs_Position.w	= 1.0f;
+		outVs_Position.xyz	= outVs.pos;
+		float L = length( outVs_Position.xyz );
+		outVs_Position.z	+= 1.0f;
+		outVs_Position.xy	/= outVs_Position.z;
+		outVs_Position.z	= (L - NearPlane) / (FarPlane - NearPlane);
+	@end
+@end
+
+@piece( DefaultTerraBodyVS )
+	CellData cellData = cellDataArray[inVs_drawId];
+
+	//Map pointInLine from range [0; 12) to range [0; 9] so that it reads:
+	// 0 0 1 2 3 4 5 6 7 8 9 9
+	uint pointInLine = uint(inVs_vertexId) % (cellData.numVertsPerLine.x); //cellData.numVertsPerLine.x = 12
+	pointInLine = uint(clamp( int(pointInLine) - 1, 0, int(cellData.numVertsPerLine.x - 3u) ));
+
+	uint2 uVertexPos;
+
+	uVertexPos.x = pointInLine >> 1u;
+	//Even numbers are the next line, odd numbers are current line.
+	uVertexPos.y = (pointInLine & 0x01u) == 0u ? 1u : 0u;
+	uVertexPos.y += uint(inVs_vertexId) / cellData.numVertsPerLine.x;
+	//uVertexPos.y += floor( (float)inVs_vertexId / (float)cellData.numVertsPerLine ); Could be faster on GCN.
+
+	@property( use_skirts )
+		//Apply skirt.
+		bool isSkirt =( pointInLine <= 1u ||
+						pointInLine >= (cellData.numVertsPerLine.x - 4u) ||
+						uVertexPos.y == 0u ||
+						uVertexPos.y == (cellData.numVertsPerLine.z + 2u) );
+
+		//Now shift X position for the left & right skirts
+		uVertexPos.x = uint( max( int(uVertexPos.x) - 1, 0 ) );
+		uVertexPos.x = min( uVertexPos.x, ((cellData.numVertsPerLine.x - 7u) >> 1u) );
+		// uVertexPos.x becomes:
+		// 0 0 0 1 1 2 2 3 3 4 4 4
+		// 0 0 0 0 0 1 1 2 2 3 3 3
+		// 0 0 0 0 0 1 1 2 2 2 2 2
+
+		//Now shift Y position for the front & back skirts
+		uVertexPos.y = uint( max( int(uVertexPos.y) - 1, 0 ) );
+		uVertexPos.y = min( uVertexPos.y, cellData.numVertsPerLine.z );
+	@end
+
+	uint lodLevel = cellData.numVertsPerLine.y;
+	uVertexPos = uVertexPos << lodLevel;
+
+	uVertexPos.xy = uint2( clamp( int2(uVertexPos.xy) + cellData.xzTexPosBounds.xy,
+						   int2( 0, 0 ), cellData.xzTexPosBounds.zw ) );
+
+	float3 worldPos;
+	worldPos.y = OGRE_Load2D( heightMap, rshort2( uVertexPos.xy ), 0 ).x;
+@property( use_skirts )
+	float skirtHeight = uintBitsToFloat( cellData.numVertsPerLine.w );
+	if( isSkirt )
+	{
+		if( worldPos.y <= skirtHeight )
+			worldPos.y = worldPos.y - skirtHeight;
+		else
+			worldPos.y = skirtHeight;
+	}
+@end
+	worldPos.xz = float2( uVertexPos.xy );
+	worldPos.xyz = worldPos.xyz * cellData.scale.xyz + cellData.pos.xyz;
+
+	@property( z_up )
+		  worldPos.yz = float2( -worldPos.z, worldPos.y );
+	@end
+
+	@insertpiece( VertexTerraTransform )
+
+	outVs.uv0.xy = float2( uVertexPos.xy ) * float2( cellData.pos.w, cellData.scale.w );
+
+	@insertpiece( DoShadowReceiveVS )
+	@property( hlms_shadowcaster )
+		float shadowConstantBias = material.kD.w;
+		@insertpiece( DoShadowCasterVS )
+	@end
+
+@property( syntax != metal )
+	@property( (!hlms_shadowcaster || alpha_test) && !lower_gpu_overhead )
+		outVs.drawId = inVs_drawId;
+	@end
+@else
+	@property( hlms_fine_light_mask || hlms_forwardplus_fine_light_mask )
+		outVs.objLightMask = worldMaterialIdx[inVs_drawId].z;
+	@end
+
+	@property( use_planar_reflections )
+		outVs.planarReflectionIdx = (ushort)(worldMaterialIdx[inVs_drawId].w);
+	@end
+@end
+
+	@property( hlms_use_prepass_msaa > 1 )
+		outVs.zwDepth.xy = outVs_Position.zw;
+	@end
+
+	@property( hlms_instanced_stereo )
+		outVs_viewportIndex	= int( inVs_stereoDrawId & 0x01u );
+	@end
+@end

@@ -1,0 +1,15 @@
+{
+  "repository": "https://github.com/tu-darmstadt-ros-pkg/hector_gazebo",
+  "commit": "de947fb1e253b114d259e8690456792d91b93347",
+  "package_version": "0.5.4",
+  "interface": "hector_gazebo_plugins/srv/SetBias.srv",
+  "scope": "Interface-only ROS 2 package retaining the original request and empty response. It does not contain Gazebo Classic plugins or dynamic_reconfigure.",
+  "implementation": "gbplanner_gazebo/rmf_imu_adapter_node, native Fortress IMU observations",
+  "reference_selection": "Existing project Hector implementation reference; original lidar dependency did not pin its Hector version.",
+  "reference_sha256": {
+    "hector_gazebo_plugins/src/gazebo_ros_imu.cpp": "afba57015761ea325ac0d5123ad048a6dbe85ccbe70cd441f343adbc606fbc4e",
+    "hector_gazebo_plugins/include/hector_gazebo_plugins/sensor_model.h": "232799ffde67697b5304300a2b5f8257811e0118a95ce359cbe6314d2fd6598f"
+  },
+  "finite_request_adaptation": "Nonfinite bias requests retain the prior state and increment rejected_bias_requests. The source empty response has no success field; callers must supply finite vectors or inspect imu_state.",
+  "local_reference_directory": "../../upstream/hector_gazebo_0.5.4"
+}

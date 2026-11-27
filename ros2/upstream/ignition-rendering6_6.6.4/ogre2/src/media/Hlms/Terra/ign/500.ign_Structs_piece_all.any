@@ -1,0 +1,11 @@
+
+#include "/media/matias/Datos/SyntaxHighlightingMisc.h"
+
+@piece( custom_materialBuffer )
+	float4 ignWeightsMinHeight;
+	float4 ignWeightsMaxHeight;
+@end
+
+@piece( custom_VStoPS )
+	INTERPOLANT( float localHeight, @counter(texcoord) );
+@end

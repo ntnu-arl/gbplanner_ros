@@ -1,0 +1,3 @@
+<launch>
+	<node name="dummy_path_tracker_client_ros_node" pkg="smb_path_tracker" type="dummy_path_tracker_client_ros_node" output="screen"/>
+</launch>

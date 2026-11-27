@@ -1,0 +1,52 @@
+# Native SMB sensor-head profile. Source models and exact parameter provenance:
+# gbplanner_gazebo/models/smb/SOURCE.json.
+# This overlays edgar_exploration.yaml, optionally after upstream_planning.yaml.
+# The observed-map 0.1 m TSDF and terrain projection remain scene adaptations;
+# this file is not a claim of whole ROS 1 parameter or physics equivalence.
+gbplanner_local:
+  ros__parameters:
+    # Sparse Voxblox snapshots grow as multiple native lidar streams explore.
+    # Keep the legacy 4M default for other profiles; this upstream run observed
+    # 4.51M cells and needs headroom without truncating collision data.
+    map.max_snapshot_voxels: 16000000
+    # Native base_link is 0.24 m above flat ground. Graph states are placed at
+    # the actual VLP scan height; its horizontal offset is still applied below.
+    ground.robot_height: 0.24
+    ground.max_ground_height: 0.9337
+    # Keep the tire support layer below the obstacle box, and include the
+    # original head's highest collision (base z + 0.7277 m) inside the box.
+    robot.size: [1.17, 1.17, 0.84]
+    robot.center_offset: [0.0, 0.0, 0.31]
+    planning.exploration_sensors: [velodyne]
+    sensor.names: [velodyne]
+    sensor.velodyne.type: kLidar
+    sensor.velodyne.range: 20.0
+    sensor.velodyne.min_range: 0.0
+    sensor.velodyne.center_offset: [0.23, 0.0, 0.0]
+    sensor.velodyne.rotations: [0.0, 0.0, 0.0]
+    sensor.velodyne.horizontal_fov: 6.283185307179586
+    sensor.velodyne.vertical_fov: 0.5235987755982988
+    sensor.velodyne.horizontal_resolution: 0.08726646259971647
+    sensor.velodyne.vertical_resolution: 0.08726646259971647
+    sensor.velodyne.frontier_threshold: 0.05
+
+voxblox_mapper:
+  ros__parameters:
+    # Integrate every scan. Batch complete map snapshots at 1 Hz to avoid
+    # serializing several copies of a multi-million-cell map on every scan.
+    map.snapshot_publish_period: 1.0
+    # Retain acquisition-time transforms while both native lidar streams wait
+    # for integration. Lookups still use each scan's original timestamp.
+    tf.cache_time_sec: 30.0
+    sensor_frame: velodyne
+    input_sensors: [velodyne, os1]
+    input.velodyne.topic: points/velodyne
+    input.velodyne.frame: velodyne
+    input.os1.topic: points/os1
+    input.os1.frame: lidar_front
+    # Both original relays feed the mapper. Separate queues avoid dropping a
+    # second sensor solely because its timestamp equals the other sensor's.
+    sensor.min_range: 0.5
+    sensor.max_range: 50.0
+    robot.size: [1.17, 1.17, 0.84]
+    robot.center_offset: [0.0, 0.0, 0.31]

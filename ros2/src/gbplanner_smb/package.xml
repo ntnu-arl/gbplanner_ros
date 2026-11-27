@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>gbplanner_smb</name><version>0.1.0</version>
+  <description>ROS 2 SMB wheel motors and Bullet contact simulation using original vehicle geometry.</description>
+  <maintainer email="257770113+ai4sci-z@users.noreply.github.com">ai4sci-z</maintainer>
+  <license>MIT</license>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>eigen</depend><depend>libbullet-dev</depend><depend>rclcpp</depend>
+  <depend>geometry_msgs</depend><depend>nav_msgs</depend><depend>sensor_msgs</depend>
+  <depend>std_msgs</depend><depend>std_srvs</depend><depend>tf2_ros</depend>
+  <exec_depend>launch_ros</exec_depend><exec_depend>ament_index_python</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>rclpy</exec_depend><exec_depend>planner_msgs</exec_depend>
+  <exec_depend>gbplanner_tracking</exec_depend><exec_depend>gbplanner_local</exec_depend>
+  <exec_depend>gbplanner_voxblox</exec_depend>
+  <exec_depend>planner_gazebo_sim</exec_depend>
+  <export><build_type>ament_cmake</build_type></export>
+</package>

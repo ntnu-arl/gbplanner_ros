@@ -1,0 +1,21 @@
+{
+  "upstream_repository": "https://github.com/ntnu-arl/smb_simulator",
+  "upstream_commit": "9aa33187d7375fd48dbd63e27ca5e55bb219f750",
+  "upstream_source": "../../upstream/smb_teleop/SOURCE.json",
+  "license": "MIT; see package LICENSE and retained upstream declarations.",
+  "ports": {
+    "scripts/joy_teleop_node.py": "ROS 2 adaptation of smb_teleop_twist_joy_node.cpp using its axis/button mappings and original launch velocity scales.",
+    "scripts/velocity_mux_node.py": "New ROS 2 arbitration adapter implementing the source priorities, source TTL and Bool lock configuration; not a copy of the external twist_mux package implementation.",
+    "config/teleop.yaml": "Original mapping and scale defaults, with explicit Joy freshness, neutral release and polling settings."
+  },
+  "intentional_changes": [
+    "Validate Joy indices and values; toggle lock on button rising edges rather than every pressed message.",
+    "Stop on stale Joy and emit one zero at neutral instead of indefinitely refreshing old or neutral velocity ownership.",
+    "Consume soft_emergency_stop as a lock plus PCI cancellation; the fixed original repository only had its publisher.",
+    "Route autonomous tracking through external/cmd_vel rather than the original direct-controller mux bypass.",
+    "On manual takeover publish zero before asynchronous pci_stop; cancel once per takeover or new blocked goal rather than per manual message.",
+    "After cancellation query execution_state/tracking_state/control_state, require idle and auto=false, then require each Action layer to accept a new UUID before forwarding subsequently received external Twist.",
+    "Unlocking does not replay cached commands or restore a canceled autonomous task.",
+    "Recognize an explicitly admitted GROUND_MANEUVER in both Action layers when reopening after manual takeover; require active RUNNING/SETTLING state and retain each new UUID/counter, retired-goal and lock conditions. BRAKING cannot reopen the gate."
+  ]
+}

@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>gbplanner_graph</name><version>0.1.0</version>
+  <description>ROS 2 port of GBPlanner graph storage, search and graph services.</description>
+  <maintainer email="tung.dang@nevada.unr.edu">Tung Dang</maintainer>
+  <license>BSD-3-Clause</license>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>rclcpp</depend><depend>geometry_msgs</depend><depend>nav_msgs</depend>
+  <depend>planner_msgs</depend><depend>planner_semantic_msgs</depend>
+  <depend>kdtree</depend><depend>eigen</depend><depend>boost</depend>
+  <exec_depend>launch_ros</exec_depend><exec_depend>rclpy</exec_depend>
+  <exec_depend>ament_index_python</exec_depend>
+  <test_depend>ament_cmake_gtest</test_depend>
+  <export><build_type>ament_cmake</build_type></export>
+</package>

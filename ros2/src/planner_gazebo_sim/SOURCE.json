@@ -1,0 +1,247 @@
+{
+  "source_package": "planner_gazebo_sim",
+  "source_basis": "Pinned GBPlanner 2 repository at commit 7301b5350915cf3a4055072ad559842db37b4ca9; retained files and hashes are listed in this manifest. The original ROS 1 package remains at repository root.",
+  "source_package_license_declaration": "None (as written in upstream package.xml); repository root LICENSE is retained separately for provenance.",
+  "transformation": "Original .world files are preserved under worlds/. worlds_ros2/ contains copies with only the ROS1 RotorS interface plugin line removed; model files are unchanged.",
+  "source_root_relative_to_package": "../../../planner_gazebo_sim",
+  "repository": "https://github.com/ntnu-arl/gbplanner_ros",
+  "branch": "gbplanner2",
+  "commit": "7301b5350915cf3a4055072ad559842db37b4ca9",
+  "archive_sha256": "82eb0aa927c0eaec716bd978352b2088907a0449dacaa4d84825b999ff65dbb5",
+  "upstream_files": [
+    {
+      "path": "CMakeLists.txt",
+      "sha256": "96deec72822b1b17169a7b7556dbabce946280e398076a613aa7dead19f2d798",
+      "bytes": 299
+    },
+    {
+      "path": "models/edgar_mine/edgar_mine.dae",
+      "sha256": "ea68f513e88621a36142c4b19d3d37b8e360855e4ecc3880bb4be931225817ee",
+      "bytes": 1398351
+    },
+    {
+      "path": "models/edgar_mine/model.config",
+      "sha256": "92b6fe47f27e261578b155f4638bdbaa2be59936a2b46b29c088b9a01ca7350f",
+      "bytes": 272
+    },
+    {
+      "path": "models/edgar_mine/model.sdf",
+      "sha256": "5b24e0ee7ff01c4160a089c992e59ea194bee1d783c7d485ee44939b94eb1963",
+      "bytes": 531
+    },
+    {
+      "path": "models/pittsburgh_mine/model.config",
+      "sha256": "8de9c9573117250f23182ef73e6d7cbb9e47d07fb3ad4a4593479efb61558b03",
+      "bytes": 272
+    },
+    {
+      "path": "models/pittsburgh_mine/model.sdf",
+      "sha256": "41ae4176b897d099dbbd3cd03afa1f299cc30b94dcf6585e6f8b369823bc8c4b",
+      "bytes": 550
+    },
+    {
+      "path": "models/pittsburgh_mine/pittsburgh_mine.dae",
+      "sha256": "8a630aff5bbddc71f32b599788f545adbf6ee6ed6d00c45106b9b36f5298cfe3",
+      "bytes": 799402
+    },
+    {
+      "path": "models/virginia_mine/model.config",
+      "sha256": "8c90d93722f51b5c19ade1a4c9be33cbc9c319df22eb2e9478579c558a0842a5",
+      "bytes": 282
+    },
+    {
+      "path": "models/virginia_mine/model.sdf",
+      "sha256": "3a8935283d33f06dde9883896f9db3e65683c1fb985a2fc1f41f7d0c33f33d65",
+      "bytes": 537
+    },
+    {
+      "path": "models/virginia_mine/virginia_mine.dae",
+      "sha256": "fadb7b117f78e1f12fea351f2bbe0b034d5478c97eae4f7e1ddc174fc14dbad4",
+      "bytes": 40014313
+    },
+    {
+      "path": "package.xml",
+      "sha256": "155470ac62312ad99481d28ab8dbc632ea0feba02f936843efbe2633d5b66d60",
+      "bytes": 407
+    },
+    {
+      "path": "worlds/darpa_cave_01.world",
+      "sha256": "7888c67d71fa5a5697feb90f3e4beac0d5a661abc12f6b99132a1cc711c25fea",
+      "bytes": 12116
+    },
+    {
+      "path": "worlds/darpa_cave_02.world",
+      "sha256": "ac7b5f5222682468daf2ffa2e00586273b11610d025852df0046d28f79f4539f",
+      "bytes": 12346
+    },
+    {
+      "path": "worlds/darpa_subt_final_circuit.world",
+      "sha256": "5ca433032e1181339f6c255c721875c4b3f52829163c6dfd18ae39c925895126",
+      "bytes": 124305
+    },
+    {
+      "path": "worlds/edgar_mine.world",
+      "sha256": "655e7a84a1989d498638bc42fe4f3716ca5b4ea51e031e3b3a7cc6994f2f3483",
+      "bytes": 1154
+    },
+    {
+      "path": "worlds/niosh_osrf.world",
+      "sha256": "f5a7297245442a701bea06c810f847f8f051c3947d35d98e26442a0b7adef1fa",
+      "bytes": 26690
+    },
+    {
+      "path": "worlds/pittsburgh_mine.world",
+      "sha256": "9b5a73b363ba9a59711ed2e0cb79f1121a563a916cbfe9a0b57ae834fde52b59",
+      "bytes": 3335
+    },
+    {
+      "path": "worlds/virginia_mine.world",
+      "sha256": "3222d68746b7184fac74de868e2586ba5f9db6d70115c081976c24aaf6313a08",
+      "bytes": 1158
+    }
+  ],
+  "retained_files": [
+    {
+      "path": "models/edgar_mine/edgar_mine.dae",
+      "sha256": "ea68f513e88621a36142c4b19d3d37b8e360855e4ecc3880bb4be931225817ee",
+      "bytes": 1398351
+    },
+    {
+      "path": "models/edgar_mine/model.config",
+      "sha256": "92b6fe47f27e261578b155f4638bdbaa2be59936a2b46b29c088b9a01ca7350f",
+      "bytes": 272
+    },
+    {
+      "path": "models/edgar_mine/model.sdf",
+      "sha256": "5b24e0ee7ff01c4160a089c992e59ea194bee1d783c7d485ee44939b94eb1963",
+      "bytes": 531
+    },
+    {
+      "path": "models/pittsburgh_mine/model.config",
+      "sha256": "8de9c9573117250f23182ef73e6d7cbb9e47d07fb3ad4a4593479efb61558b03",
+      "bytes": 272
+    },
+    {
+      "path": "models/pittsburgh_mine/model.sdf",
+      "sha256": "41ae4176b897d099dbbd3cd03afa1f299cc30b94dcf6585e6f8b369823bc8c4b",
+      "bytes": 550
+    },
+    {
+      "path": "models/pittsburgh_mine/pittsburgh_mine.dae",
+      "sha256": "8a630aff5bbddc71f32b599788f545adbf6ee6ed6d00c45106b9b36f5298cfe3",
+      "bytes": 799402
+    },
+    {
+      "path": "models/virginia_mine/model.config",
+      "sha256": "8c90d93722f51b5c19ade1a4c9be33cbc9c319df22eb2e9478579c558a0842a5",
+      "bytes": 282
+    },
+    {
+      "path": "models/virginia_mine/model.sdf",
+      "sha256": "3a8935283d33f06dde9883896f9db3e65683c1fb985a2fc1f41f7d0c33f33d65",
+      "bytes": 537
+    },
+    {
+      "path": "models/virginia_mine/virginia_mine.dae",
+      "sha256": "fadb7b117f78e1f12fea351f2bbe0b034d5478c97eae4f7e1ddc174fc14dbad4",
+      "bytes": 40014313
+    },
+    {
+      "path": "worlds/darpa_cave_01.world",
+      "sha256": "7888c67d71fa5a5697feb90f3e4beac0d5a661abc12f6b99132a1cc711c25fea",
+      "bytes": 12116
+    },
+    {
+      "path": "worlds/darpa_cave_02.world",
+      "sha256": "ac7b5f5222682468daf2ffa2e00586273b11610d025852df0046d28f79f4539f",
+      "bytes": 12346
+    },
+    {
+      "path": "worlds/darpa_subt_final_circuit.world",
+      "sha256": "5ca433032e1181339f6c255c721875c4b3f52829163c6dfd18ae39c925895126",
+      "bytes": 124305
+    },
+    {
+      "path": "worlds/edgar_mine.world",
+      "sha256": "655e7a84a1989d498638bc42fe4f3716ca5b4ea51e031e3b3a7cc6994f2f3483",
+      "bytes": 1154
+    },
+    {
+      "path": "worlds/niosh_osrf.world",
+      "sha256": "f5a7297245442a701bea06c810f847f8f051c3947d35d98e26442a0b7adef1fa",
+      "bytes": 26690
+    },
+    {
+      "path": "worlds/pittsburgh_mine.world",
+      "sha256": "9b5a73b363ba9a59711ed2e0cb79f1121a563a916cbfe9a0b57ae834fde52b59",
+      "bytes": 3335
+    },
+    {
+      "path": "worlds/virginia_mine.world",
+      "sha256": "3222d68746b7184fac74de868e2586ba5f9db6d70115c081976c24aaf6313a08",
+      "bytes": 1158
+    },
+    {
+      "path": "UPSTREAM_package.xml",
+      "upstream_path": "package.xml",
+      "sha256": "155470ac62312ad99481d28ab8dbc632ea0feba02f936843efbe2633d5b66d60",
+      "bytes": 407
+    },
+    {
+      "path": "UPSTREAM_LICENSE",
+      "upstream_path": "../LICENSE",
+      "sha256": "d53882826bc2d1f8402b9093945837fbcd9b46af05b3b78052f5a0167728e12a",
+      "bytes": 1533
+    }
+  ],
+  "derived_worlds": [
+    {
+      "source": "worlds/darpa_cave_01.world",
+      "path": "worlds_ros2/darpa_cave_01.world",
+      "transformation": "Remove the single self-closing librotors_gazebo_ros_interface_plugin.so line; preserve all remaining bytes.",
+      "sha256": "fd3dec148e48e978a117ecb0bb4da5b2aaffd6f6b3adde11e165c9c8de8da526"
+    },
+    {
+      "source": "worlds/darpa_cave_02.world",
+      "path": "worlds_ros2/darpa_cave_02.world",
+      "transformation": "Remove the single self-closing librotors_gazebo_ros_interface_plugin.so line; preserve all remaining bytes.",
+      "sha256": "294dca7dac0f4711a82ddaf079b8d27509327e70dd5d7147e6d9942a259e3dde"
+    },
+    {
+      "source": "worlds/darpa_subt_final_circuit.world",
+      "path": "worlds_ros2/darpa_subt_final_circuit.world",
+      "transformation": "Remove the single self-closing librotors_gazebo_ros_interface_plugin.so line; preserve all remaining bytes.",
+      "sha256": "7736777d0b12d7ddca785ef767130c0103fd7321f3e2eaa774147c6bd1ed2bb0"
+    },
+    {
+      "source": "worlds/edgar_mine.world",
+      "path": "worlds_ros2/edgar_mine.world",
+      "transformation": "Remove the single self-closing librotors_gazebo_ros_interface_plugin.so line; preserve all remaining bytes.",
+      "sha256": "9d56fd7a11b99fd70aa4d9382c423c3211814348db18be426db548d9ece56708"
+    },
+    {
+      "source": "worlds/niosh_osrf.world",
+      "path": "worlds_ros2/niosh_osrf.world",
+      "transformation": "Remove the single self-closing librotors_gazebo_ros_interface_plugin.so line; preserve all remaining bytes.",
+      "sha256": "2fd01f3540243d078993ad6a88579b8dbf7d1eb36a93eccf498a47cf2f8f72a0"
+    },
+    {
+      "source": "worlds/pittsburgh_mine.world",
+      "path": "worlds_ros2/pittsburgh_mine.world",
+      "transformation": "Remove the single self-closing librotors_gazebo_ros_interface_plugin.so line; preserve all remaining bytes.",
+      "sha256": "82f15c102a74db66691c0196efc056c3313792d7bcb4dae52d039caf61a61f01"
+    },
+    {
+      "source": "worlds/virginia_mine.world",
+      "path": "worlds_ros2/virginia_mine.world",
+      "transformation": "Remove the single self-closing librotors_gazebo_ros_interface_plugin.so line; preserve all remaining bytes.",
+      "sha256": "a3392eb444fe607c8827c5d80519da63e9ac3bc883bdd47f530430aa122a22d4"
+    }
+  ],
+  "derived_collision_mesh": {
+    "manifest": "collision/SOURCE.json",
+    "geometry": "Edgar mine exact world-space triangle conversion for the Bullet SMB adapter",
+    "source_assets_modified": false,
+    "gazebo_runtime_status": "not_run"
+  }
+}

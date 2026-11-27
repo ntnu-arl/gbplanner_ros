@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>smb_path_tracker</name>
+  <version>0.0.0</version>
+  <description>Path tracker for SuperMegaBot</description>
+  <maintainer email="mdharmadhikari@nevada.unr.edu">Mihir Dharmadhikari</maintainer>
+  <license>None</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend>catkin_simple</buildtool_depend>
+  <depend>planner_msgs</depend>
+  <depend>roscpp</depend>
+  <depend>tf</depend>
+  <depend>geometry_msgs</depend>
+
+</package>

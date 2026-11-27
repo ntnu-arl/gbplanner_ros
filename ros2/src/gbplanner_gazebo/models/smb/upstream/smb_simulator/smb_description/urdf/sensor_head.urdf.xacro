@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="sensor_head">
+
+	<xacro:macro name="sensor_head" params="*origin parent:=base_link name:=sensor_head">
+		<joint name="${name}_base_mount_joint" type="fixed">
+			<xacro:insert_block name="origin" />
+			<parent link="${parent}"/>
+			<child link="${name}_base_link"/>
+		</joint>
+
+		<link name="${name}_base_link">
+			<inertial>
+				<mass value="0.001" />
+				<origin xyz="0 0 0" rpy="0 0 0"/>
+				<inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
+			</inertial>
+		</link>
+
+		<xacro:arg name="gpu" default="true"/>
+		
+		<xacro:include filename="$(find lidar_description)/urdf/VLP-16.urdf.xacro"/>
+		<xacro:VLP-16 parent="${name}_base_link" name="velodyne" topic="velodyne_points" hz="10" samples="440" gpu="$(arg gpu)" collision_range="0.2" min_range="0.2">
+			<origin xyz="0.03 0 0.08" rpy="0 0 0" />
+		</xacro:VLP-16>
+
+		<xacro:include filename="$(find lidar_description)/urdf/OS1-64.urdf.xacro"/>
+		<xacro:OS1-64 parent="${name}_base_link" name="lidar_front" topic="lidar_front_points" hz="10" lasers="32" samples="440" min_range="0.7">
+			<origin xyz="0.1 -0.3 -0.1" rpy="0 0.5 0" />
+		</xacro:OS1-64>
+
+		<xacro:include filename="$(find smb_description)/urdf/smb_rgb_camera.urdf.xacro"/>
+
+		<!-- Cameras: -->
+		<xacro:rgb_camera parent="${name}_base_link" name="rgb_cam_front">
+			<origin xyz="0.10 -0.03 0.033" rpy="0 0 0" />
+		</xacro:rgb_camera>
+
+		<xacro:rgb_camera parent="${name}_base_link" name="rgb_cam_left">
+			<origin xyz="0.01 0.10 0.033" rpy="0 0 1.570795" />
+		</xacro:rgb_camera>
+
+		<xacro:rgb_camera parent="${name}_base_link" name="rgb_cam_right">
+			<origin xyz="0.01 -0.10 0.033" rpy="0 0 -1.570795" />
+		</xacro:rgb_camera>
+		
+	</xacro:macro>
+</robot>

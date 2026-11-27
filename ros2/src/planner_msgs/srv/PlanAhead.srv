@@ -1,0 +1,22 @@
+# Native ROS 2 extension: plan from the currently executing route endpoint.
+# arrival_time is its remaining travel time in seconds when requested.
+std_msgs/Header header
+geometry_msgs/Pose root_pose
+float64 arrival_time
+# ROS 2 extension: preserve the active route's mode in its continuation plan.
+int32 bound_mode 3
+---
+bool success
+bool homing_required
+# An evaluated ahead round reached the shared no-frontier threshold. Do not
+# commit another local route; finish the current action, observe its endpoint,
+# then request global planning from actual odometry. Homing/landing take priority.
+bool global_required
+string reason
+int32 map_revision
+# Populated only on success. The follower rechecks its current mission budget
+# immediately before commit, adding its own remaining time to the old endpoint.
+bool budget_enabled
+# New local travel + conservative return route + reserve, excluding old arrival.
+float64 required_time_after_root
+geometry_msgs/Pose[] path

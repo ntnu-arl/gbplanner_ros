@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="robot_namespace" default="/"/>
+
+  <param name="robot_description" command="$(find xacro)/xacro '$(find smb_description)/urdf/smb.urdf.xacro' robot_namespace:=$(arg robot_namespace)" />
+</launch>

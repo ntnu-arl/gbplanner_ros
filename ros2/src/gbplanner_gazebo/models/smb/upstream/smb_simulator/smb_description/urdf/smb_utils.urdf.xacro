@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+        
+    <!--   Inertia definitions -->
+    <xacro:macro name="cylinder_inertia" params="m r h">
+        <inertia  
+            ixx="${m*(3*r*r+h*h)/12}" 
+            ixy="0" 
+            ixz="0"
+            iyy="${m*(3*r*r+h*h)/12}" 
+            iyz="0"
+            izz="${m*r*r/2}"
+        />
+    </xacro:macro>
+    <xacro:macro name="box_inertia" params="m x y z">
+        <inertia  
+            ixx="${m*(y*y+z*z)/12}" 
+            ixy="0" 
+            ixz="0"
+            iyy="${m*(x*x+z*z)/12}" 
+            iyz="0"
+            izz="${m*(x*x+z*z)/12}"
+        />
+    </xacro:macro>
+    <xacro:macro name="sphere_inertia" params="m r">
+        <inertia  
+            ixx="${2*m*r*r/5}" 
+            ixy="0"
+            ixz="0"
+            iyy="${2*m*r*r/5}"
+            iyz="0"
+            izz="${2*m*r*r/5}"
+        />
+    </xacro:macro>
+
+    <!-- Materials -->
+    <material name="black">
+        <color rgba="0 0 0 1.0"/>
+    </material>
+    <material name="blue">
+        <color rgba="0 0 0.78 1.0"/>
+    </material>
+    <material name="green">
+        <color rgba="0 0.78 0 1.0"/>
+    </material>
+    <material name="grey">
+        <color rgba="0.19 0.19 0.19 1.0"/>
+    </material>
+    <material name="orange">
+        <color rgba="1.0 0.423 0.039 1.0"/>
+    </material>
+    <material name="brown">
+        <color rgba="0.87 0.811 0.764 1.0"/>
+    </material>
+    <material name="red">
+        <color rgba="0.78 0 0 1.0"/>
+    </material>
+    <material name="white">
+        <color rgba="1.0 1.0 1.0 1.0"/>
+    </material>
+
+  </robot>

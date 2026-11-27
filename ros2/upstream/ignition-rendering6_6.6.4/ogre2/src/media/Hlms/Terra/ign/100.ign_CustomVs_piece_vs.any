@@ -1,0 +1,4 @@
+
+@piece( custom_vs_posExecution )
+	outVs.localHeight = worldPos.z - cellData.pos.y;
+@end

@@ -1,0 +1,36 @@
+{
+  "repository": "https://github.com/ntnu-arl/rotors_simulator",
+  "branch": "dev/rmf_obelix",
+  "commit": "e8c6f170de51620f572664656f10603334bf5057",
+  "archive_sha256": "ffb958939a7e6cff0970b204961a72c893e7e5454040bb4c4e176795441d26bd",
+  "resolved_date": "2026-10-26",
+  "scope": "Compile original LeePositionController implementation unchanged against ROS-independent compatibility types; Bullet adapter is new",
+  "files": {
+    "vendor/rotors_control/package.xml": "018fe54df0eb18b32e66ac72b46c62cae0e2e485ac18cbdd24e25def74ea9af3",
+    "vendor/rotors_control/include/rotors_control/lee_position_controller.h": "3cf7f60ff5fadbc92c4fe6ccb00752c20b6f9350d27f162d685d0b7827630107",
+    "vendor/rotors_control/include/rotors_control/parameters.h": "fe505fe18c751063b6d529450717356e52e299e5de889f20af4c71c1e723f15f",
+    "vendor/rotors_control/include/rotors_control/common.h": "d01982be25a52394978257a19d58b0f20932abe92fe266632619a2518ca90bc0",
+    "vendor/rotors_control/src/library/lee_position_controller.cpp": "19a5fc767c3427ddf8de4d3453c0c243aac9be122b0e5be9f6213c8184faaa0b",
+    "vendor/rotors_gazebo/resource/rmf_obelix.yaml": "b1725ced0273dfe152fc5707a814d7e604b60bbee28d492beb0960bc4c7debeb",
+    "vendor/rotors_gazebo/resource/lee_controller_rmf_obelix.yaml": "e6975a1b49d4ca11290cbe4b4a58265eced267b19aa839b657dd0dab0cb536c1",
+    "vendor/rotors_description/urdf/rmf_obelix.xacro": "81d34161e7bfd2d3049bd4c89a16229b229ed0c8b6c0e455617cca969736eeef",
+    "vendor/rotors_gazebo_plugins/src/gazebo_motor_model.cpp": "4a3fbfe356f51e39e7d6a323a3391a56aacc34ca70f470ba5b3003b695f894b2",
+    "vendor/rotors_gazebo_plugins/include/rotors_gazebo_plugins/common.h": "ad2b0a83d04ff8a0a20dd5055b6dbd20af93b2178f95d18824408b5f9fc769e8",
+    "vendor/rotors_gazebo_plugins/include/rotors_gazebo_plugins/gazebo_motor_model.h": "02da82f05f0c9ef72a19db77e6e8a0bc73a42efd3a1162213eb373e372a35dc1"
+  },
+  "adaptations": {
+    "controller": "lee_position_controller.cpp is compiled directly from unmodified vendor source; ROS1 message includes replaced by field-compatible C++ types in include/",
+    "vehicle": "Controller mass/inertia/rotor layout and gains from original RMF YAML; motor lag/limits and body dimensions from RMF xacro",
+    "physics": "New Bullet 3.06 adapter: one rigid body, original rotor force/torque allocation, first-order motor response, lateral drag and rolling moment",
+    "sensor": "New Bullet closest-ray lidar, 6480 total rays, 7 m range. Default legacy frame coincides with body; optional dual layout uses front/rear offsets +/-0.2 m, rear yaw pi, 3240 rays each, acquisition-time TF and 25 ms transport delay.",
+    "initialization": "Starts at hover with equilibrium rotor speed at (-2,0,0); no takeoff or landing phase",
+    "trajectory": "Hold timed trajectory samples with supplied derivatives, matching the original controller input; no pose reassignment during motion",
+    "mission_speed": "Physical demo defaults 0.25 m/s; original kinematic demo was 1.0 m/s; not a matched performance comparison",
+    "world": "Synthetic two-room collision world, not the original DARPA cave/Gazebo world"
+  },
+  "native_gazebo_consumer": {
+    "target": "gbplanner_dynamics::lee_controller",
+    "source": "gbplanner_gazebo/src/rmf_controller_node.cpp",
+    "scope": "Exports unchanged Lee core to a ROS2 controller which commands native rotor plugins; existing Bullet adapter unchanged"
+  }
+}

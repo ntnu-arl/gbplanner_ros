@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package format="3">
+ <name>gbplanner_voxblox</name><version>0.1.0</version>
+ <description>Native ROS 2 pointcloud and timestamped TF adapter for the official Voxblox TSDF core.</description>
+ <maintainer email="257770113+ai4sci-z@users.noreply.github.com">ai4sci-z</maintainer>
+ <license>BSD-2-Clause</license><license>BSD-3-Clause</license><license>MIT</license><buildtool_depend>ament_cmake</buildtool_depend>
+ <depend>gbplanner_local</depend><depend>voxblox_core</depend><depend>voxblox_msgs</depend><depend>rclcpp</depend>
+ <depend>planner_msgs</depend>
+ <depend>sensor_msgs</depend><depend>std_srvs</depend><depend>tf2_ros</depend>
+ <depend>nav_msgs</depend><depend>std_msgs</depend><depend>geometry_msgs</depend>
+ <test_depend>ament_cmake_gtest</test_depend><exec_depend>launch_ros</exec_depend>
+ <exec_depend>ament_index_python</exec_depend><exec_depend>rclpy</exec_depend>
+ <build_depend>rosidl_default_generators</build_depend>
+ <exec_depend>rosidl_default_runtime</exec_depend><depend>visualization_msgs</depend>
+ <member_of_group>rosidl_interface_packages</member_of_group>
+ <export><build_type>ament_cmake</build_type></export>
+</package>

@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>gbplanner_ui</name><version>0.2.0</version>
+  <description>ROS 2 RViz control panel for GBPlanner.</description>
+  <maintainer email="257770113+ai4sci-z@users.noreply.github.com">ai4sci-z</maintainer>
+  <license>BSD-3-Clause</license>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>rviz_common</depend><depend>pluginlib</depend><depend>rclcpp</depend>
+  <depend>planner_msgs</depend><depend>std_srvs</depend><depend>std_msgs</depend>
+  <depend>qtbase5-dev</depend>
+  <exec_depend>rviz2</exec_depend><exec_depend>rviz_default_plugins</exec_depend>
+  <exec_depend>launch_ros</exec_depend><exec_depend>ament_index_python</exec_depend>
+  <export><build_type>ament_cmake</build_type></export>
+</package>

@@ -1,0 +1,20 @@
+gbplanner_velocity_mux:
+  ros__parameters:
+    # Original SMB source order: joy=10, interactive_marker=8, external=1.
+    # Emergency lock is independent of these expiring velocity sources.
+    source_timeout: 0.5
+    publish_period: 0.02
+    state_poll_period: 0.1
+    service_timeout: 2.0
+
+gbplanner_joy_teleop:
+  ros__parameters:
+    axis_linear: 3
+    axis_angular: 2
+    button_stop: 5
+    button_lock: 4
+    max_velocity_linear: 1.0
+    max_velocity_angular: 1.5
+    joy_timeout: 0.5
+    publish_period: 0.1
+    deadzone: 0.05

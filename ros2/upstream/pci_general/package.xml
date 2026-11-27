@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>pci_general</name>
+  <version>0.0.0</version>
+  <description>Interface with gbplanner for ground robots</description>
+  <maintainer email="mdharmadhikari@nevada.unr.edu">Mihir Dharmadhikari</maintainer>
+  <license>None</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend>catkin_simple</buildtool_depend>
+  <depend>planner_control_interface</depend>
+  <depend>actionlib</depend>
+  <depend>actionlib_msgs</depend>
+  <depend>mav_msgs</depend>
+  <depend>planner_msgs</depend>
+  <depend>geometry_msgs</depend>
+
+</package>

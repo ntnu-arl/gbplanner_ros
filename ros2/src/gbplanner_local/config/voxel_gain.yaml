@@ -1,0 +1,26 @@
+gbplanner_local:
+  ros__parameters:
+    frame_id: map
+    map.resolution: 0.25
+    map.origin: [-5.0, -5.0, -1.5]
+    map.dimensions: [40, 40, 12]
+    robot.size: [0.4, 0.4, 0.4]
+    sampling.seed: 42
+    sampling.min: [-2.0, -2.5, -1.0]
+    sampling.max: [5.0, 2.5, 1.0]
+    planning.max_vertices: 100
+    planning.max_edges: 2000
+    planning.max_attempts: 4000
+    planning.use_ray_model_for_volumetric_gain: false
+    planning.exp_gain_voxel_size: 0.25
+    sensor.names: [camera]
+    planning.exploration_sensors: [camera]
+    sensor.camera.type: kCamera
+    sensor.camera.range: 6.0
+    sensor.camera.horizontal_fov: 1.5707963267948966
+    sensor.camera.vertical_fov: 1.0471975511965976
+    sensor.camera.horizontal_resolution: 0.2617993877991494
+    sensor.camera.vertical_resolution: 0.2617993877991494
+    gain.unknown: 1.0
+    gain.free: 0.1
+    gain.occupied: 0.0

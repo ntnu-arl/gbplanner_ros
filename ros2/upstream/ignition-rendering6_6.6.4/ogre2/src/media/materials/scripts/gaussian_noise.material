@@ -1,0 +1,141 @@
+/*
+ * Copyright (C) 2019 Open Source Robotics Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
+// GLSL shaders
+vertex_program GaussianNoiseVS_GLSL glsl
+{
+  source gaussian_noise_vs.glsl
+  default_params
+  {
+    param_named_auto worldViewProj worldviewproj_matrix
+  }
+}
+
+fragment_program GaussianNoiseFS_GLSL glsl
+{
+  source gaussian_noise_fs.glsl
+  default_params
+  {
+    param_named RT int 0
+    param_named mean float 0.0
+    param_named stddev float 1.0
+    param_named offsets float3 0.0 0.0 0.0
+  }
+}
+
+// Metal shaders
+vertex_program GaussianNoiseVS_Metal metal
+{
+  source gaussian_noise_vs.metal
+  default_params
+  {
+    param_named_auto worldViewProj worldviewproj_matrix
+  }
+}
+
+fragment_program GaussianNoiseFS_Metal metal
+{
+  source gaussian_noise_fs.metal
+  shader_reflection_pair_hint GaussianNoiseVS_Metal
+}
+
+// Unified shaders
+vertex_program GaussianNoiseVS unified
+{
+  delegate GaussianNoiseVS_GLSL
+  delegate GaussianNoiseVS_Metal
+}
+
+fragment_program GaussianNoiseFS unified
+{
+  delegate GaussianNoiseFS_GLSL
+  delegate GaussianNoiseFS_Metal
+}
+
+material GaussianNoise
+{
+  technique
+  {
+    pass
+    {
+      depth_check off
+      depth_write off
+      cull_hardware none
+
+      vertex_program_ref GaussianNoiseVS { }
+      fragment_program_ref GaussianNoiseFS { }
+
+      texture_unit RT
+      {
+        tex_coord_set 0
+        tex_address_mode clamp
+        filtering linear linear linear
+      }
+    }
+  }
+}
+
+// GLSL shaders
+fragment_program GaussianNoiseDepthFS_GLSL glsl
+{
+  source gaussian_noise_depth_fs.glsl
+  default_params
+  {
+    param_named RT int 0
+    param_named mean float 0.0
+    param_named stddev float 1.0
+    param_named offsets float3 0.0 0.0 0.0
+  }
+}
+
+// Metal shaders
+fragment_program GaussianNoiseDepthFS_Metal metal
+{
+  source gaussian_noise_depth_fs.metal
+  shader_reflection_pair_hint GaussianNoiseVS_Metal
+}
+
+// Unified shaders
+fragment_program GaussianNoiseDepthFS unified
+{
+  delegate GaussianNoiseDepthFS_GLSL
+  delegate GaussianNoiseDepthFS_Metal
+}
+
+material GaussianNoiseDepth
+{
+  technique
+  {
+    pass
+    {
+      depth_check off
+      depth_write off
+      cull_hardware none
+
+      vertex_program_ref GaussianNoiseVS { }
+      fragment_program_ref GaussianNoiseDepthFS { }
+
+      texture_unit RT
+      {
+        tex_coord_set 0
+        tex_address_mode clamp
+        filtering none
+      }
+    }
+  }
+}
+

@@ -1,0 +1,14 @@
+# Native ROS 2 extension: replace a running goal with its remaining route plus
+# a new segment rooted at its old endpoint. Success means committed, not arrived.
+std_msgs/Header header
+uint8[16] goal_id
+uint64 expected_generation
+geometry_msgs/Pose[] path
+bool budget_enabled
+float64 required_time_after_root
+---
+bool accepted
+string reason
+uint64 generation
+uint64 map_revision
+geometry_msgs/Pose[] path

@@ -1,0 +1,348 @@
+{
+  "scope": "Pinned SMB physical sensor head and lidar dependencies, plus explicit native Fortress profile conversion. No ROS1/ROS2 simulation equivalence claim.",
+  "recorded_at": "2026-10-31T23:12:45.022428+00:00",
+  "sources": {
+    "smb_simulator": {
+      "repository": "https://github.com/ntnu-arl/smb_simulator",
+      "commit": "9aa33187d7375fd48dbd63e27ca5e55bb219f750",
+      "archive_sha256": "8072e44e9c9e84ebb9eef735d56558eec39bf208e374ad1dcaf0ab3350c0d049",
+      "acquisition": "Selected files extracted byte-for-byte from the previously downloaded archive after verifying its SHA-256.",
+      "license": "smb_description/package.xml declares MIT; the retained archive has no repository-wide LICENSE. Its separate smb_path_tracker license does not replace model ownership."
+    },
+    "lidar_simulator": {
+      "repository": "https://github.com/ntnu-arl/lidar_simulator",
+      "commit": "c772727b73445975d604f6ed6f5fd524ae1caa8c",
+      "reference_branch": "psuedo_bpearl",
+      "selection": "Same already pinned dependency as RMF; declared by fixed GBPlanner packages_https.rosinstall. SMB README spells pseudo_bpearl, but the selected branch follows the GBPlanner dependency lock, not a new HEAD. No historical same-date claim.",
+      "acquisition": "Two macros downloaded from raw.githubusercontent.com at the exact commit; plugin and three VLP meshes from public GitHub Git blob API after raw connections timed out. Existing same-commit license, package declaration and Ouster mesh reused. Every lidar file verified against its pinned Git tree blob SHA-1; SHA-256 also recorded.",
+      "license": "Unmodified upstream LICENSE retained. It is headed BSD 2-Clause but contains the non-endorsement condition too; preserve the actual license text without relabeling it. lidar_description/package.xml declares BSD."
+    }
+  },
+  "files": {
+    "upstream/lidar_simulator/LICENSE": {
+      "sha256": "a0322173997beb63b7f53a83ab4fa67be57e67c0cc2a41c3127ab022910708bf",
+      "bytes": 1543,
+      "git_blob_sha1": "de4c7b6192a13196b0d1013bdeba687e5274e06c"
+    },
+    "upstream/lidar_simulator/lidar_description/meshes/Ouster/ouster.dae": {
+      "sha256": "d71e557aa501303bf5c31be7db9ee0a129337921301f5bd96f3d977242c1728c",
+      "bytes": 7509749,
+      "git_blob_sha1": "875cefa5c95ff6d089ccc28e4dae429efc83d492"
+    },
+    "upstream/lidar_simulator/lidar_description/meshes/VLP-16/VLP-16_base_1.dae": {
+      "sha256": "cb3a270b85e089940c14ce9b0ac54ba3a112cd7793df6b7494b116cf1b2b156e",
+      "bytes": 265306,
+      "git_blob_sha1": "d033ef370cd2904d9f1b5336c94e309c5f7aabe9"
+    },
+    "upstream/lidar_simulator/lidar_description/meshes/VLP-16/VLP-16_base_2.dae": {
+      "sha256": "fdbb99489bb948cd605916ca99b15f6654f5fd4e883c81aefadd6589653921c2",
+      "bytes": 184777,
+      "git_blob_sha1": "5ae0343caec835bc8a61c187062c37c4f000a379"
+    },
+    "upstream/lidar_simulator/lidar_description/meshes/VLP-16/VLP-16_scan.dae": {
+      "sha256": "1d153783195adc3af084195fe987fa0efa79d815fd29b08935749159d8a6488f",
+      "bytes": 23053,
+      "git_blob_sha1": "569632886181ff3d885af5e2b3766c870e10c151"
+    },
+    "upstream/lidar_simulator/lidar_description/package.xml": {
+      "sha256": "54048b3e7084e6d1565cf8017ffbc93da1138bfa3bc668af0f183bf27790fb20",
+      "bytes": 461,
+      "git_blob_sha1": "6a44832586a6a60852c8f4f1e959f49a483e4101"
+    },
+    "upstream/lidar_simulator/lidar_description/urdf/OS1-64.urdf.xacro": {
+      "sha256": "942117757156869a9ce64d78a442efec29b2da870aef1fac7639616a1a499802",
+      "bytes": 5220,
+      "git_blob_sha1": "dec381281b44dce1e2722907a1ed89505d54858f"
+    },
+    "upstream/lidar_simulator/lidar_description/urdf/VLP-16.urdf.xacro": {
+      "sha256": "66434c0ebc947cfd1fafa7cea250d44e7d0ff8b4d8116692f9b7b10fe786f792",
+      "bytes": 5140,
+      "git_blob_sha1": "ee21eb013e61062f2e563bb38595fa26056c2cbc"
+    },
+    "upstream/lidar_simulator/lidar_gazebo_plugins/src/GazeboRosLidar.cpp": {
+      "sha256": "69c1fdb1b2ab035cb4167d830c9ca37283faa23cb380c83a57ab8190ece04c2a",
+      "bytes": 12299,
+      "git_blob_sha1": "f949420e37b4a0a16a68663e3b554681c442dcb3"
+    },
+    "upstream/smb_simulator/README.md": {
+      "sha256": "b647fe423dfe66b2db5e2e25b28562e1362dd07b19366d794be7934c3e921ddc",
+      "bytes": 817
+    },
+    "upstream/smb_simulator/smb_description/launch/description.launch": {
+      "sha256": "e62f5efdc13f0725dd88838231f7840ccd8e75025e887225eb91203311f9309c",
+      "bytes": 239
+    },
+    "upstream/smb_simulator/smb_description/package.xml": {
+      "sha256": "3db5ea45b658266db20ed84fd39b54b8db406ab6ce1d4d398567dd3a62c50c02",
+      "bytes": 759
+    },
+    "upstream/smb_simulator/smb_description/urdf/sensor_head.urdf.xacro": {
+      "sha256": "e650ffacad0da8a4708d8d5e443c7ccf31fc4613fd2935c344b7d23b747a665a",
+      "bytes": 1761
+    },
+    "upstream/smb_simulator/smb_description/urdf/smb.urdf.xacro": {
+      "sha256": "5b458187eecf7daa25bf386b96291ff8500a68c2bb34e0aa4037c05feb76bc13",
+      "bytes": 3377
+    },
+    "upstream/smb_simulator/smb_description/urdf/smb_rgb_camera.urdf.xacro": {
+      "sha256": "ea12e96ad4c8e7742fdf9629bbf9ba58835c0c7a86ef388abcf903e9039beb52",
+      "bytes": 2472
+    },
+    "upstream/smb_simulator/smb_description/urdf/smb_utils.urdf.xacro": {
+      "sha256": "b8c6802b884a599c528aa4cb2d9537d94dac3365fedd6e7283f31c2ba745d435",
+      "bytes": 1624
+    },
+    "upstream/smb_simulator/smb_description/urdf/wheel.urdf.xacro": {
+      "sha256": "5d1fbed744d42696ce7726e3d3e971082bd5124ba7de8ae412861bb878ca0a3a",
+      "bytes": 2323
+    },
+    "upstream/smb_simulator/smb_gazebo/launch/spawn_smb.launch": {
+      "sha256": "71fa44a32cacc333cfc93e52da3cbafdafd01f79de462da83a3d94395d47e2da",
+      "bytes": 2386
+    }
+  },
+  "adapted_meshes": {
+    "meshes/VLP-16/VLP-16_base_1.dae": {
+      "sha256": "3fc51b4ab2dce77b0e683625bf68ee39f5a8156b3d19bf034cb665a2b0aba5da",
+      "source": "upstream/lidar_simulator/lidar_description/meshes/VLP-16/VLP-16_base_1.dae",
+      "change": "Replace only literal angle brackets in the id/name node labels <STL_BINARY>; no mesh coordinates, indices, materials, transforms or units changed."
+    },
+    "meshes/VLP-16/VLP-16_base_2.dae": {
+      "sha256": "61d6f500eaad347d0963f7cebbb1d2dc9d45e79362f2630ae0d872f4f109c097",
+      "source": "upstream/lidar_simulator/lidar_description/meshes/VLP-16/VLP-16_base_2.dae",
+      "change": "Replace only literal angle brackets in the id/name node labels <STL_BINARY>; no mesh coordinates, indices, materials, transforms or units changed."
+    },
+    "meshes/VLP-16/VLP-16_scan.dae": {
+      "sha256": "0732a9b10a823f65be91e5f99d7b9c412bda6eea2008a209387bdc9cde73ae25",
+      "source": "upstream/lidar_simulator/lidar_description/meshes/VLP-16/VLP-16_scan.dae",
+      "change": "Replace only literal angle brackets in the id/name node labels <STL_BINARY>; no mesh coordinates, indices, materials, transforms or units changed."
+    }
+  },
+  "active_input_chain": {
+    "entry": "../gbplanner/launch/smb/smb_sim.launch:33 loads smb_gazebo/spawn_smb.launch; that loads smb_description/launch/description.launch and smb.urdf.xacro.",
+    "relay": "../gbplanner/launch/smb/smb_sim.launch:42-43 relays both /velodyne_points and /lidar_front_points into /input_pointcloud; line 50 remaps /pointcloud to that shared input.",
+    "server": "../planner_common/src/voxblox/voxblox_common_impl.cpp:18-21 constructs the Voxblox server with the planner node handles. Retained tsdf_server.cc:59 subscribes pointcloud and :338 uses each message header.frame_id/stamp for its TF.",
+    "timing_caveat": "ROS1 TsdfServer::insertPointcloud :359 uses one strict timestamp gate for the merged stream. With min_time_between_msgs_sec=0, equal-stamp second-sensor messages can be dropped; configured two-source input is proven, complete per-frame fusion is not. ROS2 separate source queues are an explicit existing adaptation.",
+    "gain": "../gbplanner/config/smb/gbplanner_config.yaml:17-25 and :114 select only VLP16, range20m, 360x30 degree FOV, 5x5 degree angular gain grid, zero source gain extrinsic offset, frontier threshold .05. OS1 contributes mapping but is not a second gain sensor.",
+    "mapping": "../gbplanner/config/smb/voxblox_sim_config.yaml:6 max_ray_length_m=50; min_ray_length_m=.5, voxel size .2. These are mapper integration settings, not physical lidar maximum ranges."
+  },
+  "physical_sensors": {
+    "velodyne": {
+      "original_type": "gpu_ray",
+      "topic": "velodyne_points",
+      "frame": "velodyne",
+      "samples": [
+        440,
+        16
+      ],
+      "hz": 10,
+      "horizontal_angles_rad": [
+        -3.141592653589793,
+        3.141592653589793
+      ],
+      "vertical_angles_rad": [
+        -0.2617993877991494,
+        0.2617993877991494
+      ],
+      "ray_range_m": [
+        0.2,
+        131.0
+      ],
+      "plugin_output_open_interval_m": [
+        0.2,
+        130.0
+      ],
+      "ray_resolution_m": 0.001,
+      "plugin_gaussian_stddev_m": 0.008,
+      "base_scan_xyz_m": [
+        0.23,
+        0,
+        0.6937
+      ],
+      "base_scan_rpy_rad": [
+        0,
+        0,
+        0
+      ],
+      "fixed_chain": "base_link -> sensor_head_base_link (.2,0,.576) -> velodyne_base_link (.03,0,.08) -> velodyne (0,0,.0377)",
+      "mass_kg": 0.84,
+      "collision": "Cylinder r=.0516,l=.0717 at velodyne_base_link z=.03585; source mesh visuals and full inertia retained."
+    },
+    "lidar_front": {
+      "original_type": "ray (gpu default false at this call site)",
+      "topic": "lidar_front_points",
+      "frame": "lidar_front",
+      "samples": [
+        440,
+        32
+      ],
+      "hz": 10,
+      "horizontal_angles_rad": [
+        -3.141592653589793,
+        3.141592653589793
+      ],
+      "vertical_angles_rad": [
+        -0.2899166420487781,
+        0.2899166420487781
+      ],
+      "ray_range_m": [
+        0.7,
+        100.0
+      ],
+      "plugin_output_open_interval_m": [
+        0.7,
+        100.0
+      ],
+      "ray_resolution_m": 0.03,
+      "plugin_gaussian_stddev_m": 0.008,
+      "base_scan_xyz_m": [
+        0.3,
+        -0.3,
+        0.476
+      ],
+      "base_scan_rpy_rad": [
+        0,
+        0.5,
+        0
+      ],
+      "fixed_chain": "base_link -> sensor_head_base_link (.2,0,.576) -> lidar_front (.1,-.3,-.1,rpy0,.5,0). Gazebo scan attaches to lidar_front; do not add the auxiliary os1_lidar link offset .03618.",
+      "mass_kg": 1e-09,
+      "collision": "Tilted cylinder r=.04,l=.073 at lidar_front z=.0365; original nonzero inertia and Ouster visual retained."
+    }
+  },
+  "head_physics": {
+    "head_mass_kg": 0.001,
+    "camera_mass_kg_each": 0.05,
+    "cameras": 3,
+    "total_added_mass_kg": 0.991000001,
+    "camera_shape_m": [
+      0.029,
+      0.029,
+      0.029
+    ],
+    "preserved": "Original fixed mounts, inertial tensors, masses, collision solids and visuals for the head, two lidars and three camera bodies."
+  },
+  "conversion": {
+    "selection": "generate_robot_description(...,sensor_profile='upstream',gazebo_share=...) is explicit; default compact keeps the prior single 720x16,5Hz,6m scan.",
+    "method": "Official xacro expands temporary copies; source files remain unchanged. Original sensor_head invocation is copied from smb.urdf.xacro. Native lidar scan/FOV/ranges/update_rate are copied from expanded original sensors.",
+    "topics": {
+      "velodyne": "/smb/velodyne/scan",
+      "lidar_front": "/smb/os1/scan"
+    },
+    "native_type": "Both scans use Fortress gpu_lidar. Original OS1 CPU ray becomes GPU rendering, an explicit simulator adaptation.",
+    "noise_and_range": "Native Gaussian range sigma .008 replaces Classic plugin noise. Original GazeboRosLidar.cpp:296-304 first rejects <=min or >=max, then adds noise; :325 applies the strict gate again. Native sensor noise runs before the ROS output gate, so exact noise/RNG and pre-noise gate equivalence are not claimed. VLP native ray max stays131m; ROS output must keep its separate strict130m bound. Invalid/no-return samples must not become fake far obstacles.",
+    "camera_and_imu_scope": "Camera bodies remain; native RGB streams default to disabled and are enabled only with cameras:=true alongside sensor_profile:=upstream. The optional conversion preserves the original three monocular camera settings and publishes REP-103 optical frames; Classic camera plugins are not loaded. Explicit upstream also enables the native OS1 IMU and effective Hector noise adaptation.",
+    "names": "Original rgb_cam_* joint names collide with their child-link names during SDF reduction. Only those fixed-joint identifiers gain _mount_joint; geometry and poses are unchanged.",
+    "self_visibility": "Existing native visibility mask continues to exclude all robot visuals, including head parts, from GPU lidar. Collision solids remain active.",
+    "wheel_slip": "Nominal optional WheelSlip loads use the full fixed-joint rotation chain and each local inertial COM. Bilinear front/rear-left/right allocation balances weight and horizontal moments; it is an explicit static normalization, not measured tire/contact load.",
+    "ament_symlink_install": "Mesh URI must name a known package, a relative path and no .. component. Resolve only after that validation and require a file; ament-installed individual file symlinks may point into the original source tree outside the installed directory. This preserves the installed package entry while allowing standard symlink-install."
+  },
+  "static_verification": "results/smb_sensor_profile/model_static1.json; official xacro/ign sdf checks, not a simulation run.",
+  "runtime_attempts": [
+    {
+      "artifact": "results/smb_sensors/runtime1.json",
+      "log": "results/smb_sensors/runtime1.log",
+      "status": "failed_before_simulation",
+      "reason": "The initial helper required resolved mesh targets to remain under the installed package root. ament symlink-install uses individual source-file symlinks, so a valid VLP mesh was rejected during launch model generation.",
+      "resolution": "Validate the URI path lexically (known package, not absolute, no ..), then permit the existing package entry to resolve to its source-file target. No sensor/model/physics parameters changed.",
+      "rerun": "Not performed by this agent; root will run runtime2."
+    }
+  ],
+  "os1_imu": {
+    "source": "upstream/lidar_simulator/lidar_description/urdf/OS1-64.urdf.xacro",
+    "frame": "os1_imu",
+    "output": "/os1_cloud_node/imu",
+    "raw": "/smb/os1/imu/raw",
+    "rate_hz": 100,
+    "mount": "Original fixed chain with pitch .5 rad and os1_imu local offset; see model1.sdf sensor pose.",
+    "implementation": "Native noise-free IMU with world reference -> bridge -> Hector adapter smb_imu.yaml.",
+    "evidence": "results/smb_os1_imu/checkpoint.json",
+    "scope": "Static and idle observations only; motion response unverified."
+  },
+  "rgb_cameras": {
+    "names": [
+      "rgb_cam_front",
+      "rgb_cam_left",
+      "rgb_cam_right"
+    ],
+    "source": "upstream/smb_simulator/smb_description/urdf/smb_rgb_camera.urdf.xacro and sensor_head.urdf.xacro",
+    "selection": "sensor_profile:=upstream cameras:=true; disabled by default",
+    "configuration": {
+      "image_size": [
+        1440,
+        1080
+      ],
+      "format": "R8G8B8",
+      "rate_hz": 20,
+      "horizontal_fov_rad": 1.3962634,
+      "clip_m": [
+        0.02,
+        300.0
+      ],
+      "source_pixel_noise_stddev": 0.007
+    },
+    "physical_model": "Source bodies, mounting, masses and inertia unchanged",
+    "frames": "REP-103 rgb_cam_*_optical_frame; fixed rpy(-pi/2,0,-pi/2) from physical camera frames",
+    "camera_info": "Native raw Info is retained under /gazebo/rgb_cam_*_camera_info_raw. Adapter sets only P[3]=0 for independent monocular cameras, undoing Fortress automatic same-link stereo grouping. Original Classic hackBaseline=.07 is not retained.",
+    "evidence": "results/smb_cameras/checkpoint.json",
+    "runtime": "40frames/camera;20.041Hz source timestamps,6.33-6.36Hz wall clock;100% exact-stamp Image/Info pairing; cleaned up"
+  },
+  "hector_runtime_interfaces": {
+    "implementation": "rmf_imu_adapter_node; interface-only ROS 2 hector_gazebo_plugins/SetBias",
+    "services": {
+      "calibrate": "std_srvs/Empty: reset only gyro dynamic bias to zero",
+      "set_accel_bias": "hector_gazebo_plugins/SetBias: set acceleration dynamic drift",
+      "set_rate_bias": "hector_gazebo_plugins/SetBias: set gyro dynamic drift"
+    },
+    "bias_topic": "output_topic + /bias: sensor_msgs/Imu, same header, current dynamic drift + fixed offset for accel/rate, actual orientationError, zero covariance",
+    "preserved": "No service-generated sample, timestamp reset, RNG draw or changes to drift/noise parameters",
+    "finite_request_adaptation": "Nonfinite vectors are ignored and counted; original empty response has no success field",
+    "evidence": [
+      "results/hector_imu_services/smb1.json",
+      "results/hector_imu_services/rmf1.json"
+    ],
+    "remaining": "ROS1 dynamic_reconfigure wire protocol/UI is replaced by native ROS2 parameters; original RNG implementation/library bit parity is not claimed."
+  },
+  "hector_dynamic_parameters": {
+    "implementation": "Native ROS 2 parameter services on gbplanner_rmf_imu_adapter; os0 and enabled smb_os1 streams",
+    "source_commit": "de947fb1e253b114d259e8690456792d91b93347",
+    "source_cfg": "upstream/hector_gazebo_0.5.4/hector_gazebo_plugins/cfg/SensorModel.cfg",
+    "source_cfg_sha256": "5753e9f7abdb02be908ae2e17156c716ffb2619146ce326b33f2e1e68caf9700",
+    "names": "<stream>.<accel|rate|yaw>.<GaussianNoise|Offset|Drift|DriftFrequency|ScaleError>",
+    "runtime_ranges": {
+      "GaussianNoise": [
+        0,
+        10
+      ],
+      "Offset": [
+        -10,
+        10
+      ],
+      "Drift": [
+        0,
+        10
+      ],
+      "DriftFrequency": [
+        0,
+        1
+      ],
+      "ScaleError": [
+        0,
+        2
+      ]
+    },
+    "types": "accel/rate: three doubles; yaw: one double",
+    "startup": "Preserves loaded per-axis values and 1/3600 default frequency; cfg GUI defaults do not overwrite source model defaults",
+    "native_parameter_adaptation": "Only named arrays/scalars change. Unlike ROS1 dynamic_reconfigure, an update does not broadcast all five scalar GUI values over all three axes. ROS1 wire protocol/UI are not emulated.",
+    "atomicity": "Validate complete Hector-only batch before applying. Reject mixed non-Hector batches; static node parameters are read-only. Pure use_sim_time retains rclcpp behavior.",
+    "state": "No RNG consumption, drift reset, time reset or synthetic sample on configuration. Offset contributes to total published bias and pseudo-AHRS. SetBias changes dynamic drift only; rate calibration preserves fixed offset.",
+    "measurement": "native_measurement * scale_error + offset + updated_dynamic_drift + gaussian_noise * N(0,1)",
+    "yaw": "ScaleError remains unused, matching source yawModel.update(dt); yaw white noise affects covariance but not pseudo-AHRS bias quaternion.",
+    "covariance": "Acceleration/rate covariance retain startup GaussianNoise squared; orientation covariance follows current GaussianNoise, as in the source plugin.",
+    "evidence": [
+      "results/hector_imu_parameters/rmf2.json",
+      "results/hector_imu_parameters/smb1.json"
+    ],
+    "scope": "Each native stream contributes 30 same-stamp raw/output/bias samples after a runtime update, plus paused state transitions. No noise-distribution, motion or complete-migration claim."
+  }
+}

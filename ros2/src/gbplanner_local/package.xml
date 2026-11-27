@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>gbplanner_local</name><version>0.2.0</version>
+  <description>ROS 2 port of GBPlanner 2 aerial and ground exploration.</description>
+  <maintainer email="257770113+ai4sci-z@users.noreply.github.com">ai4sci-z</maintainer>
+  <license>BSD-3-Clause</license>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>rclcpp</depend><depend>gbplanner_graph</depend><depend>planner_msgs</depend>
+  <depend>planner_semantic_msgs</depend>
+  <depend>geometry_msgs</depend><depend>nav_msgs</depend><depend>sensor_msgs</depend>
+  <depend>std_msgs</depend><depend>std_srvs</depend><depend>eigen</depend>
+  <depend>tf2_ros</depend><depend>boost</depend><depend>visualization_msgs</depend>
+  <depend>libpcl-all-dev</depend>
+  <exec_depend>rclpy</exec_depend><exec_depend>launch_ros</exec_depend>
+  <exec_depend>interactive_markers</exec_depend>
+  <exec_depend>tf2_ros_py</exec_depend>
+  <exec_depend>action_msgs</exec_depend>
+  <exec_depend>ament_index_python</exec_depend>
+  <test_depend>ament_cmake_gtest</test_depend>
+  <export><build_type>ament_cmake</build_type></export>
+</package>

@@ -1,0 +1,27 @@
+gbplanner_dynamics:
+  ros__parameters:
+    # From pinned rmf_obelix.yaml and lee_controller_rmf_obelix.yaml.
+    mass: 0.5265
+    inertia: [0.01, 0.01, 0.01]
+    position_gain: [2.0, 2.0, 2.0]
+    velocity_gain: [1.2, 1.2, 1.2]
+    attitude_gain: [0.7, 0.7, 0.015]
+    angular_rate_gain: [0.12, 0.12, 0.012]
+    rotor_angles: [-0.785398, 2.35619, 0.78539, -2.35619]
+    rotor_directions: [1, 1, -1, -1]
+    arm_length: 0.1
+    force_constant: 0.00000854858
+    moment_constant: 0.016
+    # From pinned rmf_obelix.xacro; body simplified as one collision box.
+    body_size: [0.25, 0.25, 0.113]
+    motor_time_up: 0.0125
+    motor_time_down: 0.025
+    motor_max_speed: 2000.0
+    rotor_drag: 0.0000806428
+    rolling_moment: 0.000001
+    # Test-room initial hover; not a takeoff simulation.
+    initial_position: [-2.0, 0.0, 0.0]
+    initial_yaw: 1.5707963267948966
+    physics_step: 0.002
+    lidar_period: 0.15
+    telemetry_file: ''

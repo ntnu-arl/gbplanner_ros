@@ -1,0 +1,202 @@
+#include "/media/matias/Datos/SyntaxHighlightingMisc.h"
+
+@property( irradiance_field )
+
+// clang-format off
+@piece( DeclIrradianceFieldTextures )
+	@property( syntax == glsl )
+		uniform sampler2D ifdColour;
+		uniform sampler2D ifdDepth;
+	@end
+	@property( syntax == hlsl )
+		Texture2D<float4> ifdColour		: register(t@value(ifdColour));
+		Texture2D<float2> ifdDepth		: register(t@value(ifdDepth));
+		SamplerState ifdSampler         : register(s@value(ifdColour));
+	@end
+	@property( syntax == metal )
+		, texture2d<float> ifdColour	[[texture(@value(ifdColour))]]
+		, texture2d<float> ifdDepth		[[texture(@value(ifdDepth))]]
+		, sampler ifdSampler            [[sampler(@value(ifdColour))]]
+	@end
+@end
+// clang-format on
+
+{
+@piece( DeclIrradianceFieldFuncs )
+	#define IrfProbeIndex uint
+
+	INLINE float2 octahedronMappingWrap( float2 v )
+	{
+		float2 signVal;
+		signVal.x = v.x >= 0.0 ? 1.0 : -1.0;
+		signVal.y = v.y >= 0.0 ? 1.0 : -1.0;
+		return ( 1.0 - abs( v.yx ) ) * signVal;
+	}
+
+	INLINE float2 octahedronMappingEncode( float3 n )
+	{
+		// https://twitter.com/Stubbesaurus/status/937994790553227264
+		n /= ( abs( n.x ) + abs( n.y ) + abs( n.z ) );
+		n.xy = n.z >= 0.0 ? n.xy : octahedronMappingWrap( n.xy );
+		n.xy = n.xy * 0.5 + 0.5;
+		return n.xy;
+	}
+
+	INLINE float3 transformPos3( float3 position, float4 row0, float4 row1, float4 row2 )
+	{
+		float3 retVal;
+		retVal.x = dot( row0.xyzw, float4( position, 1.0 ) );
+		retVal.y = dot( row1.xyzw, float4( position, 1.0 ) );
+		retVal.z = dot( row2.xyzw, float4( position, 1.0 ) );
+		return retVal;
+	}
+
+	INLINE float3 transformDir3( float3 dir, float4 row0, float4 row1, float4 row2 )
+	{
+		float3 retVal;
+		retVal.x = dot( row0.xyz, dir );
+		retVal.y = dot( row1.xyz, dir );
+		retVal.z = dot( row2.xyz, dir );
+		return retVal;
+	}
+
+	INLINE float2 getIrradianceFieldXY( float3 dir, IrfProbeIndex probeIdx, float borderedRes,
+										float fullWidth, float2 invFullResolution )
+	{
+		float2 retVal;
+		/* Perform the following, but in floating point:
+		retVal.x = ( probeIdx * borderedRes ) % fullWidth;
+		retVal.y = ( ( probeIdx * borderedRes ) / fullWidth ) * borderedRes;*/
+		float temp = probeIdx * borderedRes;
+		retVal.y = floor( temp * invFullResolution.x );
+		retVal.x = temp - retVal.y * fullWidth;
+		retVal.y *= borderedRes;
+
+		// Skip top-left border
+		retVal.xy += 1.0f;
+
+		//dir.y = -dir.y;
+		// Quantize direction to fix noise artifacts where the texels output from
+		// octahedronMappingEncode keep jumping due to octahedronMappingWrap being too sharp
+		// https://github.com/OGRECave/ogre-next/issues/29#issuecomment-541491145
+		dir = ceil( dir * 1048576.0 );
+		dir *= 1.0 / 1048576.0;
+		float2 uv = octahedronMappingEncode( dir ) * ( borderedRes - 2.0f );
+
+		retVal += uv;
+		retVal *= invFullResolution;
+		return retVal;
+	}
+
+	/**
+	\param probeOrigin
+	\param numProbesAggregated
+		numProbesAggregated.x must contain IrradianceFieldSettings::mNumProbes[0]
+		numProbesAggregated.x must contain ( mNumProbes[0] * mNumProbes[1] )
+	\return
+	*/
+	IrfProbeIndex getProbeIdx( float3 probeOrigin, float2 numProbesAggregated )
+	{
+		return IrfProbeIndex( probeOrigin.x + probeOrigin.y * numProbesAggregated.x +
+							  probeOrigin.z * numProbesAggregated.y );
+	}
+@end
+}
+
+{
+@piece( applyIrradianceField )
+
+	// ifdGridPos in range [0; mNumProbes)
+	float3 ifdGridPos =
+		transformPos3( inPs.pos.xyz, //
+					   passBuf.irradianceField.viewToIrradianceFieldRow0,
+					   passBuf.irradianceField.viewToIrradianceFieldRow1,
+					   passBuf.irradianceField.viewToIrradianceFieldRow2 );
+
+	float3 ifdGridProbeOrigin = trunc( ifdGridPos );
+	float3 ifdSpaceNormal = normalize( transformDir3( pixelData.normal, //
+									   passBuf.irradianceField.viewToIrradianceFieldRow0,
+									   passBuf.irradianceField.viewToIrradianceFieldRow1,
+									   passBuf.irradianceField.viewToIrradianceFieldRow2 ) );
+
+	// ifdAlpha is how far from the floor( ifdGridPos ). on [0, 1] for each axis.
+	float3 ifdAlpha = saturate( fract( ifdGridPos ) );
+
+	float3 ifdIrradiance = float3( 0, 0, 0 );
+	float sumIfdWeight = 0;
+
+	// Iterate over adjacent probe cage
+	for( int i = 0; i < 8; ++i )
+	//for( int i = 0; i < 1; ++i )
+	{
+		// Compute the offset grid coord and clamp to the probe grid boundary
+		// Offset = 0 or 1 along each axis
+		float3 probeOffset = float3( int3( i, i >> 1, i >> 2 ) & int3( 1, 1, 1 ) );
+		float3 probeOrigin = ifdGridProbeOrigin + probeOffset;
+
+		IrfProbeIndex probeIdx =
+			getProbeIdx( probeOrigin, passBuf.irradianceField.numProbesAggregated.xy );
+
+		float3 dir = probeOrigin - ifdGridPos;
+		float r = length( dir );
+		dir *= 1.0 / r;
+
+		// Ignore probes that are behind us, but don't black them out completely
+		// as detailed surface may otherwise have very few probes ppointing at it
+		float weight;
+		weight = dot( dir, ifdSpaceNormal ) * 200.0;
+		weight = saturate( weight ) + 0.2;
+
+		// Compute the trilinear weights based on the grid cell vertex to smoothly
+		// transition between probes. Avoid ever going entirely to zero because that
+		// will cause problems at the border probes.
+		// We're using 1-a when offset = 0 and a when offset = 1.
+		float3 trilinear;
+		trilinear.x = probeOffset.x < 1 ? ( 1.0 - ifdAlpha.x ) : ifdAlpha.x;
+		trilinear.y = probeOffset.y < 1 ? ( 1.0 - ifdAlpha.y ) : ifdAlpha.y;
+		trilinear.z = probeOffset.z < 1 ? ( 1.0 - ifdAlpha.z ) : ifdAlpha.z;
+
+		// Visibility (Chebyshev)
+		float2 ifdDepthUV = getIrradianceFieldXY(
+			-dir, probeIdx, passBuf.irradianceField.depthBorderedRes,
+			passBuf.irradianceField.depthFullWidth, passBuf.irradianceField.depthInvFullResolution );
+		float2 temp = OGRE_SampleLevel( ifdDepth, ifdSampler, ifdDepthUV, 0 ).xy;
+		float mean = temp.x;
+		float meanSq = temp.y;
+		if( r > mean )
+		{
+			float variance = abs( mean * mean - meanSq ) + 1e-6;
+			float dev = ( r - mean );
+			float chebyshevWeight = variance / ( variance + dev * dev );
+			chebyshevWeight = max( chebyshevWeight * chebyshevWeight * chebyshevWeight, 0.0 );
+
+			weight *= chebyshevWeight;
+		}
+
+		// Avoid zero weight
+		weight = max( 0.000001, weight );
+
+		const float crushThreshold = 0.2;
+		if (weight < crushThreshold) {
+			weight *= weight * weight * (1.0 / (crushThreshold*crushThreshold));
+		}
+
+		weight *= trilinear.x * trilinear.y * trilinear.z;
+
+		float2 ifdColourUV = getIrradianceFieldXY(
+			ifdSpaceNormal, probeIdx, passBuf.irradianceField.irradBorderedRes,
+			passBuf.irradianceField.irradFullWidth, passBuf.irradianceField.irradInvFullResolution );
+
+		float3 irrColour = OGRE_SampleLevel( ifdColour, ifdSampler, ifdColourUV, 0 ).xyz;
+//		irrColour = sqrt(irrColour);
+		ifdIrradiance += irrColour * weight;
+		sumIfdWeight += weight;
+	}
+
+//	ifdIrradiance = ifdIrradiance * ifdIrradiance;
+
+	pixelData.envColourD.xyz += ifdIrradiance * ( 1.0 / sumIfdWeight );
+@end
+}
+
+@end

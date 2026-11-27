@@ -1,0 +1,116 @@
+{
+  "upstream_commit": "7301b5350915cf3a4055072ad559842db37b4ca9",
+  "license": "BSD-3-Clause",
+  "original_sources": [
+    {
+      "path": "gbplanner/src/rrg.cpp",
+      "sha256": "b6191f17e0f8072c3717b83148868793de2bf0155347df641590d8026e6ecefb",
+      "sections": [
+        {
+          "first_line": 54,
+          "last_line": 56,
+          "purpose": "initial direction and timer creation",
+          "sha256": "64be0dc70393225e058175905733346176c6d98176b01a9d688d4de1ddb30421"
+        },
+        {
+          "first_line": 1460,
+          "last_line": 1515,
+          "purpose": "root-to-leaf discounted gain and direction factor",
+          "sha256": "7d46127f885077651c7a8cc59db8980afa85490f6605796298ef3ecb4496b5e8"
+        },
+        {
+          "first_line": 4424,
+          "last_line": 4424,
+          "purpose": "Rrg::timerCallback entry",
+          "sha256": "504fd171f8c30ada57ae4e4cdb94f05545e5ace7abce3feca685902cc3422529"
+        },
+        {
+          "first_line": 4462,
+          "last_line": 4485,
+          "purpose": "horizontal displacement direction estimator",
+          "sha256": "2d5c8d655198c9237fa77c3a30bb0719709c9967df637d9f76f8b3b669148dfc"
+        }
+      ]
+    },
+    {
+      "path": "gbplanner/include/gbplanner/rrg.h",
+      "sha256": "5e790246ca9c2b259e87e7110d573225718b2eb411f06ef8e61c954045895488",
+      "sections": [
+        {
+          "first_line": 311,
+          "last_line": 311,
+          "purpose": "kTimerPeriod = 0.25 seconds",
+          "sha256": "152696710255b102758269e4201e90d10736361c159cf321fbaa9fd705378149"
+        }
+      ]
+    },
+    {
+      "path": "planner_common/src/trajectory.cpp",
+      "sha256": "0e751d9b782b0cd80d962fad5a97a49471bede3119727f799ac1bbc7a4c26a14",
+      "sections": [
+        {
+          "first_line": 74,
+          "last_line": 103,
+          "purpose": "direction distance with repeated endpoint reference",
+          "sha256": "70451ba0d0c8b1b695ffb96f17140c335bca2c65b6804928b65f0577f43d92ca"
+        },
+        {
+          "first_line": 151,
+          "last_line": 180,
+          "purpose": "PathType segment interpolation",
+          "sha256": "8b4ea528c6e0287a415562f9857e41fab35643f9f5fe3ae7a995fae4a55afa33"
+        },
+        {
+          "first_line": 262,
+          "last_line": 289,
+          "purpose": "Euclidean-cost DTW recurrence",
+          "sha256": "466e95cb7e6ac45d669389a986eeb93a505be751906af3f0faa86fbf3404ef39"
+        }
+      ]
+    },
+    {
+      "path": "planner_common/src/params.cpp",
+      "sha256": "4c2b40dbafc2e8b45d1980512632691982a44c086cae996fbbfe03093d8eeef7",
+      "sections": [
+        {
+          "first_line": 948,
+          "last_line": 952,
+          "purpose": "upstream default path_direction_penalty = 0",
+          "sha256": "96dc70b36e5970fa64408e95e45524de554e37ab821492f63fa6fb7a5b8c01ae"
+        }
+      ]
+    }
+  ],
+  "native_files": [
+    "src/gbplanner_local/include/gbplanner_local/exploration_direction.hpp",
+    "src/gbplanner_local/include/gbplanner_local/trajectory.hpp",
+    "src/gbplanner_local/src/trajectory.cpp",
+    "src/gbplanner_local/src/local_planner.cpp",
+    "src/gbplanner_local/src/local_planner_node.cpp"
+  ],
+  "upstream_semantics": {
+    "score": "sum(viewpoint_gain_i * exp(-path_length_penalty * shortest_distance_i)) * exp(-path_direction_penalty * normalized_DTW)",
+    "dtw_discrete_length_m": 0.2,
+    "normalization": "square of interpolated path length",
+    "reference": "n=floor(interpolated_path_length/discrete_length); repeat p0 + n*discrete_length*[cos(heading),sin(heading),0] exactly n times",
+    "preserved_anomaly": "The original reference loop uses *n, not *i. It produces repeated endpoint coordinates, not a sampled forward line.",
+    "direction_initial_radians": 0.0,
+    "timer_period_s": 0.25,
+    "direction_min_horizontal_displacement_m": 0.75,
+    "direction_update": "wrap(previous + 0.7*wrap(atan2(dy,dx)-previous))",
+    "history_capacity": 10,
+    "history_use": "delta from the latest accepted sample; not a fit over all ten positions",
+    "default_path_direction_penalty": 0.0
+  },
+  "native_adaptations": [
+    "Eigen-only PathType and existing standalone DTW helper in gbplanner2; ROS geometry overloads are not needed.",
+    "ROS 2 wall timer samples validated measured odometry. The estimate persists across local graph rebuilds and map replacement.",
+    "Current-root and plan-ahead root planning use the same measured direction snapshot; a hypothetical planning root does not update motion history.",
+    "A zero direction penalty leaves path selection unchanged and computes the selected path direction distance only for diagnostics.",
+    "Nonfinite direction and discretization inputs are rejected by the native helper.",
+    "Read-only Trigger diagnostics and planning metrics expose direction state and scoring terms."
+  ],
+  "scope": "Local aerial path scoring and measured exploration-direction estimate. Does not claim all Rrg timer duties, ground-robot inclination/hanging penalties, or a complete upstream Rrg port.",
+  "evidence": "Implementation provenance only. Runtime and source-snapshot evidence belongs in results/direction after the experiment completes.",
+  "original_files_modified": false
+}

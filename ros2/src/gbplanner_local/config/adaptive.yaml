@@ -1,0 +1,35 @@
+gbplanner_local:
+  ros__parameters:
+    frame_id: map
+    robot.type: kAerial
+    robot.size: [0.4, 0.4, 0.4]
+    map.resolution: 0.2
+    map.origin: [-6.0, -6.0, -2.4]
+    map.dimensions: [60, 60, 24]
+    sampling.seed: 42
+    sampling.distribution: uniform
+    # Each planning request starts from these settings before adaptation.
+    sampling.min: [-2.2, -1.1, -0.6]
+    sampling.max: [2.2, 1.1, 0.6]
+    sampling.rotations: [0.0, 0.0, 0.0]
+    sampling.mean: [0.0, 0.0, 0.0]
+    sampling.scale: [1.0, 1.0, 0.5]
+    planning.adaptive_exploration: true
+    adaptive.type: kPca
+    adaptive.local_pointcloud_range: 8.0
+    adaptive.bounding_box_size_max: 6.0
+    adaptive.distribution_scaling_max: 2.0
+    adaptive.voxel_filter_leaf_size: 0.3
+    planning.max_vertices: 100
+    planning.max_edges: 1500
+    planning.max_attempts: 5000
+    planning.path_length_penalty: 0.07
+    sensor.range: 4.0
+    sensor.horizontal_fov: 6.283185307179586
+    sensor.vertical_fov: 1.0471975511965976
+    sensor.horizontal_resolution: 0.2617993877991494
+    sensor.vertical_resolution: 0.2617993877991494
+    gain.unknown: 1.0
+    gain.free: 0.0
+    gain.occupied: 0.0
+    global.enable: false

@@ -1,0 +1,75 @@
+# Both mappers consume the same two point-cloud streams. TF and odometry are
+# supplied by the robot or simulator, including each cloud's acquisition time.
+occupancy_mapper:
+  ros__parameters:
+    frame_id: map
+    map.resolution: 0.25
+    map.origin: [-5.0, -5.0, -1.5]
+    map.dimensions: [40, 40, 12]
+    sensor.min_range: 0.1
+    sensor.max_range: 6.0
+    input_sensors: [front, rear]
+    input.front.topic: /front/points
+    input.front.frame: front_lidar
+    input.rear.topic: /rear/points
+    input.rear.frame: rear_lidar
+
+voxblox_mapper:
+  ros__parameters:
+    frame_id: map
+    map.resolution: 0.25
+    map.origin: [-5.0, -5.0, -1.5]
+    map.dimensions: [40, 40, 12]
+    sensor.min_range: 0.1
+    sensor.max_range: 6.0
+    input_sensors: [front, rear]
+    input.front.topic: /front/points
+    input.front.frame: front_lidar
+    input.rear.topic: /rear/points
+    input.rear.frame: rear_lidar
+    tsdf.voxels_per_side: 16
+    tsdf.truncation_distance: 0.75
+    tsdf.method: fast
+    tsdf.threads: 1
+    tsdf.max_weight: 200.0
+    tsdf.clearing_ray_weight_factor: 0.01
+    tsdf.use_weight_dropoff: true
+    tsdf.voxel_carving_enabled: true
+    tsdf.occupancy_distance_factor: 1.0
+
+gbplanner_local:
+  ros__parameters:
+    frame_id: map
+    map.resolution: 0.25
+    map.origin: [-5.0, -5.0, -1.5]
+    map.dimensions: [40, 40, 12]
+    robot.size: [0.4, 0.4, 0.4]
+    sampling.seed: 42
+    sampling.min: [-3.0, -3.0, -1.0]
+    sampling.max: [3.0, 3.0, 1.0]
+    planning.max_vertices: 100
+    planning.max_edges: 2000
+    planning.max_attempts: 4000
+    planning.path_length_penalty: 0.07
+    # These are planning frustums; input_sensors above selects mapper inputs.
+    sensor.names: [front, rear]
+    planning.exploration_sensors: [front, rear]
+    sensor.front.type: kLidar
+    sensor.front.range: 3.0
+    sensor.front.center_offset: [0.2, 0.0, 0.0]
+    # Rotations follow the original yaw, pitch, roll order, in radians.
+    sensor.front.rotations: [0.0, 0.0, 0.0]
+    sensor.front.horizontal_fov: 3.141592653589793
+    sensor.front.vertical_fov: 1.0471975511965976
+    sensor.front.horizontal_resolution: 0.2617993877991494
+    sensor.front.vertical_resolution: 0.2617993877991494
+    sensor.front.frontier_threshold: 0.1
+    sensor.rear.type: kLidar
+    sensor.rear.range: 3.0
+    sensor.rear.center_offset: [-0.2, 0.0, 0.0]
+    sensor.rear.rotations: [3.141592653589793, 0.0, 0.0]
+    sensor.rear.horizontal_fov: 3.141592653589793
+    sensor.rear.vertical_fov: 1.0471975511965976
+    sensor.rear.horizontal_resolution: 0.2617993877991494
+    sensor.rear.vertical_resolution: 0.2617993877991494
+    sensor.rear.frontier_threshold: 0.1

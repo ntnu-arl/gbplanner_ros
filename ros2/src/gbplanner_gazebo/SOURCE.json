@@ -1,0 +1,476 @@
+{
+  "gazebo_version": "6.18.0",
+  "odometry_publisher": {
+    "url": "https://raw.githubusercontent.com/gazebosim/gz-sim/ignition-gazebo6_6.18.0/src/systems/odometry_publisher/OdometryPublisher.cc",
+    "sha256": "67b54c562e620b554da18544261324ca0fa6c0696f05d526f3dada4f80ef1536",
+    "snapshot": "results/fortress_setup/OdometryPublisher.cc",
+    "pose": "worldPose(model) * offset; configured offset is identity",
+    "linear": "world finite difference rotated into body frame, moving mean",
+    "angular": "moving means of Euler RPY derivatives; adapter applies ZYX body-rate transform"
+  },
+  "smb_model": "Derived at launch from installed gbplanner_smb/urdf/smb.urdf. Default compact preserves its chassis/wheels; explicit sensor_profile=upstream adds the pinned original head, both lidars and three camera physical bodies, including masses, inertias and collision solids.",
+  "physics_engine": "Gazebo Fortress DART 6.12.1 solver with ODE collision detector selected by ign-physics 5.4.0",
+  "pointcloud": "Native gpu_lidar PointCloudPacked via ros_gz_bridge. Compact:720x16 at5Hz. Upstream:VLP440x16 and OS1 440x32 at10Hz each, distinct frames/topics, strict per-sensor output range gates with invalid samples retained as NaN in organized layouts.",
+  "scope": "Native ROS 2 simulator integration, not an equivalence claim against ROS 1 Gazebo Classic",
+  "native_mapping_run": {
+    "result": "results/fortress_mapping/run3.json",
+    "motion_and_mapping": "passed",
+    "shutdown_note": "adapter received a second SIGINT during destruction; cleanup fixed after this run, subsequent native run must confirm normal exit",
+    "sensor_note": "this run includes vehicle visual returns; render mask added afterward must be checked in next native run"
+  },
+  "self_returns": {
+    "method": "Native rendering visibility bits: five vehicle visuals use bit 4; lidar mask 0xfffffffb excludes only that bit",
+    "collision_geometry": "Unchanged",
+    "static_evidence": "results/fortress_setup/visibility_static_check.json",
+    "native_evidence": "results/fortress_autonomy/run2.json records masked native cloud during 3.54 m supervised travel"
+  },
+  "optional_contacts": {
+    "enabled_by": "contacts:=true",
+    "parts": [
+      "base",
+      "lf",
+      "rf",
+      "lh",
+      "rh"
+    ],
+    "transport": "native Contact system to ros_gz_interfaces/Contacts",
+    "semantics": "Nonempty messages only; a silent sensor alone is not proof of no collision",
+    "static_evidence": "results/fortress_setup/contacts_static_check.json",
+    "native_evidence": "results/fortress_mapping/run4.json",
+    "unobserved_fields": "Fortress 6.18 emits entity IDs and contact positions but leaves normals/depths/wrenches empty in these runs. Empty arrays are unobserved, not zero force."
+  },
+  "current_native_mapping_evidence": "results/fortress_mapping/run4.json",
+  "current_native_search_evidence": "results/fortress_autonomy/run8.json (whole search + 1 local + homing passed; optional finite-slip tire model)",
+  "wheel_contact_configuration": {
+    "source": "upstream/smb_model/smb_description/urdf/wheel.urdf.xacro",
+    "restored_values": {
+      "mu1": 1,
+      "mu2": 1,
+      "fdir1": [
+        1,
+        0,
+        0
+      ],
+      "kp": 10000000,
+      "kd": 1,
+      "minDepth": 0.005,
+      "maxVel": 100
+    },
+    "DART_applies": [
+      "mu1",
+      "mu2",
+      "fdir1"
+    ],
+    "DART_does_not_apply": [
+      "kp",
+      "kd",
+      "minDepth",
+      "maxVel"
+    ],
+    "static_evidence": "results/fortress_setup/wheel_surface/summary.json",
+    "effort_limit": "No explicit upstream joint effort limit; native velocity interface uses the DART servo, not the separate Bullet 20 Nm motor implementation"
+  },
+  "simulation_clock_adapter": {
+    "source_nodes": [
+      "gbplanner_tracking/pure_pursuit_node",
+      "gbplanner_execution/path_follower_node.py",
+      "gbplanner_local/control_node.py",
+      "gbplanner_smb/velocity_mux_node.py"
+    ],
+    "contract": "simulated source and receipt ages govern Action liveness; delayed wall receipts stop motor commands while preserving an Action with fresh simulated state; service/action/stop deadlines and command expiry retain steady time",
+    "evidence": "results/simulated_clock/tracking.json",
+    "scope": "Synthetic clock/odometry with real ROS Actions; physical mission results separate"
+  },
+  "native_autonomy_evidence": {
+    "single_local_and_homing": "results/fortress_autonomy/run8.json",
+    "lateral_slip_compliance": 1.0,
+    "final_home_xy_error_m": 0.004803163116732689,
+    "calibration": "Finite-slip simulation candidate, not measured SMB tire calibration",
+    "three_local_and_homing": "results/fortress_autonomy/run9.json",
+    "three_cycle_final_home_xy_error_m": 0.00469084226566945,
+    "ten_local_and_homing": "results/fortress_autonomy/coverage10.json",
+    "ten_cycle_mission_status": "passed",
+    "ten_cycle_overall_status": "failed (shutdown)",
+    "ten_cycle_final_home_xy_error_m": 0.005379243701428177
+  },
+  "optional_wheel_slip": {
+    "launch_parameter": "lateral_slip_compliance",
+    "default": 0.0,
+    "default_behavior": "Original rigid upstream friction fields; no WheelSlip plugin",
+    "native_plugin": "ignition::gazebo::systems::WheelSlip",
+    "source": "https://github.com/gazebosim/gz-sim/blob/ignition-gazebo6_6.18.0/src/systems/wheel_slip/WheelSlip.cc",
+    "physics_source": "https://github.com/gazebosim/gz-physics/blob/ignition-physics5_5.4.0/dartsim/src/ShapeFeatures.cc",
+    "formula": "primary slip [m/(N s)] = C_lateral * radius * abs(wheel spin) / nominal normal force",
+    "coefficient_basis": "C_lateral=1 uses the installed official demonstration scale; not an SMB tire measurement or upstream value. Only this finite-slip candidate was run.",
+    "longitudinal_compliance": 0.0,
+    "friction_basis": "For the optional plugin only, rotate the real joint axis into collision coordinates: fdir1 = (0,0,-1). mu1=mu2=1 unchanged.",
+    "nominal_wheel_loads_N": {
+      "LF": 145.79101901854895,
+      "RF": 145.79101901854895,
+      "LH": 148.50898098145106,
+      "RH": 148.50898098145106
+    },
+    "normal_force_basis": "Static level-ground force/moment balance of original 60 kg masses and COM; not observed dynamic contact loads",
+    "unchanged": "Original geometry, inertia, wheel joints, engine step, wheel radius/separation, speed limits, planner and endpoint/path thresholds",
+    "scope": "Joint change of contact tangent basis and finite lateral slip; improvement cannot be attributed to the coefficient alone",
+    "static_evidence": "results/fortress_setup/wheel_slip/summary.json",
+    "rigid_open_loop": "results/fortress_turn_response/open_loop.json",
+    "finite_slip_open_loop": "results/fortress_turn_response/compliant.json",
+    "contact_analysis": "results/fortress_turn_response/contact_analysis.json",
+    "source_index": "results/fortress_setup/wheel_slip/sources.json"
+  },
+  "observed_shutdown_fix": {
+    "error": "SIGINT context shutdown during take_message Contacts conversion in coverage10; mission completed before shutdown",
+    "method": "SignalHandlerOptions.NO, synchronous single-thread callback drain and executor/node/context shutdown in order",
+    "result": "results/fortress_turn_response/contact_shutdown.json",
+    "status": "passed",
+    "scope": "Separate short native load, original coverage10 status retained"
+  },
+  "rmf_obelix": {
+    "source_manifest": "models/rmf_obelix/SOURCE.json",
+    "launch": "rmf_fortress.launch.py",
+    "generator": "scripts/fortress_rmf_model.py",
+    "controller": "src/rmf_controller_node.cpp",
+    "dynamics": "Four native MulticopterMotorModel plugins on original joints; unchanged pinned RotorS Lee core; no adapter pose integration",
+    "sensor": "Original OS0 macro with 512x64 beams, 10 Hz requested, 360x90 degree FOV and base z offset .08 m",
+    "model_mass_kg": 0.527030001,
+    "controller_mass_kg": 0.5265,
+    "flight_evidence": "results/fortress_rmf/flight2.json: whole native takeoff, 3-D flight, return, landing contact, zero motor command and orderly shutdown passed (27.33 s)",
+    "mapping_evidence": "results/fortress_rmf/mission4.json: one start request, automatic takeoff, observed-map Extended root acceptance, home set, local + homing, native landing contact and stopped rotors; 21.156 m autonomous travel, 754232 known cells, 61.664 s wall elapsed",
+    "unmigrated": "Native committed PlanAhead continuation, remaining source/ROS2 scheduling-budget differences, Linux x86 and ROS1/ROS2 system equivalence remain unverified. Classic telemetry/logging remains outside the migrated IMU data path; Hector calibration/bias interfaces and native ROS2 dynamic parameters are recorded below. The preceding planning/x86 notes are historical scope statements, not new requirements.",
+    "independent_review": "results/fortress_rmf/mission4_review.json",
+    "post_run_changes": {
+      "clock_watchdog": "Pause retains motor input; ROS source age > .5 s still stops motors; hardware receipt watchdog retained",
+      "directed_check": "results/fortress_rmf/pause_clock2.json; synthetic clock/odometry, 4 checks. Later mission4 used the fix; original autonomy4 three-cycle mission not rerun.",
+      "pci_shutdown": "results/control_shutdown/native.json; 4 actual ROS lifecycle checks, not physics",
+      "scope": "Clock/shutdown fixes were used by the later mission4; the original three-cycle autonomy4 was not rerun or rewritten."
+    },
+    "previous_three_cycle_evidence": {
+      "run": "results/fortress_rmf/autonomy4.json",
+      "independent_review": "results/fortress_rmf/autonomy4_review.json",
+      "summary": "results/fortress_rmf/autonomy4.json: 3 local + homing actions, 51.263 m, home 2.594 mm, supervised landing; all four Actions succeeded",
+      "scope": "Three autonomous local actions and homing; takeoff and landing supervised. Original watchdog drop and shutdown warning remain in the run evidence; not rerun."
+    },
+    "mission_entry": {
+      "service": "/rmf/start_mission",
+      "observer": "tools/check_fortress_rmf_mission.py; one Trigger request, no trajectory publisher",
+      "takeoff_profile": "Relative to native ground: +1 m in 4 s, hold 1 s, descend .2 m in 2 s to +.8 m; AIRBORNE only after the full profile and endpoint motion checks.",
+      "validation_scope": "Takeoff profile is controller-generated, not ValidatePath-certified. The task subsequently validates the current Extended root against new observed map data before setting home.",
+      "landing_services": "land_srv (Empty) and rmf/land (Trigger); contact/rest-confirmed native landing then four zero motor commands",
+      "preserved_failures": [
+        "results/fortress_rmf/mission1.json",
+        "results/fortress_rmf/mission2.json",
+        "results/fortress_rmf/mission3.json"
+      ]
+    },
+    "imu_runtime": {
+      "evidence": "results/fortress_rmf/mission4_imu_review.json",
+      "pipeline": "Three native Fortress IMUs at original mounts -> bridge -> source-effective stochastic adapters; no odometry synthesis.",
+      "observed_raw_output_hz": {
+        "adis": [
+          499.837,
+          499.928
+        ],
+        "ground_truth": [
+          499.855,
+          499.946
+        ],
+        "os0": [
+          99.946,
+          99.964
+        ]
+      },
+      "scope": "Finite monotonic stamps, frames, motion, specific force and retained same-stamp differences/covariances checked. The two 500 Hz flight pair histories end before significant rotation; individual streams are separately checked during motion. Not noise-distribution, hardware or whole-stack parity validation."
+    },
+    "post_mission_exact_gain_cache": {
+      "verification": "results/fortress_rmf/gain_cache_verification.json",
+      "native_final_map_comparison": "results/fortress_rmf/gain_cache_native_map.json",
+      "scope": "Implemented after mission4; two targeted checks plus one offline baseline/cached pair on its final map, no new physical flight.",
+      "result": "Exact path, local/global graphs, score and draw count equality; single-pair plan 1197.433->1171.850 ms, absorb 1187.196->192.297 ms, total 2384.757->1364.267 ms, 286 cache hits. No statistical speedup claim."
+    }
+  },
+  "smb_upstream_sensor_profile": {
+    "source_manifest": "models/smb/SOURCE.json",
+    "configuration": "gbplanner_smb/config/upstream_sensors.yaml",
+    "launch_argument": "sensor_profile:=upstream",
+    "default_unchanged": "compact",
+    "implementation": [
+      "scripts/fortress_model.py",
+      "scripts/fortress_smb_sensors.py",
+      "scripts/fortress_state_node.py",
+      "launch/edgar_fortress.launch.py"
+    ],
+    "source_chain": "Fixed SMB sensor_head includes VLP-16 and OS1-64 (called with32 beams). Original smb_sim.launch relays both pointclouds into Voxblox; gain selects VLP16 only.",
+    "native_sensor_configuration": {
+      "velodyne": {
+        "type": "gpu_lidar",
+        "update_rate_hz": 10.0,
+        "horizontal_samples": 440,
+        "vertical_samples": 16,
+        "horizontal_angles_rad": [
+          -3.141592653589793,
+          3.141592653589793
+        ],
+        "vertical_angles_rad": [
+          -0.2617993877991494,
+          0.2617993877991494
+        ],
+        "ray_range_m": [
+          0.2,
+          131.0
+        ],
+        "noise_stddev_m": 0.008
+      },
+      "os1": {
+        "type": "gpu_lidar",
+        "update_rate_hz": 10.0,
+        "horizontal_samples": 440,
+        "vertical_samples": 32,
+        "horizontal_angles_rad": [
+          -3.141592653589793,
+          3.141592653589793
+        ],
+        "vertical_angles_rad": [
+          -0.2899166420487781,
+          0.2899166420487781
+        ],
+        "ray_range_m": [
+          0.7,
+          100.0
+        ],
+        "noise_stddev_m": 0.008
+      }
+    },
+    "sensor_tf": {
+      "velodyne": {
+        "translation": [
+          0.23,
+          0.0,
+          0.6937
+        ],
+        "quaternion": [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "os1": {
+        "translation": [
+          0.30000000000000004,
+          -0.3,
+          0.476
+        ],
+        "quaternion": [
+          0.0,
+          0.24740395925452288,
+          0.0,
+          0.9689124217106448
+        ]
+      }
+    },
+    "physical_model": {
+      "mass_kg": 60.99100000099998,
+      "center_of_mass_base_m": [
+        0.004728566514941069,
+        -2.4593797445121523e-05,
+        -0.005359831770041623
+      ]
+    },
+    "static_evidence": "results/smb_sensor_profile/model_static1.json",
+    "runtime_evidence": "results/smb_sensors/runtime2.json",
+    "checkpoint": "results/smb_sensors/checkpoint.json",
+    "runtime_scope": "Idle native dual-lidar scanning, TF, mapper fusion and planner accepted-map observation only. No commanded motion or planning/Action request. Natural spawning/settling observed.",
+    "runtime_result": {
+      "status": "passed",
+      "wall_elapsed_s": 13.492065048005315,
+      "raw_and_adapted_frames_per_sensor": 52,
+      "observed_rate_hz_about": 10,
+      "mapper_status_integrated_scans": 27,
+      "mapper_status_inputs": {
+        "velodyne": 13,
+        "os1": 14
+      },
+      "startup_tf_queue_drops_each": 1,
+      "rejected_scans_each": 0,
+      "mapper_status_known_cells": 1796374,
+      "planner_status_known_cells": 1794754,
+      "latest_mapper_cloud_cells": 1796489,
+      "latest_mapper_cloud_cells_beyond_6m": 1639134,
+      "accepted_cloud_cells_beyond_6m": 1637516,
+      "maximum_cell_distance_from_base_m": 50.28484433914409,
+      "cleanup": {
+        "started": true,
+        "process_group": 37043,
+        "forced_kill": false,
+        "emergency_sigterm": false,
+        "launch_returncode": 0,
+        "process_group_remaining": false
+      }
+    },
+    "snapshot_semantics": "Mapper status, planner status/accepted map and latest mapper pointcloud are non-atomic observations at different moments, not a same-version cell difference. Distances are voxel centres from observed base_link, not lidar integration ray lengths.",
+    "earlier_failure": {
+      "artifact": "results/smb_sensors/runtime1.json",
+      "stage": "Failed during model generation before simulation due to rejecting legitimate ament file symlinks.",
+      "fix": "Lexical package-relative path validation permits existing installed source symlinks; record results/smb_sensors/symlink_fix.json."
+    },
+    "adaptations": [
+      "OS1 original CPU ray becomes native GPU lidar.",
+      "Classic plugin applies noise between two open-interval range gates; native noise precedes the final ROS output gate. No RNG or exact near-limit rejection parity claim.",
+      "Original malformed VLP mesh node labels corrected only in separate copies.",
+      "Original camera joint/link name collisions resolved by renaming camera fixed joints only.",
+      "Camera bodies remain; RGB streams default off and are opt-in via cameras:=true, with separate static/runtime evidence in results/smb_cameras/checkpoint.json. OS1 IMU has separate evidence in results/smb_os1_imu/checkpoint.json.",
+      "Per-source mapper queues deliberately avoid cross-sensor equal-stamp rejection from the original merged ROS1 stream.",
+      "Scene .1m TSDF and ground projection remain; this is not a complete original .2m mapper/profile or physics equivalence."
+    ],
+    "prior_compact_exploration": "Existing run8/run9/coverage10 remain compact evidence and were not rerun for this profile.",
+    "output_gate_branch": {
+      "artifact": "results/smb_sensors/output_gate1.json",
+      "status": "passed",
+      "scope": "Direct call to fortress_state.points using actual encoded PointCloud2 messages; no Node construction, simulator, mapper or native scan was started. Little-endian and big-endian cases each contain7 points;3 finite out-of-range points become XYZ NaN. In-range points, original NaN/Inf, non-XYZ bytes and source acquisition stamp remain preserved.",
+      "result": {
+        "status": "passed",
+        "scope": "Output range branch on encoded PointCloud2; no sensor or map simulation",
+        "cases": [
+          {
+            "byte_order": "<",
+            "filtered": 3,
+            "source_stamp_preserved": true,
+            "other_bytes_preserved": true
+          },
+          {
+            "byte_order": ">",
+            "filtered": 3,
+            "source_stamp_preserved": true,
+            "other_bytes_preserved": true
+          }
+        ],
+        "native_run_filtered_first_12_pairs": 0
+      },
+      "native_scope": "The recorded first12 matched cloud pairs for each sensor contained no native out-of-range return; this direct message branch check is separate evidence, not a native clipping event."
+    },
+    "os1_imu_runtime": {
+      "evidence": "results/smb_os1_imu/checkpoint.json",
+      "pipeline": "Original mount -> native 100 Hz IMU -> bridge -> effective Hector noise -> /os1_cloud_node/imu; frame os1_imu.",
+      "status": "static_conversion_and_idle_data_observed",
+      "counts": {
+        "received": 10132,
+        "published": 10132,
+        "rejected": 0,
+        "maximum_interval_s": 0.01,
+        "interval_gaps": 0
+      },
+      "scope": "No motion/planning; samples at different times. Simulator processes cleaned up, child exit codes not retained."
+    }
+  },
+  "smb_rgb_cameras": {
+    "selection": "cameras:=true requires sensor_profile:=upstream; disabled by default",
+    "implementation": [
+      "scripts/fortress_smb_cameras.py",
+      "scripts/smb_camera_info_node.py",
+      "launch/edgar_fortress.launch.py"
+    ],
+    "source": "models/smb/SOURCE.json rgb_cameras",
+    "validation": "results/smb_cameras/checkpoint.json",
+    "observed": "Three native1440x1080RGB8 images;20.04Hz source-time,6.33-6.36Hz wall-time;40frames/camera; exact Image/CameraInfo stamps and optical TF verified; final nodes cleanly exited.",
+    "camera_info": "Only inferred stereo P[3] is cleared; raw native Info is retained and images are directly bridged. Original physical models unchanged."
+  },
+  "hector_runtime_interfaces": {
+    "implementation": "rmf_imu_adapter_node; interface-only ROS 2 hector_gazebo_plugins/SetBias",
+    "services": {
+      "calibrate": "std_srvs/Empty: reset only gyro dynamic bias to zero",
+      "set_accel_bias": "hector_gazebo_plugins/SetBias: set acceleration dynamic drift",
+      "set_rate_bias": "hector_gazebo_plugins/SetBias: set gyro dynamic drift"
+    },
+    "bias_topic": "output_topic + /bias: sensor_msgs/Imu, same header, current dynamic drift + fixed offset for accel/rate, actual orientationError, zero covariance",
+    "preserved": "No service-generated sample, timestamp reset, RNG draw or changes to drift/noise parameters",
+    "finite_request_adaptation": "Nonfinite vectors are ignored and counted; original empty response has no success field",
+    "evidence": [
+      "results/hector_imu_services/smb1.json",
+      "results/hector_imu_services/rmf1.json"
+    ],
+    "remaining": "ROS1 dynamic_reconfigure wire protocol/UI is replaced by native ROS2 parameters; original RNG implementation/library bit parity is not claimed."
+  },
+  "hector_dynamic_parameters": {
+    "implementation": "Native ROS 2 parameter services on gbplanner_rmf_imu_adapter; os0 and enabled smb_os1 streams",
+    "source_commit": "de947fb1e253b114d259e8690456792d91b93347",
+    "source_cfg": "upstream/hector_gazebo_0.5.4/hector_gazebo_plugins/cfg/SensorModel.cfg",
+    "source_cfg_sha256": "5753e9f7abdb02be908ae2e17156c716ffb2619146ce326b33f2e1e68caf9700",
+    "names": "<stream>.<accel|rate|yaw>.<GaussianNoise|Offset|Drift|DriftFrequency|ScaleError>",
+    "runtime_ranges": {
+      "GaussianNoise": [
+        0,
+        10
+      ],
+      "Offset": [
+        -10,
+        10
+      ],
+      "Drift": [
+        0,
+        10
+      ],
+      "DriftFrequency": [
+        0,
+        1
+      ],
+      "ScaleError": [
+        0,
+        2
+      ]
+    },
+    "types": "accel/rate: three doubles; yaw: one double",
+    "startup": "Preserves loaded per-axis values and 1/3600 default frequency; cfg GUI defaults do not overwrite source model defaults",
+    "native_parameter_adaptation": "Only named arrays/scalars change. Unlike ROS1 dynamic_reconfigure, an update does not broadcast all five scalar GUI values over all three axes. ROS1 wire protocol/UI are not emulated.",
+    "atomicity": "Validate complete Hector-only batch before applying. Reject mixed non-Hector batches; static node parameters are read-only. Pure use_sim_time retains rclcpp behavior.",
+    "state": "No RNG consumption, drift reset, time reset or synthetic sample on configuration. Offset contributes to total published bias and pseudo-AHRS. SetBias changes dynamic drift only; rate calibration preserves fixed offset.",
+    "measurement": "native_measurement * scale_error + offset + updated_dynamic_drift + gaussian_noise * N(0,1)",
+    "yaw": "ScaleError remains unused, matching source yawModel.update(dt); yaw white noise affects covariance but not pseudo-AHRS bias quaternion.",
+    "covariance": "Acceleration/rate covariance retain startup GaussianNoise squared; orientation covariance follows current GaussianNoise, as in the source plugin.",
+    "evidence": [
+      "results/hector_imu_parameters/rmf2.json",
+      "results/hector_imu_parameters/smb1.json"
+    ],
+    "scope": "Each native stream contributes 30 same-stamp raw/output/bias samples after a runtime update, plus paused state transitions. No noise-distribution, motion or complete-migration claim."
+  },
+  "managed_bridge": {
+    "implementation": "src/managed_bridge_node.cpp",
+    "conversion_library": "Installed official ros_gz_bridge 0.244.26; no modified conversion formulas or system libraries",
+    "launch": "bridge:=managed is now the default in SMB and RMF launches; bridge:=system selects the installed parameter_bridge",
+    "scope": "Project CLI message pairs and directions only; unsupported pairs/directions fail at startup. Official KeepLast10 and publisher/subscriber QoS override policies retained.",
+    "inbound": [
+      "Clock",
+      "Odometry",
+      "PointCloudPacked",
+      "IMU",
+      "Image",
+      "CameraInfo",
+      "Model/JointState",
+      "Contacts"
+    ],
+    "outbound": [
+      "Actuators"
+    ],
+    "shutdown": "Signal handler sets a flag only. Close admission, await active conversions/publications, unsubscribe and release resources, then shut down ROS. Late callbacks retain only closed shared state. Conversion work remains outside the short gate mutex.",
+    "old_failure": "results/runtime_integration/renderer_launch.log retains the system bridge pthread assertion. No backtrace identifies its exact mutex; this is not a proven unique upstream root cause.",
+    "evidence": [
+      "results/managed_bridge/smb1.json",
+      "results/managed_bridge/smb2.json",
+      "results/managed_bridge/rmf1.json"
+    ],
+    "evidence_scope": "SMB2 confirms all expected active streams and independent clean bridge exit (~0.149s), but its later native-echo JSON parser failed and whole record remains failed. RMF1 fully passes, including native actuator receipt, independent clean exit (~0.120s) and native IMU after exit. SMB1 preserves the earlier fixture timeout waiting for legitimate absent chassis contact."
+  },
+  "smb_native_background": {
+    "evidence": "results/background_native/checkpoint.json",
+    "native_result": "results/background_native/run2.json",
+    "sensor_profile": "upstream dual lidar",
+    "background_timer_updates": 28,
+    "background_vertices_added": 5,
+    "explicit_expansion_requests": 0,
+    "mission": "One search, one local exploration, one homing; original mine, native wheel dynamics, 512 internal renderer",
+    "home_error_xy_m": 0.011768720743997797,
+    "budgets": "500 vertices, 5000 edges, 20000 sampling rounds, 5m history/graph exclusion and 30s planning deadline unchanged",
+    "cleanup": "launch0, no node exit failures, no signal escalation or forced kill",
+    "scope": "Independent background counters, not total graph growth. One successful run, not a stability rate."
+  }
+}

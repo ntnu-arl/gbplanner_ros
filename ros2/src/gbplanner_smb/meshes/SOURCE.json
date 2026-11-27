@@ -1,0 +1,34 @@
+{
+  "repository": "https://github.com/ntnu-arl/smb_simulator",
+  "commit": "9aa33187d7375fd48dbd63e27ca5e55bb219f750",
+  "archive_sha256": "8072e44e9c9e84ebb9eef735d56558eec39bf208e374ad1dcaf0ab3350c0d049",
+  "license": "The upstream smb_description/package.xml declares MIT. Its unmodified declaration is retained as upstream_package.xml. No repository-wide LICENSE file was present in the retrieved archive; the local course-project LICENSE does not replace upstream ownership.",
+  "upstream_files": [
+    {
+      "upstream_path": "smb_description/meshes/SMB_COARSE.dae",
+      "local_path": "SMB_COARSE.dae",
+      "sha256": "c9549ab743fb881439723ac61d64e01309c73938e6a0cafdafb0e8c48d847625"
+    },
+    {
+      "upstream_path": "smb_description/package.xml",
+      "local_path": "upstream_package.xml",
+      "sha256": "3db5ea45b658266db20ed84fd39b54b8db406ab6ce1d4d398567dd3a62c50c02"
+    }
+  ],
+  "visual_mesh": "Original DAE copied byte-for-byte, original base_link mesh origin xyz=[.423,.42,-.25], rpy=[1.57,0,-1.57] and .001 scale retained. One embedded geometry, no external images or textures.",
+  "urdf_adaptations": {
+    "scope": "New standalone ROS 2 visualization description using original mesh, box/cylinder geometry and mounting coordinates. This is not a Gazebo simulation port.",
+    "joint_names": {
+      "LF_WHEEL": "LF_wheel_joint",
+      "RF_WHEEL": "RF_wheel_joint",
+      "LH_WHEEL": "LH_wheel_joint",
+      "RH_WHEEL": "RH_wheel_joint"
+    },
+    "joint_data": "Current smb_node publishes these four joint names in LF RF LH RH order from integrated measured relative wheel angular velocity, not desired motor velocity.",
+    "wheel_visual": "Original visual radius .20 m and width .17 m retained. Collision radius .19 m and width .185 m remain distinct, as in the upstream xacro.",
+    "inertia": "Analytic box and Y-axis cylinder tensors match smb_vehicle.cpp. Corrects original box izz macro x*x+z*z to x*x+y*y, and wheel axial term from Z to Y.",
+    "tf_ownership": "robot_state_publisher publishes only base_link->inertial_link and the four base_link->wheel links. No map link or smb_lidar link is present; smb_node owns those transforms.",
+    "omitted": "ROS 1 Gazebo plugins, ros_control transmissions, sensor_head xacro and dependencies are not copied into this visualization URDF.",
+    "nominal_geometry": "The URDF describes default dimensions and base_link frame. Customized physical geometry requires matching URDF changes."
+  }
+}

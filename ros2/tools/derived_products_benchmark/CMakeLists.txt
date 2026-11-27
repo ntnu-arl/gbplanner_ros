@@ -1,0 +1,26 @@
+cmake_minimum_required(VERSION 3.16)
+project(gbplanner_derived_products_benchmark LANGUAGES CXX)
+
+find_package(ament_cmake REQUIRED)
+find_package(voxblox_core REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
+find_package(OpenSSL REQUIRED)
+
+get_filename_component(RMF_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
+set(RMF_OLD "${RMF_ROOT}/results/rmf_mapping_throughput/derived_products/baseline/include/gbplanner_voxblox")
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/baseline_gbplanner_voxblox")
+foreach(header distance_products.hpp map_visualization.hpp pointcloud_buffer.hpp)
+  file(READ "${RMF_OLD}/${header}" old_text)
+  string(REPLACE "namespace gbplanner2" "namespace baseline_gbplanner2" old_text "${old_text}")
+  string(REPLACE "\"gbplanner_voxblox/" "\"baseline_gbplanner_voxblox/" old_text "${old_text}")
+  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/baseline_gbplanner_voxblox/${header}" "${old_text}")
+endforeach()
+
+add_executable(benchmark_derived_products ../benchmark_derived_products.cpp)
+target_compile_features(benchmark_derived_products PRIVATE cxx_std_17)
+target_compile_options(benchmark_derived_products PRIVATE -Wall -Wextra -Wpedantic)
+target_include_directories(benchmark_derived_products PRIVATE
+  "${CMAKE_CURRENT_BINARY_DIR}" "${RMF_ROOT}/src/gbplanner_voxblox/include")
+ament_target_dependencies(benchmark_derived_products voxblox_core sensor_msgs visualization_msgs)
+target_link_libraries(benchmark_derived_products OpenSSL::Crypto)

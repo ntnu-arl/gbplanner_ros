@@ -1,0 +1,20 @@
+gbplanner_path_follower:
+  ros__parameters:
+    frame_id: map
+    joint_name: base_link
+    # kTopic: MultiDOFJointTrajectory; kAction: downstream PathFollower action.
+    output_type: kTopic
+    output_action: pci_output_path
+    # Zero follows the driver's result, as in the original PCI Action branch.
+    output_action_timeout: 0.0
+    # Same values as the pinned GBPlanner RMF simulation PCI configuration.
+    speed: 1.0
+    yaw_rate: 0.15
+    sample_period: 0.05
+    smooth_yaw: true
+    odom_timeout: 2.0
+    endpoint_tolerance: 0.05
+    yaw_tolerance: 0.10
+    execution_grace: 10.0
+    validation_timeout: 10.0
+    max_points: 20000

@@ -1,0 +1,80 @@
+{
+  "feature": "Reproducible per-request local planning seeds",
+  "source": {
+    "upstream_graph_reset": "../gbplanner/src/rrg.cpp:1078-1085 resets exploration/adaptive samplers on each graph build.",
+    "upstream_reseeding": "../planner_common/src/random_sampler.cpp:134-136 and 242-247 reseed the main and four axis generators from std::random_device; upstream does not preserve one uninterrupted RNG stream between builds.",
+    "ros2_adaptation": "SamplingSeedSequence uses effective_seed = (base_seed + request_index) modulo 2^32 in sequence mode. This deterministic schedule replaces fresh entropy and is not bit-equivalent to upstream sampling."
+  },
+  "configuration": {
+    "parameter": "sampling.seed_mode",
+    "allowed": [
+      "fixed",
+      "sequence"
+    ],
+    "node_default": "fixed",
+    "sequence_enabled_in": [
+      "src/gbplanner_smb/config/exploration.yaml",
+      "src/gbplanner_smb/config/edgar_exploration.yaml"
+    ]
+  },
+  "lifetime": {
+    "owner": "LocalPlannerNode::local_sampling_seeds_",
+    "consumer": "LocalPlannerNode::beginLocalSampling",
+    "shared_callers": [
+      "local",
+      "ahead"
+    ],
+    "advance": "One request index is consumed when a local planning attempt enters beginLocalSampling, including attempts that later fail or are rejected inside LocalPlanner. Fixed mode also increments the recorded index.",
+    "no_advance": [
+      "gain-only evaluator",
+      "node-level preflight return before beginLocalSampling",
+      "retained global route without local planning"
+    ],
+    "seed_cycle": "Sequence seeds repeat after 2^32 requests; the uint64 request index distinguishes repetitions.",
+    "index_exhaustion": "Index UINT64_MAX can be returned once; the next call throws std::overflow_error without wrapping.",
+    "restart": "The node-owned sequence starts again at request index zero after node restart.",
+    "observability": "sampling_status publishes mode, base_seed, effective_seed, request_index, caller and map_revision; ordinary planning metrics also identify the effective seed and request index."
+  },
+  "focused_validation": {
+    "scope": "Standard-library-only helper test performed before this provenance record; not rerun while writing the record.",
+    "working_directory": "ros2",
+    "compile_command": [
+      "c++",
+      "-std=c++17",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-pedantic",
+      "-I",
+      "src/gbplanner_local/include",
+      "src/gbplanner_local/test/sampling_seed_sequence.cpp",
+      "-o",
+      "/tmp/gbplanner_sampling_seed_sequence_check"
+    ],
+    "compile_exit_code": 0,
+    "run_command": [
+      "/tmp/gbplanner_sampling_seed_sequence_check"
+    ],
+    "run_exit_code": 0,
+    "stdout": "sampling_seed_sequence: passed\n",
+    "covered": [
+      "sequence seeds 42,43,44,45 with indices 0,1,2,3",
+      "fixed seed 42 with advancing indices",
+      "same input build sequence replays exactly",
+      "uint32 seed wrap UINT32_MAX,0,1"
+    ],
+    "not_exercised": "The uint64 exhaustion branch was source-reviewed, not reached through 2^64 test calls.",
+    "ros_started": false,
+    "whole_workspace_build": false,
+    "node_integration": "Read-only inspection found both intended consumption sites and no gain-only/preflight consumption. No runtime node validation is claimed here."
+  },
+  "sha256": {
+    "src/gbplanner_local/include/gbplanner_local/sampling_seed_sequence.hpp": "5c306a061c8fd49188e5685b2dc257d92b57764aed26cac189f0ac1dbce274ad",
+    "src/gbplanner_local/test/sampling_seed_sequence.cpp": "817a79cd348c9d26f1a1e803346d056d73c88488297b07b91f054c40e78f2c94",
+    "src/gbplanner_local/src/local_planner_node.cpp": "988b4a6219aa14e326a9953dc9a70a70d1d2a54972d3a301a05c728180607b6f",
+    "src/gbplanner_smb/config/exploration.yaml": "fcefa6b4085eb2a44a05261d7268b53ea2a6593a774c4e2c74cb2d9daa731658",
+    "src/gbplanner_smb/config/edgar_exploration.yaml": "b176721edf11f75cc60086f16d7bb3d5a6db2a730718687ca31ed5517c19c128",
+    "../gbplanner/src/rrg.cpp": "b6191f17e0f8072c3717b83148868793de2bf0155347df641590d8026e6ecefb",
+    "../planner_common/src/random_sampler.cpp": "c10101803e17a0e76e648d9cc58e378a920563f25ef3813eb0bc9a163bae1895"
+  }
+}

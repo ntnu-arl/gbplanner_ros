@@ -1,0 +1,53 @@
+# Planner-only SMB sampling and graph policy from gbplanner2 commit
+# 7301b5350915cf3a4055072ad559842db37b4ca9:
+# gbplanner/config/smb/gbplanner_config.yaml (spaces, samplers, PlanningParams)
+# and gbplanner/include/gbplanner/rrg.h (0.5 s timer, 0.1 s update budget).
+# Load after the scene's exploration YAML. Robot geometry, world bounds,
+# ground/TSDF projection, sensors, gain weights and search settings remain
+# those of that scene; this overlay is not full ROS 1 parameter equivalence.
+gbplanner_local:
+  ros__parameters:
+    # The background sampler keeps this ordinary Local box. Local buildGraph
+    # instead uses its separate PCA sampler when adaptation succeeds.
+    sampling.space_type: kCuboid
+    sampling.min: [-15.0, -15.0, -3.0]
+    sampling.max: [15.0, 15.0, 3.0]
+    sampling.rotations: [0.0, 0.0, 0.0]
+    sampling.distribution: uniform
+    sampling.x.distribution: uniform
+    sampling.y.distribution: uniform
+    sampling.z.distribution: uniform
+    sampling.heading.distribution: uniform
+    sampling.heading.min: -3.141592653589793
+    sampling.heading.max: 3.141592653589793
+
+    planning.adaptive_exploration: true
+    adaptive.type: kPca
+    adaptive.local_pointcloud_range: 50.0
+    adaptive.bounding_box_size_max: 35.0
+    adaptive.distribution_scaling_max: 10.0
+    adaptive.voxel_filter_leaf_size: 1.0
+    # Original PCA overwrites its initial box. The ROS 2 implementation falls
+    # back to the configured ordinary box for empty or degenerate point clouds.
+
+    planning.graph_mode: true
+    planning.max_vertices: 500
+    planning.max_edges: 5000
+    planning.sampling_budget_mode: sampling_rounds
+    planning.max_sampling_rounds: 20000
+    planning.empty_graph_cutoff: 2000
+    planning.edge_min: 0.1
+    planning.edge_max: 3.0
+    planning.overshoot: 0.0
+    planning.neighbor_radius: 2.5
+    planning.neighbor_min: 0.1
+    planning.neighbor_max: 3.0
+    planning.cluster_vertices_for_gain: true
+    planning.clustering_radius: 0.5
+
+    global.background_enable: true
+    # Scheduling follows the node's ROS clock; the soft computation budget
+    # uses steady time so a paused simulation cannot stall an active update.
+    global.background_period: 0.5
+    global.background_budget_mode: time
+    global.background_time_budget: 0.1
