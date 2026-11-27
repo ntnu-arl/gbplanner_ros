@@ -1,0 +1,61 @@
+gbplanner_local:
+  ros__parameters:
+    frame_id: map
+    map.resolution: 0.2
+    map.origin: [-3.0, -3.0, -1.0]
+    map.dimensions: [30, 30, 25]
+    robot.type: kGround
+    robot.size: [0.3, 0.3, 0.3]
+    ground.robot_height: 0.65
+    ground.max_ground_height: 0.9
+    ground.max_inclination: 0.65
+    ground.max_negative_inclination: 0.65
+    ground.projection_max_length: 3.0
+    ground.interpolate_projection_distance: true
+    ground.hanging_vertex_penalty: 0.0
+    sampling.seed: 42
+    sampling.min: [-0.1, -0.6, -0.1]
+    sampling.max: [3.0, 0.6, 0.6]
+    planning.max_vertices: 80
+    planning.max_edges: 1000
+    planning.max_attempts: 3000
+    planning.edge_min: 0.2
+    planning.edge_max: 0.8
+    planning.overshoot: 0.1
+    planning.neighbor_radius: 1.2
+    planning.neighbor_min: 0.2
+    planning.neighbor_max: 1.2
+    planning.path_length_penalty: 0.07
+    planning.path_direction_penalty: 0.0
+    sensor.range: 3.0
+    sensor.horizontal_fov: 6.283185307179586
+    sensor.vertical_fov: 1.0471975511965976
+    sensor.horizontal_resolution: 0.2617993877991494
+    sensor.vertical_resolution: 0.2617993877991494
+    gain.unknown: 1.0
+    gain.free: 0.0
+    gain.occupied: 0.0
+    global.enable: true
+    global.auto_home: true
+    global.background_enable: false
+
+voxblox_mapper:
+  ros__parameters:
+    frame_id: map
+    sensor_frame: terrain_sensor
+    map.resolution: 0.2
+    map.origin: [-3.0, -3.0, -1.0]
+    map.dimensions: [30, 30, 25]
+    map.distance_field: tsdf
+    sensor.min_range: 0.1
+    sensor.max_range: 8.0
+    tsdf.voxels_per_side: 16
+    tsdf.truncation_distance: 0.6
+    tsdf.method: simple
+    tsdf.threads: 1
+    tsdf.max_weight: 200.0
+    # Voxblox's base integrator needs one of its weighting branches enabled;
+    # this preserves the native distance-dependent dropoff.
+    tsdf.use_weight_dropoff: true
+    tsdf.voxel_carving_enabled: true
+    tsdf.occupancy_distance_factor: 1.0

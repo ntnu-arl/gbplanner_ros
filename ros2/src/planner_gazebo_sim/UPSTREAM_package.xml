@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>planner_gazebo_sim</name>
+  <version>0.0.0</version>
+  <description>Gazebo resources for planner simulation</description>
+  <maintainer email="tung.dang@nevada.unr.edu">Tung Dang</maintainer>
+  <license>None</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend>catkin_simple</buildtool_depend>
+  <depend>roscpp</depend>
+
+</package>

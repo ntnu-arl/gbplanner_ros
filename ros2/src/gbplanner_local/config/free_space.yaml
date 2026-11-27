@@ -1,0 +1,48 @@
+# Separate sensor-return and synthetic clearing streams. The robot supplies
+# odometry plus map -> lidar TF at the acquisition timestamp; no TF is invented.
+# This example uses a lidar at the body origin. Match these extrinsics to TF
+# when using another sensor installation. Camera frame must be its optical frame.
+gbplanner_local:
+  ros__parameters:
+    planning.freespace_cloud_enable: true
+    free_space.odometry_timeout: 2.0
+    free_space.sensor_names: [lidar]
+    free_space.lidar.frame: lidar
+    free_space.lidar.type: kLidar
+    free_space.lidar.range: 3.0
+    free_space.lidar.min_range: 0.0
+    free_space.lidar.center_offset: [0.0, 0.0, 0.0]
+    free_space.lidar.rotations: [0.0, 0.0, 0.0]
+    free_space.lidar.horizontal_fov: 6.283185307179586
+    free_space.lidar.vertical_fov: 1.0471975511965976
+    free_space.lidar.horizontal_resolution: 0.2617993877991494
+    free_space.lidar.vertical_resolution: 0.2617993877991494
+
+voxblox_mapper:
+  ros__parameters:
+    frame_id: map
+    sensor_frame: lidar
+    map.resolution: 0.25
+    map.origin: [-5.0, -5.0, -1.5]
+    map.dimensions: [40, 40, 12]
+    sensor.min_range: 0.1
+    sensor.max_range: 6.0
+    use_freespace_pointcloud: true
+    freespace.sensor_frames: [lidar]
+    tsdf.truncation_distance: 0.75
+    tsdf.clearing_ray_weight_factor: 0.01
+    tsdf.voxel_carving_enabled: true
+
+# The deterministic occupancy adapter has no TSDF confidence weights. Its
+# clearing input changes unknown cells to free and retains occupied surfaces.
+occupancy_mapper:
+  ros__parameters:
+    frame_id: map
+    sensor_frame: lidar
+    map.resolution: 0.25
+    map.origin: [-5.0, -5.0, -1.5]
+    map.dimensions: [40, 40, 12]
+    sensor.min_range: 0.1
+    sensor.max_range: 6.0
+    use_freespace_pointcloud: true
+    freespace.sensor_frames: [lidar]

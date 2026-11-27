@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+
+<launch>
+  <arg name="robot_namespace" default="/"/>
+  <arg name="x" default="0.0"/>
+  <arg name="y" default="0.0"/>
+  <arg name="z" default="0.5"/>
+  <arg name="yaw" default="0.0"/>
+  <arg name="joystick" default="false"/>
+
+  <group ns="$(arg robot_namespace)">
+    <!-- Load the robot_description parameter -->
+    <include file="$(find smb_description)/launch/description.launch">
+      <arg name="robot_namespace" value="$(arg robot_namespace)"/>
+    </include>
+
+    <!-- Spawn robot in gazebo -->
+    <node name="spawn_smb_model" pkg="gazebo_ros" type="spawn_model" args="-x $(arg x)
+              -y $(arg y)
+              -z $(arg z)
+              -Y $(arg yaw)
+              -unpause
+              -urdf
+              -param robot_description
+              -model $(arg robot_namespace)" />
+  
+
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
+
+    <node name="message_to_tf" pkg="smb_gazebo" type="message_to_tf" output="screen">
+      <param name="odometry_topic" value="ground_truth/state"/>
+      <param name="frame_id" value="world"/>
+    </node>
+
+    <node name="odom_to_world_tf" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 /world /odom 10"/>
+
+    <!-- Load controller configuration -->
+    <rosparam command="load" file="$(find smb_lowlevel_controller)/config/control_sim.yaml" />
+
+    <!-- Spawn controllers -->
+    <node name="controller_spawner" pkg="controller_manager" type="spawner" args="smb_joint_publisher smb_velocity_controller"/>
+
+    <node pkg="twist_mux" type="twist_mux" name="twist_mux">
+      <rosparam command="load" file="$(find smb_lowlevel_controller)/config/twist_mux.yaml" />
+      <remap from="cmd_vel_out" to="smb_velocity_controller/cmd_vel"/>
+    </node>
+
+    <!-- Spawn human control nodes -->
+    <node pkg="interactive_marker_twist_server" type="marker_server" name="twist_marker_server" output="screen"/>
+
+    <group if="$(arg joystick)">
+      <node name="joy_node" pkg="joy" type="joy_node" output="screen"/>
+
+      <node name="smb_teleop_twist_joy_node" pkg="smb_teleop_twist_joy" type="smb_teleop_twist_joy_node" output="screen">
+        <remap from="cmd_vel" to="joy_teleop/cmd_vel"/>
+        <param name="max_velocity_angular" value="1.5"/>
+        <param name="max_velocity_linear" value="1"/>
+      </node>
+    </group>
+  </group>
+</launch>

@@ -1,0 +1,129 @@
+<?xml version="1.0"?>
+<!-- ROS 2 visualization derived from the retained SMB xacro model (MIT).
+     See meshes/SOURCE.json. This file has no Gazebo or ros2_control plugins.
+     smb_node owns map -> base_link and base_link -> smb_lidar.
+     robot_state_publisher owns only the chassis inertial link and four wheels.
+     Joint names match the measured wheel JointState output of smb_node. -->
+<robot name="smb">
+  <material name="smb_white"><color rgba="1 1 1 1"/></material>
+  <material name="smb_black"><color rgba="0 0 0 1"/></material>
+
+  <link name="base_link">
+    <visual>
+      <!-- Original mesh registration and millimetre-to-metre scale. -->
+      <origin xyz="0.423 0.42 -0.25" rpy="1.57 0 -1.57"/>
+      <geometry>
+        <mesh filename="package://gbplanner_smb/meshes/SMB_COARSE.dae"
+              scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="smb_white"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.605 0.410 0.220"/></geometry>
+    </collision>
+  </link>
+
+  <!-- As in the original model, keep root inertia on a fixed child link. -->
+  <link name="inertial_link">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="40"/>
+      <!-- Analytic box inertia matching smb_vehicle.cpp. -->
+      <inertia ixx="0.7216666666666666" ixy="0" ixz="0"
+               iyy="1.3814166666666665" iyz="0" izz="1.7804166666666665"/>
+    </inertial>
+  </link>
+  <joint name="inertial_joint" type="fixed">
+    <parent link="base_link"/><child link="inertial_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <link name="LF_WHEEL_LINK">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/><mass value="5"/>
+      <inertia ixx="0.05938541666666667" ixy="0" ixz="0"
+               iyy="0.09025" iyz="0" izz="0.05938541666666667"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="1.5707963267948966 0 0"/>
+      <geometry><cylinder radius="0.20" length="0.17"/></geometry>
+      <material name="smb_black"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="1.5707963267948966 0 0"/>
+      <geometry><cylinder radius="0.19" length="0.185"/></geometry>
+    </collision>
+  </link>
+  <joint name="LF_wheel_joint" type="continuous">
+    <parent link="base_link"/><child link="LF_WHEEL_LINK"/>
+    <origin xyz="0.2159 0.3275 -0.05" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+
+  <link name="RF_WHEEL_LINK">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/><mass value="5"/>
+      <inertia ixx="0.05938541666666667" ixy="0" ixz="0"
+               iyy="0.09025" iyz="0" izz="0.05938541666666667"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="1.5707963267948966 0 0"/>
+      <geometry><cylinder radius="0.20" length="0.17"/></geometry>
+      <material name="smb_black"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="1.5707963267948966 0 0"/>
+      <geometry><cylinder radius="0.19" length="0.185"/></geometry>
+    </collision>
+  </link>
+  <joint name="RF_wheel_joint" type="continuous">
+    <parent link="base_link"/><child link="RF_WHEEL_LINK"/>
+    <origin xyz="0.2159 -0.3275 -0.05" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+
+  <link name="LH_WHEEL_LINK">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/><mass value="5"/>
+      <inertia ixx="0.05938541666666667" ixy="0" ixz="0"
+               iyy="0.09025" iyz="0" izz="0.05938541666666667"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="1.5707963267948966 0 0"/>
+      <geometry><cylinder radius="0.20" length="0.17"/></geometry>
+      <material name="smb_black"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="1.5707963267948966 0 0"/>
+      <geometry><cylinder radius="0.19" length="0.185"/></geometry>
+    </collision>
+  </link>
+  <joint name="LH_wheel_joint" type="continuous">
+    <parent link="base_link"/><child link="LH_WHEEL_LINK"/>
+    <origin xyz="-0.21 0.3275 -0.05" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+
+  <link name="RH_WHEEL_LINK">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/><mass value="5"/>
+      <inertia ixx="0.05938541666666667" ixy="0" ixz="0"
+               iyy="0.09025" iyz="0" izz="0.05938541666666667"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="1.5707963267948966 0 0"/>
+      <geometry><cylinder radius="0.20" length="0.17"/></geometry>
+      <material name="smb_black"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="1.5707963267948966 0 0"/>
+      <geometry><cylinder radius="0.19" length="0.185"/></geometry>
+    </collision>
+  </link>
+  <joint name="RH_wheel_joint" type="continuous">
+    <parent link="base_link"/><child link="RH_WHEEL_LINK"/>
+    <origin xyz="-0.21 -0.3275 -0.05" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+</robot>

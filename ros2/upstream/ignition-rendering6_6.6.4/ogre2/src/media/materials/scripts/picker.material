@@ -1,0 +1,80 @@
+// GLSL shaders
+vertex_program plaincolor_vs_GLSL glsl
+{
+  source plain_color_vs.glsl
+  num_clip_distances 1
+
+  default_params
+  {
+    param_named_auto worldViewProj worldviewproj_matrix
+    param_named_auto worldView worldview_matrix
+    param_named ignMinClipDistance float 0.0
+  }
+}
+
+fragment_program plaincolor_fs_GLSL glsl
+{
+  source plain_color_fs.glsl
+
+  default_params
+  {
+    param_named inColor float4 1 1 1 1
+  }
+}
+
+// Metal shaders
+vertex_program plaincolor_vs_Metal metal
+{
+  source plain_color_vs.metal
+  num_clip_distances 1
+
+  default_params
+  {
+    param_named_auto worldViewProj worldviewproj_matrix
+    param_named_auto worldView worldview_matrix
+    param_named ignMinClipDistance float 0.0
+  }
+}
+
+fragment_program plaincolor_fs_Metal metal
+{
+  source plain_color_fs.metal
+  shader_reflection_pair_hint plaincolor_vs_Metal
+}
+
+// Unified shaders
+vertex_program plaincolor_vs unified
+{
+  delegate plaincolor_vs_GLSL
+  delegate plaincolor_vs_Metal
+}
+
+fragment_program plaincolor_fs unified
+{
+  delegate plaincolor_fs_GLSL
+  delegate plaincolor_fs_Metal
+}
+
+material ign-rendering/plain_color
+{
+  // Material has one technique
+  technique
+  {
+    // This technique has one pass
+    pass
+    {
+      fog_override true
+
+      // Make this pass use the vertex shader defined above
+      vertex_program_ref plaincolor_vs
+      {
+      }
+
+      // Make this pass use the pixel shader defined above
+      fragment_program_ref plaincolor_fs
+      {
+        param_named_auto inColor custom 1
+      }
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "repository": "https://github.com/ntnu-arl/voxblox",
+  "commit": "0ee88c26c203a3fe88e348dbbb552ab431a35352",
+  "license": "BSD-3-Clause",
+  "copyright": "Copyright (c) 2016, ETHZ ASL. All rights reserved.",
+  "scope": "ROS 2 Block, Layer, Mesh and MeshBlock message definitions; fields and constants retain the ROS 1 definitions verbatim.",
+  "files": [
+    {
+      "upstream": "voxblox_msgs/msg/Block.msg",
+      "local": "msg/Block.msg",
+      "sha256": "20ace1520f25e9e7314250e0e93a135672e6abf3e390973b4b53bd495e52733f"
+    },
+    {
+      "upstream": "voxblox_msgs/msg/Layer.msg",
+      "local": "msg/Layer.msg",
+      "sha256": "40482ba4c66e50c642a4c5753aee9a65067abdeee2c3ff71ad212706ca155c60"
+    },
+    {
+      "upstream": "voxblox_msgs/msg/Mesh.msg",
+      "local": "msg/Mesh.msg",
+      "sha256": "10410f655debb83b1d410f26372b95d3a57da0dc389b271fb869dc3a30a5b13e"
+    },
+    {
+      "upstream": "voxblox_msgs/msg/MeshBlock.msg",
+      "local": "msg/MeshBlock.msg",
+      "sha256": "bc35299ea22f2a08f204531b84e9a149e9a143416f5236ca5b25fbbb2d6e16c9"
+    }
+  ],
+  "license_file": "LICENSE",
+  "transport_note": "Identical message fields allow a ROS1/ROS2 bridge mapping; DDS/CDR itself is not ROS1 wire serialization.",
+  "mesh_protocol_note": "Mesh coordinates follow mesh_vis.h rather than its shorthand message comment: uint16 truncation of 65535*0.5*(vertex/block_size-block_index), decoded as (2*encoded/65535+block_index)*block_size. Vertex triples form triangles; missing RGB selects receiver-side normal coloring; empty MeshBlock deletes that block. There is no layer action/reset field in Mesh."
+}

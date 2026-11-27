@@ -1,0 +1,23 @@
+name: Ubuntu CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - 'ign-rendering[0-9]'
+      - 'gz-rendering[0-9]?'
+      - 'main'
+
+jobs:
+  jammy-ci:
+    runs-on: ubuntu-latest
+    name: Ubuntu Jammy CI
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Compile and test
+        id: ci
+        uses: ignition-tooling/action-ignition-ci@jammy
+        with:
+          codecov-enabled: true
+          doxygen-enabled: true

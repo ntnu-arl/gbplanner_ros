@@ -1,0 +1,119 @@
+smb_joint_publisher:
+  type: "joint_state_controller/JointStateController"
+  publish_rate: 50
+
+smb_velocity_controller:
+  type: "diff_drive_controller/DiffDriveController"
+  pid: {p: 100.0, i: 0.01, d: 10.0}
+  left_wheel: ['LF_WHEEL', 'LH_WHEEL']
+  right_wheel: ['RF_WHEEL', 'RH_WHEEL']
+  publish_rate: 50
+  pose_covariance_diagonal: [0.001, 0.001, 0.001, 0.001, 0.001, 0.03]
+  twist_covariance_diagonal: [0.001, 0.001, 0.001, 0.001, 0.001, 0.03]
+  cmd_vel_timeout: 0.25
+  velocity_rolling_window_size: 2
+
+  wheel_separation: 0.6604
+  # Base frame_id
+  base_frame_id: base_link
+
+  # Odometry fused with IMU is published by robot_localization, so
+  # no need to publish a TF based on encoders alone.
+  enable_odom_tf: false
+
+  # SMB hardware provides wheel velocities
+  estimate_velocity_from_position: false
+
+  # Wheel separation and radius multipliers
+  wheel_separation_multiplier: 1.0 # default: 1.0
+  wheel_radius_multiplier    : 1.0 # default: 1.0
+
+  # Velocity and acceleration limits
+  # Whenever a min_* is unspecified, default to -max_*
+  linear:
+    x:
+      has_velocity_limits    : true
+      max_velocity           : 1.5   # m/s
+      has_acceleration_limits: true
+      max_acceleration       : 3   # m/s^2
+  angular:
+    z:
+      has_velocity_limits    : true
+      max_velocity           : 1   # rad/s
+      has_acceleration_limits: true
+      max_acceleration       : 2   # rad/s^2
+
+
+smb_front_left_wheel_velocity_controller:
+  type: "velocity_controllers/JointVelocityController"
+  joint: 'LF_WHEEL'
+  pid: {p: 100.0, i: 0.01, d: 10.0}
+  publish_rate: 50
+  pose_covariance_diagonal: [0.001, 0.001, 0.001, 0.001, 0.001, 0.03]
+  twist_covariance_diagonal: [0.001, 0.001, 0.001, 0.001, 0.001, 0.03]
+  cmd_vel_timeout: 0.25
+  velocity_rolling_window_size: 2
+
+  # Base frame_id
+  base_frame_id: base_link
+
+  has_velocity_limits    : true
+  max_velocity           : 3.0   # m/s
+  has_acceleration_limits: true
+  max_acceleration       : 3.0   # m/s^2
+
+  
+
+smb_rear_left_wheel_velocity_controller:
+  type: "velocity_controllers/JointVelocityController"
+  joint: 'LH_WHEEL'
+  pid: {p: 100.0, i: 0.01, d: 10.0}
+  publish_rate: 50
+  pose_covariance_diagonal: [0.001, 0.001, 0.001, 0.001, 0.001, 0.03]
+  twist_covariance_diagonal: [0.001, 0.001, 0.001, 0.001, 0.001, 0.03]
+  cmd_vel_timeout: 0.25
+  velocity_rolling_window_size: 2
+
+  # Base frame_id
+  base_frame_id: base_link
+
+  has_velocity_limits    : true
+  max_velocity           : 3.0   # m/s
+  has_acceleration_limits: true
+  max_acceleration       : 3.0   # m/s^2
+  
+smb_front_right_wheel_velocity_controller:
+  type: "velocity_controllers/JointVelocityController"
+  joint: 'RF_WHEEL'
+  pid: {p: 100.0, i: 0.01, d: 10.0}
+  publish_rate: 50
+  pose_covariance_diagonal: [0.001, 0.001, 0.001, 0.001, 0.001, 0.03]
+  twist_covariance_diagonal: [0.001, 0.001, 0.001, 0.001, 0.001, 0.03]
+  cmd_vel_timeout: 0.25
+  velocity_rolling_window_size: 2
+
+  # Base frame_id
+  base_frame_id: base_link
+
+  has_velocity_limits    : true
+  max_velocity           : 3.0   # m/s
+  has_acceleration_limits: true
+  max_acceleration       : 3.0   # m/s^2
+
+smb_rear_right_wheel_velocity_controller:
+  type: "velocity_controllers/JointVelocityController"
+  joint: 'RH_WHEEL'
+  pid: {p: 100.0, i: 0.01, d: 10.0}
+  publish_rate: 50
+  pose_covariance_diagonal: [0.001, 0.001, 0.001, 0.001, 0.001, 0.03]
+  twist_covariance_diagonal: [0.001, 0.001, 0.001, 0.001, 0.001, 0.03]
+  cmd_vel_timeout: 0.25
+  velocity_rolling_window_size: 2
+
+  # Base frame_id
+  base_frame_id: base_link
+
+  has_velocity_limits    : true
+  max_velocity           : 3.0   # m/s
+  has_acceleration_limits: true
+  max_acceleration       : 3.0   # m/s^2

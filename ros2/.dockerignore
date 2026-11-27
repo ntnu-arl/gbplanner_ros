@@ -1,0 +1,8 @@
+build*
+install*
+log*
+results
+course_runs
+__pycache__
+.plot-venv
+docs

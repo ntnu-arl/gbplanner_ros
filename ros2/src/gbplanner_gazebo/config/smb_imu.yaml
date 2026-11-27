@@ -1,0 +1,18 @@
+gbplanner_rmf_imu_adapter:
+  ros__parameters:
+    smb_os1.enabled: true
+    smb_os1.frame_id: os1_imu
+    smb_os1.input_topic: /smb/os1/imu/raw
+    smb_os1.output_topic: /os1_cloud_node/imu
+    smb_os1.nominal_period: 0.01
+    smb_os1.accel.Drift: [0.005, 0.005, 0.005]
+    smb_os1.accel.GaussianNoise: [0.005, 0.005, 0.005]
+    smb_os1.accel.DriftFrequency: [0.0002777777777777778, 0.0002777777777777778, 0.0002777777777777778]
+    smb_os1.rate.Drift: [0.005, 0.005, 0.005]
+    smb_os1.rate.GaussianNoise: [0.005, 0.005, 0.005]
+    smb_os1.rate.DriftFrequency: [0.0002777777777777778, 0.0002777777777777778, 0.0002777777777777778]
+    # Hector 0.5.4 reads yaw*; the source heading* tags are ignored.
+    smb_os1.yaw.Drift: 0.0
+    smb_os1.yaw.GaussianNoise: 0.0
+    smb_os1.yaw.DriftFrequency: 0.0002777777777777778
+    status_service: smb/imu_state

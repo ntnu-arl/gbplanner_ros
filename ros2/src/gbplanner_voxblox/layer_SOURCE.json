@@ -1,0 +1,378 @@
+{
+  "repository": "https://github.com/ntnu-arl/voxblox",
+  "commit": "0ee88c26c203a3fe88e348dbbb552ab431a35352",
+  "license": "BSD-3-Clause AND MIT",
+  "copyright": "Copyright (c) 2016, ETHZ ASL. All rights reserved. Mesh visualization: Copyright (c) 2014 Matthew Klingensmith and Ivan Dryanovski.",
+  "scope": "ROS2 Block/Layer and compressed Mesh transport, persistent incremental meshing, TSDF/ESDF visualization, timestamped transform-topic lookup and ICP pose-refinement adapters. TSDF/ESDF/Mesh integrator configuration and distant-block pruning. Combined TSDF/ESDF protobuf map persistence. Source-lattice unknown-only box augmentation and ordered ROS2 map-observation envelopes.",
+  "license_file": "LICENSE.voxblox",
+  "license_files": [
+    "LICENSE.voxblox",
+    "LICENSE.mesh"
+  ],
+  "reference_directory": "../../upstream/voxblox_ros_reference/voxblox-0ee88c26c203a3fe88e348dbbb552ab431a35352",
+  "upstream_files": [
+    {
+      "path": "voxblox_ros/include/voxblox_ros/conversions.h",
+      "sha256": "0fecfc6fc9c2b1b1d7ad36428a8b869ef699a98f5ec2e67bf6aead1c73360506"
+    },
+    {
+      "path": "voxblox_ros/include/voxblox_ros/conversions_inl.h",
+      "sha256": "45e8cfc99b24be0245c4856dbda4098e72ef1d25309f672de86136ba4e7c6bec"
+    },
+    {
+      "path": "voxblox/src/core/block.cc",
+      "sha256": "e881a2c55ae0b431dfb01d30167dba3eed88730a5c4cf7b284d89f238abf5bf6"
+    },
+    {
+      "path": "voxblox/include/voxblox/core/block_inl.h",
+      "sha256": "80c1367a137ad07abe675c98abe95c4fae82909ed0e9928cc157bcf40e65aeb5"
+    },
+    {
+      "path": "voxblox/src/utils/voxel_utils.cc",
+      "sha256": "ca5fe86f2f864ca5fc693fb242a4e1ac73ea6d10c9654f3b6da32915fe0ddfa1"
+    },
+    {
+      "path": "voxblox_ros/include/voxblox_ros/ptcloud_vis.h",
+      "sha256": "6f664490a20da507ebdceedee2bb31d9971c7d8c0d7059d1a09dd1d998829219",
+      "license": "BSD-3-Clause"
+    },
+    {
+      "path": "voxblox_ros/include/voxblox_ros/mesh_vis.h",
+      "sha256": "b53f37b1382f8f5114e13fbfa6102567f28f865c23d5f62898d5bbf70e881b46",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2014 Matthew Klingensmith and Ivan Dryanovski",
+      "original_project": "https://github.com/personalrobotics/OpenChisel"
+    },
+    {
+      "path": "voxblox/include/voxblox/core/color.h",
+      "sha256": "12ed57f4338832a650f4a6c3f45f30c5c8350d2b5a338adf44e37fdbc909fa6c",
+      "license": "BSD-3-Clause"
+    },
+    {
+      "path": "voxblox_ros/src/transformer.cc",
+      "sha256": "976db25acc0a0ebf5ad65a61dd197c901ac0bee5f1887a8e8d6a195648c65398",
+      "license": "BSD-3-Clause"
+    },
+    {
+      "path": "voxblox_ros/include/voxblox_ros/transformer.h",
+      "sha256": "a16497f099eac73f374dc4099eaf41e0f6fe0e8de59ac736b80dbd92a6c3c5dd",
+      "license": "BSD-3-Clause"
+    },
+    {
+      "path": "voxblox_ros/src/tsdf_server.cc",
+      "sha256": "8516098d16582271664b08c00b0cdadb442223f78e5163fbcc5995e8a724d92f",
+      "license": "BSD-3-Clause"
+    },
+    {
+      "path": "voxblox_ros/include/voxblox_ros/ros_params.h",
+      "sha256": "605ef3f3e53f5566656bd9a4e576ea2f248626aafeae95ed922739652fed8fa9",
+      "license": "BSD-3-Clause"
+    },
+    {
+      "path": "voxblox_ros/src/esdf_server.cc",
+      "sha256": "4e3fa3db227c7f14a6e32ee31bc5ffe20a61aad9943c58794dc642da3472ae79"
+    },
+    {
+      "path": "voxblox_ros/include/voxblox_ros/tsdf_server.h",
+      "sha256": "feced079a839d34b7495f0f6c1c874b9f471077871b3d29db20a85b246dff938"
+    },
+    {
+      "path": "voxblox/include/voxblox/core/layer.h",
+      "sha256": "99161a145a1841dde6809e5bee62699a794a2090cbda18dec53210fb5ad8c5f0"
+    },
+    {
+      "path": "voxblox/include/voxblox/mesh/mesh_layer.h",
+      "sha256": "1cbb071b8c329bba2cd2fe676d7ffab0b4d03c757a12a8392d03b505ebdef4d0"
+    },
+    {
+      "path": "voxblox/include/voxblox/mesh/mesh_integrator.h",
+      "sha256": "d86b16476c34e731073846c3e1db28f4c05dae3ceff30e16318c92274315479e"
+    },
+    {
+      "path": "voxblox/include/voxblox/integrator/esdf_integrator.h",
+      "sha256": "9864ca1ca20a8941c825f0173e045d60a56815a3664fec03286643a4be853716"
+    },
+    {
+      "path": "voxblox/src/integrator/esdf_integrator.cc",
+      "sha256": "ebf659355d03ea698ab2c8727eceb82ff98d6c2079ac6c8492503ab0092961e3"
+    },
+    {
+      "path": "voxblox/include/voxblox/integrator/tsdf_integrator.h",
+      "sha256": "b32c88b32b279504b0515484f25f74b8a74518e5f21dccc80f7e33e84a3fd120"
+    },
+    {
+      "path": "voxblox/src/integrator/tsdf_integrator.cc",
+      "sha256": "d979df3348ffdf0acb46df2e041b940e7d1d7774d87fc66d90cb8b6ed3d16e08"
+    },
+    {
+      "path": "voxblox/include/voxblox/io/layer_io_inl.h",
+      "sha256": "465f625f63c352662fe0e3d78b031e45d307d356458475df8b0ed041da16d3f9"
+    },
+    {
+      "path": "voxblox/include/voxblox/core/layer_inl.h",
+      "sha256": "c022563f56aefb4a419f90972a36cb82dda4771bcdc9479ddf36c9147def3e38"
+    },
+    {
+      "path": "voxblox/src/utils/protobuf_utils.cc",
+      "sha256": "6ec93c98942ac506df09a93b12ed1776517d27690172d1bfecb2cbf72e9d093c"
+    },
+    {
+      "path": "voxblox/proto/voxblox/Layer.proto",
+      "sha256": "f099ef634e6e4256600687e0f57a595a1862314a88fabafe47c5cb4d25f5ae9b"
+    },
+    {
+      "path": "voxblox/proto/voxblox/Block.proto",
+      "sha256": "647593c210570c174cbcd83c29ad5fa89058d0ea06ebca7201834fe9b8e9f022"
+    }
+  ],
+  "adapted_files": [
+    "include/gbplanner_voxblox/layer_conversions.hpp",
+    "test/test_layer_conversions.cpp",
+    "include/gbplanner_voxblox/distance_products.hpp",
+    "test/test_distance_products.cpp",
+    "include/gbplanner_voxblox/map_visualization.hpp",
+    "test/test_map_visualization.cpp",
+    "include/gbplanner_voxblox/mesh_messages.hpp",
+    "test/test_mesh_messages.cpp",
+    "test/test_incremental_mesh.cpp",
+    "include/gbplanner_voxblox/transform_queue.hpp",
+    "test/test_transform_queue.cpp",
+    "include/gbplanner_voxblox/icp_refiner.hpp",
+    "test/test_icp_refiner.cpp",
+    "test/test_block_pruning.cpp",
+    "test/test_esdf_configuration.cpp",
+    "test/test_tsdf_configuration.cpp",
+    "test/test_mesh_configuration.cpp",
+    "include/gbplanner_voxblox/voxel_serialization.hpp",
+    "include/gbplanner_voxblox/map_file.hpp",
+    "test/test_map_persistence.cpp",
+    "include/gbplanner_voxblox/tsdf_backend.hpp",
+    "src/tsdf_backend.cpp",
+    "src/voxblox_mapper_node.cpp",
+    "test/test_tsdf.cpp"
+  ],
+  "header_sources": [
+    {
+      "adapted_path": "include/gbplanner_voxblox/map_visualization.hpp",
+      "upstream_path": "voxblox_ros/include/voxblox_ros/ptcloud_vis.h",
+      "license": "BSD-3-Clause",
+      "license_file": "LICENSE.voxblox"
+    },
+    {
+      "adapted_path": "include/gbplanner_voxblox/icp_refiner.hpp",
+      "upstream_paths": [
+        "voxblox_ros/src/tsdf_server.cc",
+        "voxblox_ros/include/voxblox_ros/ros_params.h"
+      ],
+      "license": "BSD-3-Clause",
+      "license_file": "LICENSE.voxblox"
+    },
+    {
+      "adapted_path": "include/gbplanner_voxblox/mesh_messages.hpp",
+      "upstream_path": "voxblox_ros/include/voxblox_ros/mesh_vis.h",
+      "license": "MIT",
+      "license_file": "LICENSE.mesh"
+    },
+    {
+      "adapted_path": "include/gbplanner_voxblox/transform_queue.hpp",
+      "upstream_paths": [
+        "voxblox_ros/src/transformer.cc",
+        "voxblox_ros/include/voxblox_ros/transformer.h"
+      ],
+      "license": "BSD-3-Clause",
+      "license_file": "LICENSE.voxblox"
+    }
+  ],
+  "preserved_semantics": [
+    "Block/Layer message field names, types, action constants and absence of a header.",
+    "TSDF uses three uint32 words per voxel and the unmodified upstream Block codec. ESDF uses the same upstream two-word layout and voxel order, retaining distance bit patterns, four flags, signed int8 parent components and per-axis clamping; the incoming path uses the original upstream decoder.",
+    "Layer only_updated selects Update::kMap and does not consume update flags. Block order follows the layer hash iteration.",
+    "UPDATE overwrites listed blocks, MERGE uses the upstream voxel merge rules, RESET removes all previous blocks, and each action leaves/adds blocks according to the upstream protocol.",
+    "Voxel type, voxels_per_side and voxel_size compatibility with upstream absolute voxel-size tolerance 1e-5.",
+    "The explicit-action overload overrides the action field, as in the ROS 1 API.",
+    "Full TSDF distance clouds use weight>1e-3, ESDF distance clouds require observed, and the RGB surface cloud uses weight>0 with abs(distance)<0.75*voxel_size. All allocated blocks are visited and packed PCL RGB channel semantics are retained.",
+    "Occupied CUBE_LIST geometry uses voxel centers and voxel_size scales, weight>1e-3 and distance<=voxel_size*occupancy_min_distance_voxel_size_factor (server default factor 1.0). Colors retain rainbowColorMap((z+2.5)/5.0).",
+    "Compressed Mesh blocks retain block indices, two-block-length normalization, uint16 coordinate truncation, RGB bytes and updated-block consumption. Color/colors, height, normals, gray, lambert and lambert_color retain the upstream selection rules; normals sends no RGB arrays.",
+    "Persistent mesh extraction consumes TSDF Update::kMesh without consuming kMap or kEsdf. Unchanged blocks retain their mesh, and a changed block that becomes empty produces its own deletion block.",
+    "Transform-topic lookup preserves arrival order and the first timestamp match with absolute difference strictly less than timestamp_tolerance_sec (default 0.001), rather than selecting the nearest sample. Without a tolerance match, interpolation requires bracketing samples and performs no extrapolation.",
+    "Transform interpolation uses the pinned vendor Transformation log/exp: T_old * exp(alpha * log(T_old.inverse() * T_new)). Its translation-plus-SO(3) convention is retained rather than replaced by a different SE(3) interpolation. A successful lookup retains the matched sample or interpolation's older endpoint and all later samples; failed lookup leaves the queue and output unchanged.",
+    "The sensor transform remains T_G_D * inverse(T_B_D) * T_B_C, with independent invert_T_B_D and invert_T_B_C options. Transform-topic header.frame_id and child_frame_id are ignored, as in the original implementation.",
+    "ICP uses the unchanged vendor voxblox::ICP core in voxblox_core. The adapter retains TsdfServer's initial pose correction*raw, refined-pose integration, correction=refined*inverse(raw), and roll/pitch cleanup of the carried correction when icp_refine_roll_pitch is false.",
+    "enable_icp defaults to false and accumulate_icp_corrections defaults to true. A run reporting zero successful mini-batches still integrates the returned pose. ESDF clearing spheres use the raw sensor pose; reset and load retain the accumulated ICP correction, as in the original server.",
+    "ICP correction output retains the two-link TF tree: world_frame to icp_corrected_frame carries the correction, and icp_corrected_frame to pose_corrected_frame carries the raw pose. The default child names are icp_corrected and pose_corrected.",
+    "max_block_distance_from_body is double with float::max default. After each successful ordinary/freespace cloud, use the raw sensor position: prune TSDF, clear distant mesh, perform sensor-pose planning clearance, then prune ESDF. Block-origin subtraction and squared norm are float; strictly greater than the double squared radius removes a block.",
+    "ESDF full_euclidean_distance, min_distance, default_distance, min_diff and add_occupied_crust are passed to the original integrator. The fixed band defaults to half the truncation distance, default_distance starts at 2 m and is clamped to at least max_distance; occupied crust is only applied by batch rebuild, not ordinary incremental scans. All five legacy ROS1 parameter names are accepted; explicit ROS2 namespaced overrides take priority.",
+    "TSDF weight policy priority is symmetric, then constant, then asymmetric dropoff; sensor-depth base weighting is 1/abs(z)^2, not 1/norm(point)^2. allow_clear gates over-range ordinary returns; explicit freespace bypasses it. Original simple/merged/fast algorithms, mixed/sorted order, merged anti-grazing and all four Fast controls are configured directly.",
+    "Mesh min_weight and use_color are independent of stored TSDF RGB and apply to full, incremental and selected cached-block extraction. Marching Cubes requires voxel weight strictly greater than min_weight.",
+    "With ESDF enabled, saveMap writes a TSDF section followed by an ESDF section in the original concatenated protobuf format, including ESDF-only planning sphere blocks. Loading uses original first-matching-section and same-block kReplace behavior and retains other blocks in each layer. The original Block decoder and metadata fields are retained.",
+    "Unknown-box allocation uses the original float center-index helper and fractional half-range loops: floor(offset) for offsets from -half to +half in float unit steps, added to the center index. It is not a world-axis min/max voxel range or a symmetric ceil-radius neighborhood. Zero side lengths retain the original single-point case.",
+    "TSDF box augmentation changes only weight<1e-6 cells to weight=1e-3+1e-6 and distance=the configured truncation distance. Already measured free and occupied cells retain both distance and weight.",
+    "The planner odometry augmentation window counts completed local graph builds, including no-path/no-gain results after sampling, rather than seconds or successful paths. A non-free planning-root box has a separate fallback outside that window, using the requested bound-mode size and center offset."
+  ],
+  "adaptation_changes": [
+    "C++ namespace gbplanner2, ROS 2 generated voxblox_msgs::msg types; correct spelling MapDeserializationAction.",
+    "Reused output messages clear previous blocks before serialization.",
+    "Incoming blocks are marked has_data=true and updated on all three flags. The fixed ROS 1 converter omitted these; because Block::mergeBlock returns when incoming.has_data is false, this repairs the original MERGE no-op and enables downstream processing of received blocks.",
+    "Layer transport exposes only TSDF and ESDF voxel types. ESDF merge retains the upstream rule: average distances when both observed, OR observed, keep destination parent/hallucinated/in_queue/fixed for existing blocks. A new block is decoded in full.",
+    "Invalid action, incompatible/nonfinite dimensions, duplicate indices and malformed payload lengths are rejected before any mutation, avoiding fatal upstream codec assertions and destructive malformed RESET. Memory allocation failures are not a transactional guarantee.",
+    "ESDF sending fixes an upstream codec defect: shifting a negative signed parent component before casting to uint32 sign-extended negative Y/Z into preceding parent bytes and invoked undefined behavior. The adapter now clamps each component to [-128,127], converts to an unsigned byte, then shifts unsigned words; distance uses memcpy. The word layout remains compatible with the original ROS 1 decoder. Tests cover both negative Z and negative Y with positive neighboring components.",
+    "Mapper compares acquisition nanoseconds strictly and advances admission before TF lookup. Separate source/free-space queues retain unavailable-TF clouds; a 20ms retry without successor clouds is a ROS2 adaptation.",
+    "Layer transaction copies preserve has_data/updated metadata omitted by the upstream Layer copy constructor. Replacing TSDF reconnects integrators and rebuilds ESDF; ESDF import reconnects its integrator and clears in_queue scheduling bits.",
+    "ESDF-only clearing-sphere blocks are marked kMap so they participate in Layer updates. Remote readers receive RESET after map replacement and unknown-box batch reconstruction.",
+    "Slice helpers keep the signed-remainder grid-plane adjustment and TSDF weight>1e-3 or ESDF observed filtering. Traversable points retain observed and distance>=radius. ROS2 PointCloud2 XYZI writes little-endian words directly.",
+    "Visualization products traverse all allocated blocks, while planner PointCloud2 remains controlled by map.storage. Full surface_pointcloud, tsdf_pointcloud, esdf_pointcloud and occupied_nodes publication is disabled by default: publish_pointclouds_on_update and publish_pointclouds both retain the original false defaults.",
+    "publish_pointclouds_on_update enables full visualization with each ROS2 planning-map snapshot. Otherwise publish_pointclouds enables full visualization after a dirty mesh timer update. The publish_pointclouds Trigger service forces current full products, and reset forces empty clouds and marker deletion regardless of these switches.",
+    "The earlier ROS2 scheduling adaptation for slices and traversable voxels is retained: they publish with planning snapshots when publish_slices or publish_traversable is enabled, independently of the two full-visualization switches. This is not a claim that full products publish automatically by default.",
+    "Surface PointCloud2 writes the PCL PointXYZRGB layout explicitly: XYZ at offsets 0/4/8, packed FLOAT32 rgb at offset 16, 32-byte point stride, opaque packed alpha and little-endian words. Empty clouds retain their field definitions.",
+    "Occupied markers use identity orientation and opaque overall alpha. An empty result sends DELETE for occupied_voxels/id=0 so reset clears an earlier display; the original helper emitted an empty ADD.",
+    "Mesh conversion uses ROS2 generated message types and validates all encoded blocks before consuming update flags. Full snapshots can be selected without first changing flags. The local none color alias maps to the upstream gray fallback.",
+    "ROS2 T_B_D and T_B_C parameters are two separate 16-element double arrays in row-major 4x4 order, defaulting to identity, replacing ROS1 XmlRpc matrices. Both support the original invert_* booleans. Arrays must describe finite rigid transforms; they can be supplied through the sensor_config parameter file.",
+    "Non-TF mode subscribes to geometry_msgs/TransformStamped on transform with reliable depth 40, normalizes valid quaternions, and retries pending ordinary/freespace clouds when a transform arrives. Its internal transform deque retains the original unbounded arrival-order behavior.",
+    "ICP parameters retain the original names icp_min_match_ratio, icp_subsample_keep_ratio, icp_mini_batch_size, icp_refine_roll_pitch, icp_inital_translation_weighting and icp_inital_rotation_weighting, including the original inital spelling. They and the corrected-frame names are configured through the parameter file; launch exposes only enable_icp and accumulate_icp_corrections.",
+    "The added icp_num_threads parameter is configurable through the parameter file. Its default retains the vendor hardware_concurrency value, with a fallback of one when hardware_concurrency returns zero; the ICP algorithm itself is not modified.",
+    "Both correction TF links and the reliable transient-local depth-one icp_transform topic carry the input cloud's acquisition timestamp. This fixes the original TransformStamped topic message's omitted stamp while retaining the original TF timestamps.",
+    "When TSDF load/import invalidates the persistent mesh cache, the next timer update rebuilds every retained TSDF block, including previously consumed kMesh=false blocks.",
+    "All original display modes retain input RGB fusion; the pre-existing ROS2 none alias alone disables stored colors. color and colors select the same RGB path.",
+    "Pruning publishes complete Layer RESET messages, explicit empty Mesh blocks and updated full visualization snapshots. Deleting TSDF block B marks up to seven surviving predecessor blocks for meshing; only previously cached predecessors are remeshed immediately using original updateMeshForBlock. This repairs stale cross-block triangles without generating a new global mesh or overriding the ordinary mesh timer.",
+    "Corrected two former adapter defaults: ESDF fixed band was one voxel and is now half truncation; default_distance was max_distance and is now max(2 m, max_distance). Effective values are retained in TsdfConfig and mapper_status.esdf_configuration.",
+    "The former hardcoded sorted integration order is replaced by the original configurable mixed default. Existing resolution, 3-voxel truncation, range, max weight, clearing factor, method and thread defaults remain. Unspecified constant policy retains the earlier !use_weight_dropoff compatibility fallback; an explicit false is honored and all three policies false are rejected before the upstream CHECK.",
+    "TSDF and Mesh original parameter spellings are aliases with explicit namespaced-value priority. Fast settings require positive finite subsampling, nonnegative finite integration time (zero intentionally skips work), nonnegative collision threshold and reset interval >=1. These are ROS2 adapter input constraints.",
+    "When depth weighting is enabled, returns with undefined, nonfinite or nonpositive original float 1/z^2 weight are skipped together with their colors, avoiding the original fatal CHECK for zero sensor z. Mesh color=false with color/lambert_color display is rejected at startup; choose gray, height, normals or lambert explicitly.",
+    "File and ROS Layer publication now share the pure-core corrected ESDF integer encoder; no ROS message dependency is introduced into the backend. File writer fills BlockProto metadata directly to avoid invoking the upstream negative-parent encoder before replacing its payload.",
+    "Map loading parses every section through exact logical EOF into temporary TSDF/ESDF copies before committing either. Explicit protobuf length bounds distinguish absent ESDF from a damaged tail. Valid TSDF-only files rebuild ESDF from the final merged TSDF; present empty ESDF sections are treated as present. Restored ESDF clears only in_queue because propagation queues are not persisted.",
+    "The original multi-layer LoadLayer and LoadBlocksFromFile wrappers use fstream.eof() after buffered reads and may stop before the logical ESDF section. The adapter uses the explicit byte offset and file size instead. Independent compatibility checks retain the original protobuf utilities and LoadBlocksFromStream/Block decoder without that wrapper loop.",
+    "The ROS2 augment_free_box service takes an explicit map-frame stamped center/size and returns changed_voxels plus process source_id, map_epoch and update_id. return_snapshot returns the exact complete envelope published by that serialized mapper transaction, allowing the local planning callback to adopt it without waiting for its own topic callback. No-change asynchronous requests do not republish; no-change snapshot requests publish a new unchanged commit.",
+    "The existing voxel_map remains its original six-field 24-byte PointCloud2. A separate reliable transient-local voxel_map_update envelope always retains the latest complete map and distinguishes physical observation, freespace, augmentation, import, load, reset and snapshot changes. Only an ordinary integrated scan advances observation_id and its acquisition stamp; synthetic map changes cannot manufacture sensor freshness.",
+    "Mapper source_id is fixed for the process. map_epoch starts at 1 and advances on reset, load and replacement Layer UPDATE/RESET, while update_id increases monotonically across the whole process. An epoch change clears observation_id/stamp; Layer MERGE retains the epoch. The planner orders synchronous and topic snapshots by source/epoch/update, rejects older epochs and duplicate/stale updates, and retires replaced process identities.",
+    "ROS2 planner integration is opt-in via planning.augment_free_voxels and requires map.use_update_envelope. Both remain disabled by default, including the RMF profile. It does not perform the original first-odometry map reset. The robot pose/body size comes from the planner request, independently of the mapper fixed-size compatibility Trigger.",
+    "Odometry uses one in-flight asynchronous augmentation request, counts coalesced intermediate samples, and polls completion every 20 ms so a lone sample finishes without another odometry callback. Requests are bounded at two seconds; synchronous root requests use a separate response callback group. This scheduling adaptation is not per-odometry-sample equivalence to the ROS1 synchronous callback."
+  ],
+  "validation": [
+    {
+      "result": "../../results/voxblox_mesh_publication.json",
+      "status": "passed",
+      "checks": 26,
+      "scope": "Native ROS2 mapper messages, mesh geometry and PLY export, late-reader delivery, deletion/reset lifecycle and clean process exit; no RViz GUI validation. Includes retained old blocks after partial TSDF import and timer-only mesh regeneration.",
+      "elapsed_seconds": 0.544
+    },
+    {
+      "result": "../../results/voxblox_transform_queue.json",
+      "status": "passed",
+      "checks": 13,
+      "elapsed_seconds": 0.528,
+      "scope": "Native ROS2 transform-topic queue, dual extrinsics, delayed-cloud recovery, no extrapolation, TSDF/freespace fusion and clean process exit."
+    },
+    {
+      "test_target": "test_icp_refiner",
+      "status": "passed",
+      "checks": 2,
+      "scope": "ICP refiner unit tests; native mapper ICP integration is not covered by these two tests."
+    },
+    {
+      "result": "../../results/voxblox_icp.json",
+      "status": "passed",
+      "checks": 11,
+      "elapsed_seconds": 0.713,
+      "scope": "Native ROS2 analytic-plane correction, input-stamped TF, accumulated correction after reset and actual axis-aligned freespace fusion; no physical robot."
+    },
+    {
+      "result": "../../results/voxblox_ray_caster_core.xml",
+      "status": "passed",
+      "checks": 4,
+      "scope": "Six ray directions, boundary/interior starts, nonaxial and zero-length traversal, and native TSDF freespace integration; core build patch recorded in voxblox_core/provenance.json."
+    },
+    {
+      "result": "../../results/voxblox_block_pruning.json",
+      "status": "passed",
+      "checks": 16,
+      "elapsed_seconds": 0.486,
+      "scope": "One native mapper, ordinary and moving freespace inputs, strict origin-radius boundary, TSDF/ESDF RESET, mesh tombstones and predecessor repairs, full clouds, continued fusion and clean exit. Periodic mesh generation disabled."
+    },
+    {
+      "result": "../../results/voxblox_esdf_configuration.json",
+      "status": "passed",
+      "checks": 19,
+      "elapsed_seconds": 0.361,
+      "scope": "Two native ROS2 mappers: full/quasi distances, legacy and namespace parameter precedence, default-distance clamp, batch occupied crust, three RESET imports per mapper and clean exit. Five new ESDF core behavior tests and the existing clear-sphere test pass."
+    },
+    {
+      "result": "../../results/voxblox_tsdf_configuration.json",
+      "status": "passed",
+      "checks": 14,
+      "elapsed_seconds": 0.608,
+      "scope": "Three native mapper processes: legacy aliases, conflicting namespaced overrides, ordinary over-range versus explicit free-space, analytic const/symmetric/depth weights and zero Fast budget. Seven new core behavior tests and ten affected existing backend tests pass."
+    },
+    {
+      "result": "../../results/voxblox_mesh_configuration.json",
+      "status": "passed",
+      "checks": 20,
+      "elapsed_seconds": 0.391,
+      "scope": "Two native mapper processes: independent color switch with real 121-return RGB scans, 68-triangle PLY with no color fields, strict weight threshold (0/18 triangles), Marker and compressed Mesh, clean exit. Two new core tests cover full/incremental/selected-block paths."
+    },
+    {
+      "result": "../../results/voxblox_map_persistence.json",
+      "status": "passed",
+      "checks": 14,
+      "elapsed_seconds": 0.703,
+      "scope": "Sequential native mapper processes: real sensor-triggered ESDF planning spheres, extra mixed-sign parent block, save/exit/reload with all TSDF and ESDF voxel words preserved, and actual post-load scan integration. Source and target exit 0. Three core tests pass: double roundtrip/same-block replacement and retention, legacy TSDF-only ESDF rebuild, and truncated ESDF failure without live-map mutation. Original file primitives and original Block decoder independently read the output. Five affected Layer codec tests also pass."
+    },
+    {
+      "script": "../../tools/check_unknown_augmentation.py",
+      "result": "../../results/unknown_augmentation/runtime3.json",
+      "status": "passed",
+      "checks": 28,
+      "elapsed_seconds": 1.034,
+      "scope": "One native mapper and local planner; requested-box lattice, unchanged commits, measured TSDF preservation, physical observation provenance, completed-build window, one-sample asynchronous completion, explicit future-root synchronous adoption and withheld older-epoch replay. The planner reports receipt and rejection of the exact old envelope; no map rollback. Both nodes exit cleanly. No vehicle dynamics."
+    }
+  ],
+  "limits": [
+    "Layer contains no frame or timestamp. Both endpoints must already share a map frame; conversion performs no frame transformation.",
+    "ESDF parent serialization retains the upstream signed-int8 range and clamps components outside [-128,127]; it cannot transmit larger parent directions exactly.",
+    "A deserialized ESDF in_queue bit is preserved by the wire codec; the caller must synchronize/reset integrator queues before using a received map as a live integration state.",
+    "Non-TF mode currently requires all ordinary inputs and enabled freespace inputs to share one configured sensor frame and one T_B_C. Use TF mode for independently calibrated sensor frames.",
+    "Transform-topic publishers must supply samples in timestamp order and in the configured world/dynamic-frame convention. Frame strings are not used to validate or transform the supplied pose.",
+    "Native ROS2 mesh lifecycle validation does not establish ROS1 bridge interoperability or RViz GUI rendering; no GUI result is claimed here.",
+    "Pruning retains the original ESDF semantics: surviving distance/parent values are not globally recomputed when an obstacle block is removed. Current synchronous propagation queues finish before deletion; no queue reset or batch rebuild is used.",
+    "The original Fast integrator has a function-static reset_counter shared by Fast instances in a process. It is preserved; native mapper processes each own one integrator. No multi-instance reset-phase equivalence is claimed.",
+    "Combined map files contain voxel layers, not integrator queues, parameters, ICP correction, planner graph, home or mission timer. Saved ESDF geometry/state is restored as saved; existing files with incorrectly encoded signed parents cannot be reliably repaired automatically. The original uint32 protobuf offset range is retained.",
+    "Unknown-only augmentation fabricates limited free space by design and is opt-in. It is distinct from ray-based freespace integration and ESDF planning spheres; those mechanisms do not establish equivalent original box behavior.",
+    "The migrated box operation updates TSDF and rebuilds an enabled derived ESDF. It does not implement the original alternate ESDF-only MapManager clearIfUnknown specialization or establish physical-robot clearance safety."
+  ],
+  "unknown_augmentation_sources": {
+    "repository": "https://github.com/ntnu-arl/gbplanner_ros",
+    "commit": "7301b5350915cf3a4055072ad559842db37b4ca9",
+    "reference_directory": "../../..",
+    "files": [
+      {
+        "path": "planner_common/include/planner_common/map_manager_voxblox_impl.h",
+        "sha256": "79f83bfa10bacc58de9a60b349cd9a4cbaf156e38db3ec5f4c7ae410924962c0",
+        "functions": [
+          "voxblox::utils::getBoxAroundPoint",
+          "voxblox::utils::getAndAllocateBoxAroundPoint"
+        ]
+      },
+      {
+        "path": "planner_common/src/voxblox/voxblox_common_impl.cpp",
+        "sha256": "fa4d4fe30db609b98b223a041785d3c129fda32433cf9853ce26f94f2c6eef56",
+        "functions": [
+          "MapManagerVoxblox::clearIfUnknown",
+          "MapManagerVoxblox::augmentFreeBox"
+        ]
+      },
+      {
+        "path": "gbplanner/src/rrg.cpp",
+        "sha256": "b6191f17e0f8072c3717b83148868793de2bf0155347df641590d8026e6ecefb",
+        "functions": [
+          "Rrg::setState",
+          "Rrg::reset",
+          "Rrg::buildGraph"
+        ]
+      }
+    ],
+    "voxel_center_helper": {
+      "path": "../voxblox_core/vendor/voxblox/include/voxblox/core/common.h",
+      "function": "voxblox::getGridIndexFromPoint",
+      "semantics": "floor(float(center) * float(voxel_size_inv) + kEpsilon), kEpsilon=1e-6"
+    }
+  }
+}

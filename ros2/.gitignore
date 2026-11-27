@@ -1,0 +1,12 @@
+/build*/
+/install*/
+/log*/
+/results/
+/course_runs/
+/.plot-venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+.DS_Store
+/experiments/estimated_mapping/native_terrain/check/
+/experiments/estimated_mapping/native_terrain/build_manifest.json

@@ -1,0 +1,23 @@
+gbplanner_local:
+  ros__parameters:
+    frame_id: map
+    map.resolution: 0.25
+    map.origin: [-5.0, -5.0, -1.5]
+    map.dimensions: [40, 40, 12]
+    robot.size: [0.4, 0.4, 0.4]
+    # Additions to full side lengths. These never shrink the physical body.
+    robot.size_extension: [0.2, 0.2, 0.2]
+    robot.size_extension_min: [0.0, 0.0, 0.0]
+    robot.relax_ratio: 0.5
+    global.enable: true
+    gate.enable: true
+    gate.center: [0.0, 0.0, 0.0]
+    gate.heading: 0.0
+    gate.center_search_radius: 0.5
+    gate.center_search_step: 0.05
+    gate.line_search_length: 3.0
+    gate.line_search_range: 0.17453292519943295
+    gate.line_search_step: 0.017453292519943295
+    gate.load_from_frame: false
+    gate.center_frame_id: gate_center
+    gate.frame_offset: [0.0, 0.0, 0.0]

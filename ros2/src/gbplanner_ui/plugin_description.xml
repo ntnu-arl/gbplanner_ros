@@ -1,0 +1,5 @@
+<library path="gbplanner_ui">
+  <class name="gbplanner_ui/GbPlanner Control" type="gbplanner_ui::GbPlannerPanel" base_class_type="rviz_common::Panel">
+    <description>GBPlanner exploration, stop, homing, initialization, waypoint and global planning controls.</description>
+  </class>
+</library>

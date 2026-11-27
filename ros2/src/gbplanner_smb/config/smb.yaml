@@ -1,0 +1,33 @@
+gbplanner_smb:
+  ros__parameters:
+    frame_id: map
+    robot_frame: base_link
+    sensor_frame: smb_lidar
+    chassis_mass: 40.0
+    chassis_size: [0.605, 0.410, 0.220]
+    wheel_mass: 5.0
+    wheel_radius: 0.19
+    wheel_width: 0.185
+    front_wheel_x: 0.2159
+    rear_wheel_x: -0.21
+    wheel_y: 0.3275
+    wheel_z: -0.05
+    wheel_track: 0.6604
+    max_linear_velocity: 1.5
+    max_angular_velocity: 1.0
+    max_linear_acceleration: 3.0
+    max_angular_acceleration: 2.0
+    # Bullet base motor adaptation: integrate measured body yaw-rate error (1/s).
+    angular_velocity_feedback_gain: 2.0
+    # Finite torque and friction are parameters of the Bullet adaptation.
+    max_wheel_torque: 20.0
+    wheel_friction: 1.0
+    ground_friction: 1.0
+    physics_step: 0.002
+    command_timeout: 0.3
+    initial_position: [-2.0, 0.0, 0.26]
+    initial_yaw: 0.0
+    sensor_offset: [0.0, 0.0, 0.3]
+    lidar_period: 0.2
+    lidar_range: 6.0
+    room: true

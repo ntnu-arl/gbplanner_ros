@@ -1,0 +1,175 @@
+/*
+ * Copyright (C) 2018 Open Source Robotics Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
+// GLSL shaders
+vertex_program DepthCameraVS_GLSL glsl
+{
+  source depth_camera_vs.glsl
+  default_params
+  {
+    param_named_auto worldViewProj worldviewproj_matrix
+  }
+}
+
+fragment_program DepthCameraFS_GLSL glsl
+{
+  source depth_camera_fs.glsl
+
+  default_params
+  {
+    param_named depthTexture int 0
+    param_named colorTexture int 1
+    param_named particleTexture int 2
+    param_named particleDepthTexture int 3
+  }
+}
+
+// Metal shaders
+vertex_program DepthCameraVS_Metal metal
+{
+  source depth_camera_vs.metal
+  default_params
+  {
+    param_named_auto worldViewProj worldviewproj_matrix
+  }
+}
+
+fragment_program DepthCameraFS_Metal metal
+{
+  source depth_camera_fs.metal
+  shader_reflection_pair_hint DepthCameraVS_Metal
+}
+
+// Unified shaders
+vertex_program DepthCameraVS unified
+{
+  delegate DepthCameraVS_GLSL
+  delegate DepthCameraVS_Metal
+}
+
+fragment_program DepthCameraFS unified
+{
+  delegate DepthCameraFS_GLSL
+  delegate DepthCameraFS_Metal
+}
+
+material DepthCamera
+{
+  technique
+  {
+    pass depth_camera_tex
+    {
+      vertex_program_ref DepthCameraVS { }
+      fragment_program_ref DepthCameraFS { }
+      texture_unit depthTexture
+      {
+        filtering none
+        tex_address_mode clamp
+      }
+      texture_unit colorTexture
+      {
+        filtering none
+        tex_address_mode clamp
+      }
+      texture_unit particleTexture
+      {
+        filtering none
+        tex_address_mode clamp
+      }
+      texture_unit particleDepthTexture
+      {
+        filtering none
+        tex_address_mode clamp
+      }
+    }
+  }
+}
+
+// GLSL shaders
+vertex_program DepthCameraFinalVS_GLSL glsl
+{
+  source depth_camera_final_vs.glsl
+  default_params
+  {
+    param_named_auto worldViewProj worldviewproj_matrix
+  }
+}
+
+fragment_program DepthCameraFinalFS_GLSL glsl
+{
+  source depth_camera_final_fs.glsl
+
+  default_params
+  {
+    param_named inputTexture int 0
+
+    param_named_auto texResolution texture_size 0
+  }
+}
+
+// Metal shaders
+vertex_program DepthCameraFinalVS_Metal metal
+{
+  source depth_camera_final_vs.metal
+  default_params
+  {
+    param_named_auto worldViewProj worldviewproj_matrix
+  }
+}
+
+fragment_program DepthCameraFinalFS_Metal metal
+{
+  source depth_camera_final_fs.metal
+  shader_reflection_pair_hint DepthCameraFinalVS_Metal
+
+  default_params
+  {
+    param_named inputTexture int 0
+
+    param_named_auto texResolution texture_size 0
+  }
+}
+
+// Unified shaders
+vertex_program DepthCameraFinalVS unified
+{
+  delegate DepthCameraFinalVS_GLSL
+  delegate DepthCameraFinalVS_Metal
+}
+
+fragment_program DepthCameraFinalFS unified
+{
+  delegate DepthCameraFinalFS_GLSL
+  delegate DepthCameraFinalFS_Metal
+}
+
+material DepthCameraFinal
+{
+  technique
+  {
+    pass
+    {
+      vertex_program_ref DepthCameraFinalVS { }
+      fragment_program_ref DepthCameraFinalFS { }
+      texture_unit inputTexture
+      {
+        filtering none
+        tex_address_mode clamp
+      }
+    }
+  }
+}

@@ -1,0 +1,331 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+  - Class: rviz_common/Views
+    Name: Views
+Visualization Manager:
+  Class: ""
+  Global Options:
+    Background Color: 245; 247; 250
+    Fixed Frame: map
+    Frame Rate: 20
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Name: Grid
+      Enabled: true
+      Cell Size: 1
+      Plane Cell Count: 20
+      Color: 180; 185; 190
+    - Class: rviz_default_plugins/InteractiveMarkers
+      Name: Semantic object
+      Enabled: true
+      Update Topic: /semantics/update
+      Show Axes: false
+      Show Descriptions: true
+      Show Visual Aids: true
+    - Class: rviz_default_plugins/Path
+      Name: Semantic connection
+      Enabled: true
+      Color: 210; 125; 20
+      Line Style: Lines
+      Line Width: 0.04
+      Topic:
+        Value: /semantic_path
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Accepted semantic targets
+      Enabled: true
+      Topic:
+        Value: /vis/semantic_targets
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Occupancy
+      Enabled: true
+      Topic:
+        Value: /vis/voxel_map
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Local graph
+      Enabled: true
+      Topic:
+        Value: /vis/planning_graph
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Global graph
+      Enabled: true
+      Topic:
+        Value: /vis/planning_global_graph
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Selected frontier and return graph paths
+      Enabled: true
+      Topic:
+        Value: /vis/global_paths
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Homing raw graph path
+      Enabled: true
+      Topic:
+        Value: /vis/homing_path
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Robot and actual trace
+      Enabled: true
+      Topic:
+        Value: /vis/robot_state
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+    - Class: rviz_default_plugins/Path
+      Name: Local candidate
+      Enabled: true
+      Color: 30; 110; 195
+      Line Style: Lines
+      Line Width: 0.03
+      Topic:
+        Value: /local_path
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+    - Class: rviz_default_plugins/Path
+      Name: Global or homing candidate
+      Enabled: true
+      Color: 45; 150; 75
+      Line Style: Lines
+      Line Width: 0.05
+      Topic:
+        Value: /global_path
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+    - Class: rviz_default_plugins/Path
+      Name: Current command
+      Enabled: true
+      Color: 210; 55; 35
+      Line Style: Lines
+      Line Width: 0.07
+      Topic:
+        Value: /command_path
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+    - Class: rviz_default_plugins/Path
+      Name: Timed execution path
+      Enabled: true
+      Color: 160; 45; 180
+      Line Style: Lines
+      Line Width: 0.04
+      Topic:
+        Value: /execution_path
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Geofence boundaries
+      Enabled: true
+      Topic:
+        Value: /vis/geofence
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Shortest path tree
+      Enabled: true
+      Topic:
+        Value: /vis/shortest_paths
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Best complete candidate
+      Enabled: true
+      Topic:
+        Value: /vis/best_planning_paths
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+    - Class: rviz_default_plugins/MarkerArray
+      Name: No-gain zones
+      Enabled: true
+      Topic:
+        Value: /vis/no_gain_zone
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+    - Class: rviz_default_plugins/Marker
+      Name: Sampling bounds
+      Enabled: false
+      Topic:
+        Value: /sampling_bound_marker
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+    - Class: rviz_default_plugins/Marker
+      Name: Global bounds
+      Enabled: false
+      Topic:
+        Value: /global_bound_marker
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Sensor field of view
+      Enabled: false
+      Topic:
+        Value: /sensor_frusta
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Accepted and rejected samples
+      Enabled: false
+      Topic:
+        Value: /vis/sampler
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Ground projection
+      Enabled: false
+      Topic:
+        Value: /vis/planning_projected_graph
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Failed edges
+      Enabled: false
+      Topic:
+        Value: /vis/planning_failed
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Directed terrain checks
+      Enabled: false
+      Topic:
+        Value: /vis/ground_edge_checks
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Frontier path clusters
+      Enabled: true
+      Topic:
+        Value: /vis/shortest_path_clustering
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Refined path before interpolation
+      Enabled: false
+      Topic:
+        Value: /vis/mod_path
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Refinement feasible sections
+      Enabled: false
+      Style: Points
+      Size (Pixels): 3
+      Color Transformer: FlatColor
+      Color: 30; 200; 180
+      Position Transformer: XYZ
+      Topic:
+        Value: /vis/refinement_corridor
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Refinement halfspaces
+      Enabled: false
+      Topic:
+        Value: /vis/refinement_hyperplanes
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Gain sensor rays
+      Enabled: false
+      Topic:
+        Value: /vis/rays
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Weighted gain samples
+      Enabled: false
+      Topic:
+        Value: /vis/volumetric_gains
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Algorithm visit history
+      Enabled: false
+      Topic:
+        Value: /vis/state_history
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Depth: 1
+  Tools:
+    - Class: rviz_default_plugins/Interact
+      Hide Inactive Objects: true
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/Select
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 18
+      Focal Point: {X: 0, Y: 0, Z: 0}
+      Pitch: 0.85
+      Yaw: 0.6
+      Name: Current View
+Window Geometry:
+  Width: 1280
+  Height: 800

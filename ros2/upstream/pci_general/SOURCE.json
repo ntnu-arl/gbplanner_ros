@@ -1,0 +1,40 @@
+{
+  "repository": "https://github.com/ntnu-arl/pci_general",
+  "commit": "152eb2dfa19180391c7291d02414b1684f8f8198",
+  "source_selection": "main dependency named by fixed GBPlanner packages_https.rosinstall; resolved on 2026-10-25",
+  "archive_sha256": "b26784189e6dde7d69710588326cb0786d2b0ca910d4fd5b1de113bba40d79bd",
+  "files": [
+    {
+      "path": ".clang-format",
+      "sha256": "591540f382af71419ca17cc0431007de10371ab2582ea0f89fba4ec32f25131e"
+    },
+    {
+      "path": "CMakeLists.txt",
+      "sha256": "8f74d988c6f3b92b51d510d116340404b05e66452189fe68f7faf6c25335bd41"
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "c02539ed6dcc749d7b6a7f5767de974351bdefb86ce50dfd6404f2499dc0a493"
+    },
+    {
+      "path": "README.md",
+      "sha256": "178697b0fbc5873a57da9ad5fb2f60bcdae3a9149c3206aa938fae1ef6fcc2db"
+    },
+    {
+      "path": "include/pci_general/pci_general.h",
+      "sha256": "2a17ad4bd18e25a7f9b7a998b72a1a9803271d6085f429a41b4ff0df698c9398"
+    },
+    {
+      "path": "package.xml",
+      "sha256": "989c6cff76045e232a5e78372a324884ff7854270e85b429ef42aaa4b1873ac8"
+    },
+    {
+      "path": "src/pci_general.cpp",
+      "sha256": "be7af5aeda715a1ed05806f3e7c4070dffaf92049fc8a29c3fddd9125e7b8c17"
+    },
+    {
+      "path": "src/pci_general_ros_node.cpp",
+      "sha256": "2c2e365804080ba052c2929205fb677764f6d0e5862cacf98c50698df2a3ce33"
+    }
+  ]
+}

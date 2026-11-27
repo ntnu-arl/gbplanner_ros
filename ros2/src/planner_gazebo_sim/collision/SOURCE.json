@@ -1,0 +1,633 @@
+{
+  "repository": "https://github.com/ntnu-arl/gbplanner_ros",
+  "branch": "gbplanner2",
+  "commit": "7301b5350915cf3a4055072ad559842db37b4ca9",
+  "source_files": [
+    {
+      "path": "models/edgar_mine/model.sdf",
+      "sha256": "5b24e0ee7ff01c4160a089c992e59ea194bee1d783c7d485ee44939b94eb1963",
+      "bytes": 531
+    },
+    {
+      "path": "models/edgar_mine/edgar_mine.dae",
+      "sha256": "ea68f513e88621a36142c4b19d3d37b8e360855e4ecc3880bb4be931225817ee",
+      "bytes": 1398351
+    }
+  ],
+  "converter": {
+    "path": "tools/convert_edgar_collision.py",
+    "sha256": "235335d8c64daec581d0cc21e39cf252cde0c62fe41c2b942e034250641affa0",
+    "dependencies": "Python 3 standard library",
+    "command": "python3 tools/convert_edgar_collision.py"
+  },
+  "coordinate_frame": "World-space metres; do not reapply model or node transforms when loading",
+  "sdf": {
+    "collision_uri": "model://edgar_mine/edgar_mine.dae",
+    "model_pose_xyz_rpy": [
+      -22.0,
+      -26.0,
+      0.0,
+      1.57,
+      0.0,
+      1.5
+    ],
+    "link_pose_xyz_rpy": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "collision_pose_xyz_rpy": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "rotation_order": "Rz(yaw) * Ry(pitch) * Rx(roll); original 1.57 is retained",
+    "collision_to_world_matrix_rows": [
+      [
+        0.0707372016677029,
+        -0.0007943319016553272,
+        0.997494670330149,
+        -22.0
+      ],
+      [
+        0.9974949866040544,
+        5.632992313051736e-05,
+        -0.07073717923918815,
+        -26.0
+      ],
+      [
+        0.0,
+        0.9999996829318346,
+        0.0007963267107332633,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "mesh_scale": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "world_include_pose": "No override in retained worlds/edgar_mine.world",
+    "visual_geometry": "Not imported separately; SDF collision already references the whole DAE"
+  },
+  "collada": {
+    "active_scene": "Scene",
+    "unit_name": "meter",
+    "unit_meter": 1.0,
+    "up_axis": "Z_UP",
+    "matrix_convention": "Rows as serialized in this DAE; matrices multiply column vectors",
+    "transform_order": "SDF model * link * collision * unit_and_mesh_scale * node_hierarchy * position",
+    "instances": [
+      {
+        "node": "Cube",
+        "geometry": "Cube-mesh",
+        "node_matrix_rows": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "accumulated_node_matrix_rows": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "world_matrix_rows": [
+          [
+            0.0707372016677029,
+            -0.0007943319016553272,
+            0.997494670330149,
+            -22.0
+          ],
+          [
+            0.9974949866040544,
+            5.632992313051736e-05,
+            -0.07073717923918815,
+            -26.0
+          ],
+          [
+            0.0,
+            0.9999996829318346,
+            0.0007963267107332633,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "vertex_offset": 0,
+        "vertex_count": 8,
+        "triangle_count": 12,
+        "referenced_vertex_count": 8,
+        "world_bounds": {
+          "min": [
+            -23.069026182678346,
+            -27.068288495749474,
+            -1.0007960096425679
+          ],
+          "max": [
+            -20.930973837748482,
+            -24.931711504233625,
+            1.0007960096425679
+          ]
+        }
+      },
+      {
+        "node": "edgar_portal_doors",
+        "geometry": "edgar_portal_doors-mesh",
+        "node_matrix_rows": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "accumulated_node_matrix_rows": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "world_matrix_rows": [
+          [
+            0.0707372016677029,
+            -0.0007943319016553272,
+            0.997494670330149,
+            -22.0
+          ],
+          [
+            0.9974949866040544,
+            5.632992313051736e-05,
+            -0.07073717923918815,
+            -26.0
+          ],
+          [
+            0.0,
+            0.9999996829318346,
+            0.0007963267107332633,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "vertex_offset": 8,
+        "vertex_count": 13762,
+        "triangle_count": 22545,
+        "referenced_vertex_count": 13762,
+        "world_bounds": {
+          "min": [
+            -22.004461983910197,
+            -27.45356800834292,
+            0.00682830583496091
+          ],
+          "max": [
+            501.8263443820672,
+            236.06806831510352,
+            6.020284072258978
+          ]
+        }
+      }
+    ],
+    "excluded_non_geometry_instances": [
+      {
+        "node": "Camera",
+        "type": "instance_camera",
+        "url": "#Camera-camera",
+        "reason": "Not collision geometry"
+      },
+      {
+        "node": "Lamp",
+        "type": "instance_light",
+        "url": "#Lamp-light",
+        "reason": "Not collision geometry"
+      }
+    ]
+  },
+  "vertex_count": 13770,
+  "triangle_count": 22557,
+  "world_bounds": {
+    "min": [
+      -23.069026182678346,
+      -27.45356800834292,
+      -1.0007960096425679
+    ],
+    "max": [
+      501.8263443820672,
+      236.06806831510352,
+      6.020284072258978
+    ]
+  },
+  "spawn_candidate": {
+    "initial_position": [
+      0.0,
+      0.0,
+      0.42002595246075564
+    ],
+    "initial_yaw": 0.0,
+    "method": "Barycentric world-XY intersections with unchanged source triangles",
+    "wheel_z": -0.05,
+    "wheel_radius": 0.19,
+    "tire_below_base": 0.24,
+    "sampled_floor_min": 0.15933379646810159,
+    "sampled_floor_max": 0.16002595246075563,
+    "base_z_with_zero_initial_tire_penetration": 0.4000259524607556,
+    "initial_tire_clearance": 0.02,
+    "clearance_basis": "Same 0.02 m release clearance as flat SMB default base_z=0.26 above wheel bottom=0.24",
+    "status": "Geometry-derived candidate; physical settling and driveability require the Bullet run",
+    "upstream_spawn_alternative": {
+      "initial_position": [
+        0.0,
+        0.0,
+        0.5
+      ],
+      "initial_yaw": 0.0,
+      "source": "gbplanner/launch/smb/smb_spawner.launch in the pinned upstream repository",
+      "minimum_sampled_tire_clearance": 0.09997404753924438,
+      "status": "Used by the ROS2 mine configuration; sampled floor and body clearance permit natural settling without an added plane"
+    },
+    "floor_samples": [
+      {
+        "xy": [
+          -0.4059,
+          -0.42
+        ],
+        "floor_z": 0.15938111361853402,
+        "triangle_index": 5665,
+        "all_surface_z": [
+          0.15938111361853402
+        ]
+      },
+      {
+        "xy": [
+          -0.4059,
+          -0.3275
+        ],
+        "floor_z": 0.15937590309899233,
+        "triangle_index": 5665,
+        "all_surface_z": [
+          0.15937590309899233
+        ]
+      },
+      {
+        "xy": [
+          -0.4059,
+          0.0
+        ],
+        "floor_z": 0.1593574550433178,
+        "triangle_index": 5665,
+        "all_surface_z": [
+          0.1593574550433178
+        ]
+      },
+      {
+        "xy": [
+          -0.4059,
+          0.3275
+        ],
+        "floor_z": 0.15933900698764328,
+        "triangle_index": 5665,
+        "all_surface_z": [
+          0.15933900698764328
+        ]
+      },
+      {
+        "xy": [
+          -0.4059,
+          0.42
+        ],
+        "floor_z": 0.15933379646810159,
+        "triangle_index": 5665,
+        "all_surface_z": [
+          0.15933379646810159
+        ]
+      },
+      {
+        "xy": [
+          -0.21,
+          -0.42
+        ],
+        "floor_z": 0.15953672328740715,
+        "triangle_index": 5665,
+        "all_surface_z": [
+          0.15953672328740715
+        ]
+      },
+      {
+        "xy": [
+          -0.21,
+          -0.3275
+        ],
+        "floor_z": 0.15953151276786548,
+        "triangle_index": 5665,
+        "all_surface_z": [
+          0.15953151276786548
+        ]
+      },
+      {
+        "xy": [
+          -0.21,
+          0.0
+        ],
+        "floor_z": 0.1595130647121909,
+        "triangle_index": 5665,
+        "all_surface_z": [
+          0.1595130647121909
+        ]
+      },
+      {
+        "xy": [
+          -0.21,
+          0.3275
+        ],
+        "floor_z": 0.15949461665651643,
+        "triangle_index": 5665,
+        "all_surface_z": [
+          0.15949461665651643
+        ]
+      },
+      {
+        "xy": [
+          -0.21,
+          0.42
+        ],
+        "floor_z": 0.1594894061369747,
+        "triangle_index": 5665,
+        "all_surface_z": [
+          0.1594894061369747
+        ]
+      },
+      {
+        "xy": [
+          0.0,
+          -0.42
+        ],
+        "floor_z": 0.15970353303964482,
+        "triangle_index": 5665,
+        "all_surface_z": [
+          0.15970353303964482
+        ]
+      },
+      {
+        "xy": [
+          0.0,
+          -0.3275
+        ],
+        "floor_z": 0.15969832252010313,
+        "triangle_index": 5665,
+        "all_surface_z": [
+          0.15969832252010313
+        ]
+      },
+      {
+        "xy": [
+          0.0,
+          0.0
+        ],
+        "floor_z": 0.15967987446442858,
+        "triangle_index": 5665,
+        "all_surface_z": [
+          0.15967987446442858
+        ]
+      },
+      {
+        "xy": [
+          0.0,
+          0.3275
+        ],
+        "floor_z": 0.15966142640875408,
+        "triangle_index": 5665,
+        "all_surface_z": [
+          0.15966142640875408
+        ]
+      },
+      {
+        "xy": [
+          0.0,
+          0.42
+        ],
+        "floor_z": 0.15965621588921242,
+        "triangle_index": 5665,
+        "all_surface_z": [
+          0.15965621588921242
+        ]
+      },
+      {
+        "xy": [
+          0.2159,
+          -0.42
+        ],
+        "floor_z": 0.15987502935158823,
+        "triangle_index": 5665,
+        "all_surface_z": [
+          0.15987502935158823
+        ]
+      },
+      {
+        "xy": [
+          0.2159,
+          -0.3275
+        ],
+        "floor_z": 0.15986981883204654,
+        "triangle_index": 5665,
+        "all_surface_z": [
+          0.15986981883204654
+        ]
+      },
+      {
+        "xy": [
+          0.2159,
+          0.0
+        ],
+        "floor_z": 0.15985137077637204,
+        "triangle_index": 5665,
+        "all_surface_z": [
+          0.15985137077637204
+        ]
+      },
+      {
+        "xy": [
+          0.2159,
+          0.3275
+        ],
+        "floor_z": 0.1598329227206975,
+        "triangle_index": 5665,
+        "all_surface_z": [
+          0.1598329227206975
+        ]
+      },
+      {
+        "xy": [
+          0.2159,
+          0.42
+        ],
+        "floor_z": 0.15982771220115582,
+        "triangle_index": 5665,
+        "all_surface_z": [
+          0.15982771220115582
+        ]
+      },
+      {
+        "xy": [
+          0.4059,
+          -0.42
+        ],
+        "floor_z": 0.16002595246075563,
+        "triangle_index": 5673,
+        "all_surface_z": [
+          0.16002595246075563
+        ]
+      },
+      {
+        "xy": [
+          0.4059,
+          -0.3275
+        ],
+        "floor_z": 0.16002074194121396,
+        "triangle_index": 5673,
+        "all_surface_z": [
+          0.16002074194121396
+        ]
+      },
+      {
+        "xy": [
+          0.4059,
+          0.0
+        ],
+        "floor_z": 0.16000229388553944,
+        "triangle_index": 5673,
+        "all_surface_z": [
+          0.16000229388553944
+        ]
+      },
+      {
+        "xy": [
+          0.4059,
+          0.3275
+        ],
+        "floor_z": 0.1599838458298649,
+        "triangle_index": 5673,
+        "all_surface_z": [
+          0.1599838458298649
+        ]
+      },
+      {
+        "xy": [
+          0.4059,
+          0.42
+        ],
+        "floor_z": 0.15997863531032322,
+        "triangle_index": 5673,
+        "all_surface_z": [
+          0.15997863531032322
+        ]
+      }
+    ]
+  },
+  "generated_file": {
+    "path": "edgar_mine.triangles",
+    "sha256": "7f9e0ff795b69fbddaefbf94b1351b59266514537f32a26235c62fb3d9e4dded",
+    "bytes": 1140838,
+    "format": "GBPLANNER_TRIANGLE_MESH 1",
+    "indexing": "Zero-based; source POSITION vertices retained per instance; no welding or simplification"
+  },
+  "physics_scope": "Collision geometry only; original Gazebo ODE contact parameters are not reproduced by this conversion"
+}

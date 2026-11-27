@@ -1,0 +1,66 @@
+{
+  "repository": "https://github.com/ntnu-arl/smb_simulator",
+  "commit": "9aa33187d7375fd48dbd63e27ca5e55bb219f750",
+  "archive_sha256": "8072e44e9c9e84ebb9eef735d56558eec39bf208e374ad1dcaf0ab3350c0d049",
+  "resolved_date": "2026-10-30",
+  "scope": "Unmodified SMB geometry, inertia definitions and simulation control configuration, retained for parameter provenance only. This is not a Gazebo/ros2_control migration.",
+  "license_declaration": "smb_description/package.xml and smb_lowlevel_controller/package.xml each declare MIT; no repository-wide LICENSE was present in the retrieved source. The copied model/configuration files remain unmodified.",
+  "files": [
+    {
+      "path": "smb_description/urdf/smb.urdf.xacro",
+      "sha256": "5b458187eecf7daa25bf386b96291ff8500a68c2bb34e0aa4037c05feb76bc13"
+    },
+    {
+      "path": "smb_description/urdf/wheel.urdf.xacro",
+      "sha256": "5d1fbed744d42696ce7726e3d3e971082bd5124ba7de8ae412861bb878ca0a3a"
+    },
+    {
+      "path": "smb_description/urdf/smb_utils.urdf.xacro",
+      "sha256": "b8c6802b884a599c528aa4cb2d9537d94dac3365fedd6e7283f31c2ba745d435"
+    },
+    {
+      "path": "smb_description/package.xml",
+      "sha256": "3db5ea45b658266db20ed84fd39b54b8db406ab6ce1d4d398567dd3a62c50c02"
+    },
+    {
+      "path": "smb_lowlevel_controller/config/control_sim.yaml",
+      "sha256": "13141f7a016d48ba1371eaab913c291dd5b6adfd35218c9e8087b264f3c7f937"
+    }
+  ],
+  "parameters": {
+    "chassis_mass_kg": 40,
+    "chassis_size_m": [
+      0.605,
+      0.41,
+      0.22
+    ],
+    "wheel_mass_kg": 5,
+    "wheel_collision_radius_m": 0.19,
+    "wheel_width_m": 0.185,
+    "wheel_front_x_m": 0.2159,
+    "wheel_rear_x_m": -0.21,
+    "wheel_y_m": 0.3275,
+    "wheel_z_m": -0.05,
+    "controller_wheel_track_m": 0.6604,
+    "linear_max_mps": 1.5,
+    "angular_max_radps": 1.0,
+    "linear_max_acceleration_mps2": 3.0,
+    "angular_max_acceleration_radps2": 2.0,
+    "wheel_contact_mu1_mu2": [
+      1.0,
+      1.0
+    ],
+    "cmd_vel_timeout_s": 0.25
+  },
+  "adaptations": {
+    "physics": "New Bullet chassis box and four dynamic Y-axis cylinder wheels, attached by revolute hinge constraints with velocity motors. No chassis pose/velocity assignment during motion. No suspension.",
+    "mass": "40 kg chassis plus four 5 kg wheels. Sensor meshes and their zero mass links are omitted.",
+    "inertia": "Analytic box/cylinder tensors. Upstream cylinder inertia macro places its axial term on Z while collision and wheel joint rotate about Y; Bullet puts the axial term on Y.",
+    "motor_torque": "20 Nm per wheel is an explicit adapter assumption, configurable as max_wheel_torque. Upstream continuous joints and control_sim.yaml specify no effort limit.",
+    "friction": "Wheel Coulomb friction 1 follows upstream mu1/mu2. Bullet rolling/spinning coefficients 0.001 and ground friction 1 are adapter settings, not equivalent to Gazebo ODE kp/kd/minDepth.",
+    "controller": "v +/- omega*0.6604/2, divided by wheel radius. Upstream velocity and acceleration limits retained. Original control_sim.yaml uses cmd_vel_timeout=0.25 s; the new ROS 2 node defaults to command_timeout=0.3 s. The physics core has no wall-clock timeout.",
+    "world": "Configurable static plane and boxes with ray casting. This is not the original Clearpath playpen or DARPA cave world.",
+    "frame": "World-frame physical pose and velocity in core; ROS node converts twist to base_link.",
+    "ground_height": "Expected flat-ground base_link height about .24 m, from .19 radius minus -.05 wheel offset; unrelated to planner abstract robot_height .55 m."
+  }
+}

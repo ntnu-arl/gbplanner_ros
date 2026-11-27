@@ -1,0 +1,18 @@
+topics:
+- name    : joy
+  topic   : joy_teleop/cmd_vel
+  timeout : 0.5
+  priority: 10
+- name    : interactive_marker
+  topic   : twist_marker_server/cmd_vel
+  timeout : 0.5
+  priority: 8
+- name    : external
+  topic   : external/cmd_vel
+  timeout : 0.5
+  priority: 1
+locks:
+- name    : e_stop
+  topic   : cmd_vel_e_stop
+  timeout : 0.0
+  priority: 255

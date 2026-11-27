@@ -1,0 +1,250 @@
+/*
+ * Copyright (C) 2018 Open Source Robotics Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
+// GLSL shaders
+vertex_program GpuRaysScan1stVS_GLSL glsl
+{
+  source gpu_rays_1st_pass_vs.glsl
+  default_params
+  {
+    param_named_auto worldViewProj worldviewproj_matrix
+  }
+}
+
+fragment_program GpuRaysScan1stFS_GLSL glsl
+{
+  source gpu_rays_1st_pass_fs.glsl
+
+  default_params
+  {
+    param_named depthTexture int 0
+    param_named colorTexture int 1
+    param_named particleDepthTexture int 2
+    param_named particleTexture int 3
+  }
+}
+
+// Metal shaders
+vertex_program GpuRaysScan1stVS_Metal metal
+{
+  source gpu_rays_1st_pass_vs.metal
+  default_params
+  {
+    param_named_auto worldViewProj worldviewproj_matrix
+  }
+}
+
+fragment_program GpuRaysScan1stFS_Metal metal
+{
+  source gpu_rays_1st_pass_fs.metal
+  shader_reflection_pair_hint GpuRaysScan1stVS_Metal
+}
+
+// Unified shaders
+vertex_program GpuRaysScan1stVS unified
+{
+  delegate GpuRaysScan1stVS_GLSL
+  delegate GpuRaysScan1stVS_Metal
+}
+
+fragment_program GpuRaysScan1stFS unified
+{
+  delegate GpuRaysScan1stFS_GLSL
+  delegate GpuRaysScan1stFS_Metal
+}
+
+material GpuRaysScan1st
+{
+  technique
+  {
+    pass gpu_rays_tex
+    {
+      vertex_program_ref GpuRaysScan1stVS { }
+      fragment_program_ref GpuRaysScan1stFS { }
+      texture_unit depthTexture
+      {
+        filtering none
+        tex_address_mode clamp
+      }
+      texture_unit colorTexture
+      {
+        filtering none
+        tex_address_mode clamp
+      }
+      texture_unit particleDepthTexture
+      {
+        filtering none
+        tex_address_mode clamp
+      }
+      texture_unit particleTexture
+      {
+        filtering none
+        tex_address_mode clamp
+      }
+    }
+  }
+}
+
+// GLSL shaders
+fragment_program GpuRaysScan2ndFS_GLSL glsl
+{
+  source gpu_rays_2nd_pass_fs.glsl
+
+  default_params
+  {
+    param_named cubeUVTex int 0
+    param_named tex0 int 1
+    param_named tex1 int 2
+    param_named tex2 int 3
+    param_named tex3 int 4
+    param_named tex4 int 5
+    param_named tex5 int 6
+  }
+}
+
+// Metal shaders
+fragment_program GpuRaysScan2ndFS_Metal metal
+{
+  source gpu_rays_2nd_pass_fs.metal
+  shader_reflection_pair_hint Ogre/Compositor/Quad_vs
+}
+
+// Unified shaders
+fragment_program GpuRaysScan2ndFS unified
+{
+  delegate GpuRaysScan2ndFS_GLSL
+  delegate GpuRaysScan2ndFS_Metal
+}
+
+material GpuRaysScan2nd
+{
+  technique
+  {
+    pass gpu_rays_tex_2nd
+    {
+      vertex_program_ref Ogre/Compositor/Quad_vs { }
+      fragment_program_ref GpuRaysScan2ndFS { }
+      texture_unit cubeUVTex
+      {
+        filtering none
+      }
+      texture_unit tex0
+      {
+        filtering none
+      }
+      texture_unit tex1
+      {
+        filtering none
+      }
+      texture_unit tex2
+      {
+        filtering none
+      }
+      texture_unit tex3
+      {
+        filtering none
+      }
+      texture_unit tex4
+      {
+        filtering none
+      }
+      texture_unit tex5
+      {
+        filtering none
+      }
+    }
+  }
+}
+
+// GLSL shaders
+vertex_program laser_retro_vs_GLSL glsl
+{
+  source plain_color_vs.glsl
+  num_clip_distances 1
+
+  default_params
+  {
+    param_named_auto worldViewProj worldviewproj_matrix
+    param_named_auto worldView worldview_matrix
+    param_named ignMinClipDistance float 0.0
+  }
+}
+
+fragment_program laser_retro_fs_GLSL glsl
+{
+  source plain_color_fs.glsl
+
+  default_params
+  {
+    param_named inColor float4 0 0 0 1
+  }
+}
+
+// Metal shaders
+vertex_program laser_retro_vs_Metal metal
+{
+  source plain_color_vs.metal
+  num_clip_distances 1
+
+  default_params
+  {
+    param_named_auto worldViewProj worldviewproj_matrix
+    param_named_auto worldView worldview_matrix
+    param_named ignMinClipDistance float 0.0
+  }
+}
+
+fragment_program laser_retro_fs_Metal metal
+{
+  source plain_color_fs.metal
+  shader_reflection_pair_hint laser_retro_vs_Metal
+}
+
+// Unified shaders
+vertex_program laser_retro_vs unified
+{
+  delegate laser_retro_vs_GLSL
+  delegate laser_retro_vs_Metal
+}
+
+fragment_program laser_retro_fs unified
+{
+  delegate laser_retro_fs_GLSL
+  delegate laser_retro_fs_Metal
+}
+
+material LaserRetroSource
+{
+  // Material has one technique
+  technique
+  {
+    // This technique has one pass
+    pass
+    {
+      fog_override true
+
+      vertex_program_ref laser_retro_vs
+      {
+      }
+
+      fragment_program_ref laser_retro_fs
+      {
+        param_named_auto inColor custom 10
+      }
+    }
+  }
+}

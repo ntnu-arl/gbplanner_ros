@@ -1,0 +1,149 @@
+gbplanner_local:
+  ros__parameters:
+    frame_id: map
+    map.storage: sparse
+    map.resolution: 0.1
+    robot.type: kGround
+    # The current map query uses a world-axis-aligned box. This square contains
+    # the wheel footprint at every yaw: 2*hypot(0.2159+0.19,0.3275+0.185/2).
+    # Vertically check the chassis and upper wheels, z=[0.13,0.38] on flat ground.
+    # Ground support is checked separately; the tire contact layer below 0.13 m
+    # is not represented by this single obstacle box.
+    robot.size: [1.17, 1.17, 0.25]
+    robot.center_offset: [0.0, 0.0, 0.015]
+    robot.size_extension_min: [0.0, 0.0, 0.0]
+    robot.size_extension: [0.1, 0.1, 0.0]
+    robot.relax_ratio: 0.5
+    # Upstream SMB corridor extraction window, not a robot-size margin.
+    robot.safety_extension: [2.0, 3.0, 0.2]
+    # Wheel bottom: base_z-0.05-0.19=0, hence base_z=0.24.
+    ground.robot_height: 0.24
+    # Internal graph states are at ground+0.54, the physical lidar height.
+    # The ROS boundary converts returned paths back to base_link height.
+    ground.max_ground_height: 0.54
+    ground.max_inclination: 0.4363323129985824
+    ground.max_negative_inclination: 0.4363323129985824
+    ground.projection_max_length: 1.5
+    ground.interpolate_projection_distance: true
+    ground.hanging_vertex_penalty: 5.0
+    sampling.seed: 42
+    sampling.seed_mode: sequence
+    sampling.min: [-2.5, -2.0, -0.08]
+    sampling.max: [2.5, 2.0, 0.08]
+    planning.global_min: [-4.9, -2.9, -0.2]
+    planning.global_max: [4.9, 2.9, 2.1]
+    planning.max_vertices: 100
+    planning.max_edges: 1200
+    # Use upstream SMB's sampleVertex-call budget; synthetic scene bounds remain.
+    planning.sampling_budget_mode: sampling_rounds
+    planning.max_sampling_rounds: 20000
+    planning.empty_graph_cutoff: 2000
+    planning.edge_min: 0.15
+    planning.edge_max: 0.8
+    planning.v_max: 0.3
+    planning.traverse_length_max: 6.0
+    planning.traverse_time_max: 40.0
+    planning.auto_global_planner_enable: true
+    planning.go_home_if_fully_explored: true
+    planning.overshoot: 0.0
+    planning.neighbor_radius: 1.2
+    planning.neighbor_min: 0.15
+    planning.neighbor_max: 1.2
+    planning.graph_mode: true
+    planning.tangent_yaw: true
+    planning.path_length_penalty: 0.07
+    planning.path_direction_penalty: 0.3
+    planning.leaf_gain_only: false
+    planning.cluster_vertices_for_gain: true
+    planning.clustering_radius: 0.4
+    planning.path_safety_enhance_enable: true
+    planning.path_interpolation_distance: 0.5
+    planning.relaxed_corridor_multiplier: 1.5
+    planning.use_ray_model_for_volumetric_gain: true
+    planning.freespace_cloud_enable: false
+    planning.exploration_sensors: [smb_lidar]
+    sensor.names: [smb_lidar]
+    sensor.smb_lidar.type: kLidar
+    sensor.smb_lidar.range: 6.0
+    sensor.smb_lidar.min_range: 0.1
+    # Gain rays start at the graph state, already at the lidar height; adding
+    # the physical +0.3 base offset here would count the displacement twice.
+    sensor.smb_lidar.center_offset: [0.0, 0.0, 0.0]
+    sensor.smb_lidar.rotations: [0.0, 0.0, 0.0]
+    sensor.smb_lidar.horizontal_fov: 6.283185307179586
+    # The symmetric gain model uses the central -30..30-degree scan portion.
+    # Physical mapping still consumes all -60..30-degree returns at 3/5 degrees.
+    sensor.smb_lidar.vertical_fov: 1.0471975511965976
+    sensor.smb_lidar.horizontal_resolution: 0.10471975511965977
+    sensor.smb_lidar.vertical_resolution: 0.17453292519943295
+    sensor.smb_lidar.frontier_threshold: 0.05
+    gain.unknown: 1.0
+    gain.free: 0.0
+    gain.occupied: 0.0
+    search.sampling.min: [-4.0, -2.0, -0.08]
+    search.sampling.max: [4.0, 2.0, 0.08]
+    search.max_vertices: 250
+    search.max_edges: 2000
+    search.max_attempts: 6000
+    search.target_radius: 0.25
+    global.enable: true
+    global.auto_home: true
+    global.background_enable: false
+    mission.enabled: false
+
+voxblox_mapper:
+  ros__parameters:
+    frame_id: map
+    sensor_frame: smb_lidar
+    input_sensors: [smb_lidar]
+    input.smb_lidar.topic: points
+    input.smb_lidar.frame: smb_lidar
+    # ROS1 Voxblox server input controls. A zero minimum interval preserves
+    # every accepted scan while the timestamp tolerance rejects stale data.
+    pointcloud_queue_size: 1000
+    min_time_between_msgs_sec: 0.0
+    # Only used by upstream transform-topic mode; TF lookup has no tolerance.
+    timestamp_tolerance_sec: 0.001
+    map.storage: sparse
+    map.resolution: 0.1
+    map.distance_field: tsdf
+    sensor.min_range: 0.1
+    sensor.max_range: 6.0
+    tsdf.voxels_per_side: 16
+    tsdf.truncation_distance: 0.3
+    tsdf.method: simple
+    tsdf.threads: 1
+    tsdf.max_weight: 200.0
+    tsdf.clearing_ray_weight_factor: 0.01
+    tsdf.use_weight_dropoff: true
+    tsdf.voxel_carving_enabled: true
+    # classify(): occupied iff TSDF <= factor*resolution+1e-6. At 0.1 m,
+    # factor=0.5 gives a 0.05 m distance threshold rather than the old 0.2 m.
+    # A nominal flat-floor occupied cell ends at z=0.1, below the box at z=0.13.
+    tsdf.occupancy_distance_factor: 0.5
+    esdf.enabled: false
+    esdf.clear_sphere_for_planning: false
+    esdf.clear_sphere_pose_source: sensor
+    esdf.clear_sphere_radius: 0.8
+    esdf.occupied_sphere_radius: 5.0
+    color_mode: none
+    update_mesh_every_n_sec: 0.5
+    use_freespace_pointcloud: false
+    # Bootstrap ground support from historical physical returns during initial
+    # motion; leave the robot box unknown until it has actually been observed.
+    clear_unknown_box_on_start: false
+    robot.size: [1.17, 1.17, 0.25]
+    robot.center_offset: [0.0, 0.0, 0.015]
+    odometry_timeout: 0.5
+
+gbplanner_control:
+  ros__parameters:
+    frame_id: map
+    robot_type: kGround
+    request_timeout: 30.0
+    execution_timeout: 120.0
+    odom_timeout: 0.5
+    endpoint_tolerance: 0.1
+    planner_trigger_lead_time: 0.0
+    require_mission_status: false
+    max_cycles: 100

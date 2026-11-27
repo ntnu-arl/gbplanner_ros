@@ -1,0 +1,47 @@
+{
+  "commit": "7301b5350915cf3a4055072ad559842db37b4ca9",
+  "functions": [
+    {
+      "signature": "bool Trajectory::compareTwoTrajectories(const PathType&",
+      "sha256": "a7c5c75af15e5c82f6c24ab345cfff819c1a6af9af92896dc220cbfebeec0e58"
+    },
+    {
+      "signature": "double Trajectory::computeDistanceBetweenTwoTrajectories(",
+      "sha256": "67078cf5e2c607e36901db8b1fc0edc5b7dd7adbd691364b635399f73e98eaaf"
+    },
+    {
+      "signature": "double Trajectory::computeDistanceBetweenTrajectoryAndDirection(",
+      "sha256": "878a6a5d56243f56da22e206169d2b9bf8edf439bec39077deaf0f05c18aa510"
+    },
+    {
+      "signature": "void Trajectory::shortenPath(",
+      "sha256": "48c3566c6c2ec84f51325fbd4fa30982c00bbc9e4a31e2cf5bec4fdc8e7e4b5d"
+    },
+    {
+      "signature": "double Trajectory::getPathLength(const PathType&",
+      "sha256": "c9b2bd9c9a340cee05eb209ae65caa5c24f7966cdf313deab96eaed144c647b1"
+    },
+    {
+      "signature": "bool Trajectory::interpolatePath(const PathType&",
+      "sha256": "3c21d2e74e72c377e1374d73874523acba8b7972aaa24a7a148b6fc20ccb74a6"
+    },
+    {
+      "signature": "double Trajectory::computeDTWDistance(",
+      "sha256": "26ec9e1661ba236428570acf4361c7d9757c0c3b083ea0d82e83eba3f1af2c64"
+    },
+    {
+      "signature": "Rrg::performShortestPathsClustering",
+      "sha256": "29a79297b9085bafc15080a4eca34d4480c0cd7efd0e8fab8359c5011a19fa59"
+    }
+  ],
+  "adaptations": [
+    "Remove ROS logging from clustering",
+    "Rename clustering class/method; wrap in gbplanner2 namespace",
+    "Use Eigen-only PathType; no ROS geometry overloads",
+    "Guard zero common length before normalized DTW division",
+    "Use size_t for vector-index loops to remove signedness warnings",
+    "Preserve repeated direction-reference endpoint (*n, not *i)",
+    "Reject nonfinite heading or discretization in direction distance",
+    "Snap direction-reference step counts within 8 machine epsilons times max(1, count) of a positive integer before truncation; preserve true sub-step/floor cases and original repeated endpoints. Prevent translated paths from receiving infinite DTW distance and zero weighted gain due only to roundoff."
+  ]
+}

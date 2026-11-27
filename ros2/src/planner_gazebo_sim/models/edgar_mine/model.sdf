@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<sdf version="1.6">
+ <model name="edgar_mine">
+   <pose>-22.0 -26.0 0 1.57 0 1.5</pose>
+   <static>true</static>
+   <link name="link">
+     <collision name="collision">
+       <geometry>
+         <mesh>
+           <uri>model://edgar_mine/edgar_mine.dae</uri>
+         </mesh>
+       </geometry>
+     </collision>
+     <visual name="visual">
+       <geometry>
+         <mesh>
+           <uri>model://edgar_mine/edgar_mine.dae</uri>
+         </mesh>
+       </geometry>
+     </visual>
+   </link>
+ </model>
+</sdf>

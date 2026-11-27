@@ -1,0 +1,19 @@
+{
+  "source": "planner_common/src/random_sampler.cpp",
+  "source_sha256": "c10101803e17a0e76e648d9cc58e378a920563f25ef3813eb0bc9a163bae1895",
+  "upstream_commit": "7301b5350915cf3a4055072ad559842db37b4ca9",
+  "functions": [
+    "RandomSampler::setRotation",
+    "RandomSampler::setParams",
+    "RandomSampler::generate"
+  ],
+  "semantics": "Sample XYZ as root + inverse(Rz(yaw)*Ry(pitch)*Rx(roll))*local; sampled heading adds root heading without rotating XYZ by it.",
+  "parameter": "sampling.rotations [yaw,pitch,roll] radians, default [0,0,0]",
+  "intentional_native_behavior": "Existing bounded normal/Cauchy rejection now happens after transforming the world offset back to the sampling frame. Not a port of global BoundedSpaceParams::isInsideSpace.",
+  "scope_excluded": [
+    "dynamic global rotated bounds",
+    "adaptive OBB derivation",
+    "rotated robot collision box",
+    "automatic heading alignment"
+  ]
+}

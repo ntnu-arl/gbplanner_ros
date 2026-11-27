@@ -1,0 +1,809 @@
+@piece( envSpecularRoughness ) pixelData.perceptualRoughness * passBuf.envMapNumMipmaps @end
+
+@piece( DefaultHeaderPS )
+	@property( !fresnel_scalar )
+		#define float_fresnel float
+		#define make_float_fresnel( x ) x
+	@else
+		#define float_fresnel float3
+		#define make_float_fresnel( x ) float3( x, x, x )
+	@end
+
+	@insertpiece( DeclReverseDepthMacros )
+
+	@property( syntax == metal )
+		#define PASSBUF_ARG_DECL , constant PassBuffer &passBuf
+		#define PASSBUF_ARG , passBuf
+	@else
+		#define PASSBUF_ARG_DECL
+		#define PASSBUF_ARG
+	@end
+
+	@property( hlms_enable_cubemaps_auto )
+		@insertpiece( UnpackHelpers )
+	@end
+
+	struct PixelData
+	{
+		@property( !hlms_shadowcaster )
+			float3 normal;
+			@property( normal_map )
+				float3 geomNormal;
+			@else
+				#define geomNormal normal
+			@end
+			float4	diffuse;
+			float3	specular;
+			float	perceptualRoughness;
+			float	roughness;
+			float_fresnel	F0;
+
+			@property( needs_view_dir )
+				float3	viewDir;
+				float	NdotV;
+			@end
+
+			@property( needs_refl_dir )
+				float3 reflDir;
+				@property( needs_env_brdf )
+					float3 envColourS;
+					float3 envColourD;
+				@end
+			@end
+		@else
+			float4 diffuse; //We only use the .w component, Alpha
+		@end
+	};
+
+	#define SampleDetailWeightMap( tex, sampler, uv, arrayIdx ) OGRE_SampleArray2D( tex, sampler, uv, arrayIdx )
+	@foreach( detail_maps_diffuse, n )
+		@property( detail_map@n )#define SampleDetailCol@n( tex, sampler, uv, arrayIdx ) OGRE_SampleArray2D( tex, sampler, uv, arrayIdx )@end
+	@end
+	@property( diffuse_map )
+		#define SampleDiffuse( tex, sampler, uv, arrayIdx ) OGRE_SampleArray2D( tex, sampler, uv, arrayIdx ) @property( diffuse_map_grayscale ).rrra@end
+	@end
+	@property( specular_map )
+		#define SampleSpecular( tex, sampler, uv, arrayIdx ) OGRE_SampleArray2D( tex, sampler, uv, arrayIdx )
+	@end
+	@property( roughness_map )
+		#define SampleRoughness( tex, sampler, uv, arrayIdx ) OGRE_SampleArray2D( tex, sampler, uv, arrayIdx )
+	@end
+	@property( emissive_map )
+		#define SampleEmissive( tex, sampler, uv, arrayIdx ) OGRE_SampleArray2D( tex, sampler, uv, arrayIdx )
+	@end
+	@property( use_envprobe_map )
+        #define SampleEnvProbe( tex, sampler, uv, lod ) OGRE_SampleLevel( tex, sampler, uv, lod )
+	@end
+
+	@property( hlms_lights_spot_textured )
+		@insertpiece( DeclQuat_zAxis )
+		INLINE float3 qmul( float4 q, float3 v )
+		{
+			return v + 2.0 * cross( cross( v, q.xyz ) + q.w * v, q.xyz );
+		}
+	@end
+
+	@property( normal_map_tex || detail_maps_normal )
+		INLINE float3 reconstructZfromTSNormal( float2 tsNormal2 )
+		{
+			float3 tsNormal;
+			tsNormal.xy = tsNormal2.xy;
+			tsNormal.z	= sqrt( max( 0.0f, 1.0f - tsNormal.x * tsNormal.x - tsNormal.y * tsNormal.y ) );
+			return tsNormal.xyz;
+		}
+
+		@property( normal_sampling_format == normal_rg_snorm )
+			//Normal texture must be in UV8/RG8_SNORM or BC5S format!
+			#define getTSNormal( normalMap, samplerState, uv, normalIdx ) reconstructZfromTSNormal( OGRE_SampleArray2D( normalMap, samplerState, uv, normalIdx ).xy )
+		@end
+		@property( normal_sampling_format == normal_rg_unorm )
+			//Normal texture must be in RG8_UNORM or similar format!
+			#define getTSNormal( normalMap, samplerState, uv, normalIdx ) reconstructZfromTSNormal( OGRE_SampleArray2D( normalMap, samplerState, uv, normalIdx ).xy * 2.0 - 1.0 )
+		@end
+		@property( normal_sampling_format == normal_bc3_unorm )
+			//Normal texture must be in BC3 or similar format!
+			#define getTSNormal( normalMap, samplerState, uv, normalIdx ) reconstructZfromTSNormal( OGRE_SampleArray2D( normalMap, samplerState, uv, normalIdx ).yw * 2.0 - 1.0 )
+		@end
+		@property( normal_sampling_format == normal_la )
+			//Normal texture must be in LA format!
+			#define getTSNormal( normalMap, samplerState, uv, normalIdx ) reconstructZfromTSNormal( OGRE_SampleArray2D( normalMap, samplerState, uv, normalIdx ).xw * 2.0 - 1.0 )
+		@end
+	@end
+
+	@property( obb_restraint_approx || obb_restraint_ltc )
+		/// Returns value in range [-inf; 1]
+		/// Values <= 0 means 'pos' is outside the obb
+		float getObbRestraintFade( @property( syntax == metal )constant@end  float4 obbRestraint[3],
+								   float3 pos, float3 obbFadeFactors )
+		{
+			float3 obbDistToBounds;
+			obbDistToBounds.x = dot( obbRestraint[0].xyzw, float4( pos.xyz, 1.0 ) );
+			obbDistToBounds.y = dot( obbRestraint[1].xyzw, float4( pos.xyz, 1.0 ) );
+			obbDistToBounds.z = dot( obbRestraint[2].xyzw, float4( pos.xyz, 1.0 ) );
+			//Until this point, obbDistToBounds in range [-1;1] means we're inside the OBB.
+			obbDistToBounds = abs( obbDistToBounds );
+
+			float3 obbFade = (1.0 - obbDistToBounds) * obbFadeFactors;
+			return min( min3( obbFade.x, obbFade.y, obbFade.z ), 1.0 );
+		}
+	@end
+
+	@property( (hlms_normal || hlms_qtangent) && !hlms_prepass && needs_view_dir )
+		@insertpiece( DeclareBRDF )
+		@insertpiece( DeclareBRDF_InstantRadiosity )
+		@insertpiece( DeclareBRDF_AreaLightApprox )
+	@end
+
+	@insertpiece( DeclVctFuncs )
+	@insertpiece( DeclIrradianceFieldFuncs )
+	@insertpiece( DeclRefractionsFuncs )
+	@insertpiece( DeclIrradianceSH )
+	@insertpiece( DeclLightProfilesTextureFuncs )
+@end
+
+
+//-----------------------------------------------------------------------------
+//		BODY CODE
+//-----------------------------------------------------------------------------
+
+@piece( LoadMaterial )
+	@property( !lower_gpu_overhead )
+		@property( syntax != metal )
+            ushort materialId	= worldMaterialIdx[inPs.drawId].x & 0x1FFu;
+            #define material materialArray[materialId]
+		@else
+			#define material materialArray[inPs.materialId]
+		@end
+	@else
+		#define material materialArray[0]
+	@end
+@end
+
+@piece( UnpackTextureIndices0 )
+	@property( syntax == metal )
+		@property( diffuse_map )		ushort texIndex_diffuseIdx			= material.diffuseIdx;@end
+		@property( detail_weight_map )	ushort texIndex_weightMapIdx		= material.weightMapIdx;@end
+		@property( detail_map0 )		ushort texIndex_detailMapIdx0		= material.detailMapIdx0;@end
+		@property( detail_map1 )		ushort texIndex_detailMapIdx1		= material.detailMapIdx1;@end
+		@property( detail_map2 )		ushort texIndex_detailMapIdx2		= material.detailMapIdx2;@end
+		@property( detail_map3 )		ushort texIndex_detailMapIdx3		= material.detailMapIdx3;@end
+	@else
+		@property( diffuse_map )		ushort texIndex_diffuseIdx			= material.indices0_3.x & 0x0000FFFFu;@end
+		@property( detail_weight_map )	ushort texIndex_weightMapIdx		= material.indices0_3.z & 0x0000FFFFu;@end
+		@property( detail_map0 )		ushort texIndex_detailMapIdx0		= material.indices0_3.z >> 16u;@end
+		@property( detail_map1 )		ushort texIndex_detailMapIdx1		= material.indices0_3.w & 0x0000FFFFu;@end
+		@property( detail_map2 )		ushort texIndex_detailMapIdx2		= material.indices0_3.w >> 16u;;@end
+		@property( detail_map3 )		ushort texIndex_detailMapIdx3		= material.indices4_7.x & 0x0000FFFFu;@end
+	@end
+@end
+@piece( UnpackTextureIndices1 )
+	@property( syntax == metal )
+		@property( normal_map_tex )		ushort texIndex_normalIdx			= material.normalIdx;@end
+		@property( specular_map )		ushort texIndex_specularIdx			= material.specularIdx;@end
+		@property( roughness_map )		ushort texIndex_roughnessIdx		= material.roughnessIdx;@end
+		@property( detail_map_nm0 )		ushort texIndex_detailNormMapIdx0	= material.detailNormMapIdx0;@end
+		@property( detail_map_nm1 )		ushort texIndex_detailNormMapIdx1	= material.detailNormMapIdx1;@end
+		@property( detail_map_nm2 )		ushort texIndex_detailNormMapIdx2	= material.detailNormMapIdx2;@end
+		@property( detail_map_nm3 )		ushort texIndex_detailNormMapIdx3	= material.detailNormMapIdx3;@end
+		@property( emissive_map )		ushort texIndex_emissiveMapIdx		= material.emissiveMapIdx;@end
+		@property( use_envprobe_map )	ushort texIndex_envMapIdx			= material.envMapIdx;@end
+	@else
+		@property( normal_map_tex )		ushort texIndex_normalIdx			= material.indices0_3.x >> 16u;@end
+		@property( specular_map )		ushort texIndex_specularIdx			= material.indices0_3.y & 0x0000FFFFu;@end
+		@property( roughness_map )		ushort texIndex_roughnessIdx		= material.indices0_3.y >> 16u;@end
+		@property( detail_map_nm0 )		ushort texIndex_detailNormMapIdx0	= material.indices4_7.x >> 16u;@end
+		@property( detail_map_nm1 )		ushort texIndex_detailNormMapIdx1	= material.indices4_7.y & 0x0000FFFFu;@end
+		@property( detail_map_nm2 )		ushort texIndex_detailNormMapIdx2	= material.indices4_7.y >> 16u;@end
+		@property( detail_map_nm3 )		ushort texIndex_detailNormMapIdx3	= material.indices4_7.z & 0x0000FFFFu;@end
+		@property( emissive_map )		ushort texIndex_emissiveMapIdx		= material.indices4_7.z >> 16u;@end
+		@property( use_envprobe_map )	ushort texIndex_envMapIdx			= material.indices4_7.w & 0x0000FFFFu;@end
+	@end
+@end
+
+@piece( LoadDetailWeights )
+	@property( detail_maps_diffuse || detail_maps_normal )
+		//Prepare weight map for the detail maps.
+		@property( detail_weight_map )
+			float4 detailWeights = SampleDetailWeightMap( textureMaps@value(detail_weight_map_idx),
+														  samplerState@value(detail_weight_map_sampler),
+														  UV_DETAIL_WEIGHT( inPs.uv@value(uv_detail_weight).xy ),
+														  texIndex_weightMapIdx );
+			@property( detail_weights )detailWeights *= material.cDetailWeights;@end
+		@else
+			@property( detail_weights )
+				float4 detailWeights = material.cDetailWeights;
+			@else
+				float4 detailWeights = float4( 1.0, 1.0, 1.0, 1.0 );
+			@end
+		@end
+	@end
+@end
+
+@piece( SampleDetailMaps )
+	/// Sample detail maps and weight them against the weight map in the next foreach loop.
+	@foreach( detail_maps_diffuse, n )
+		@property( detail_map@n )
+			float4 detailCol@n = SampleDetailCol@n( textureMaps@value(detail_map@n_idx),
+													samplerState@value(detail_map@n_sampler),
+                                                    UV_DETAIL@n( inPs.uv@value(uv_detail@n).xy@insertpiece( offsetDetail@n ) ),
+                                                    texIndex_detailMapIdx@n );
+			detailWeights.@insertpiece(detail_swizzle@n) *= detailCol@n.w;
+			detailCol@n.w = detailWeights.@insertpiece(detail_swizzle@n);
+		@end
+	@end
+@end
+
+@piece( SampleDiffuseMap )
+	/// DIFFUSE MAP
+	@property( diffuse_map )
+		pixelData.diffuse = SampleDiffuse( textureMaps@value( diffuse_map_idx ),
+										   samplerState@value(diffuse_map_sampler),
+										   UV_DIFFUSE( inPs.uv@value(uv_diffuse).xy ),
+										   texIndex_diffuseIdx );
+	@else
+		/// If there are no diffuse maps, we must initialize it to some value.
+		pixelData.diffuse.xyzw = material.bgDiffuse.xyzw;
+	@end
+
+	/// Blend the detail diffuse maps with the main diffuse.
+	@foreach( detail_maps_diffuse, n )
+		@insertpiece( blend_mode_idx@n ) @add( t, 1 ) @end
+
+	/// Apply the material's diffuse over the textures
+	pixelData.diffuse.xyz *= material.kD.xyz;
+	@property( transparent_mode || hlms_screen_space_refractions )
+		pixelData.diffuse.xyz *= (pixelData.diffuse.w * pixelData.diffuse.w);
+	@end
+
+	@property( alpha_test && (!alpha_test_shadow_caster_only || hlms_shadowcaster) )
+		if( material.kD.w @insertpiece( alpha_test_cmp_func ) pixelData.diffuse.w )
+			discard;
+	@end
+@end
+
+@piece( SampleSpecularMap )
+	/// SPECUlAR MAP
+	pixelData.specular.xyz = material.kS.xyz;
+	@property( !metallic_workflow )
+		pixelData.F0 = material.F0.@insertpiece( FresnelSwizzle );
+		@property( specular_map && !fresnel_workflow )
+			pixelData.specular.xyz *= SampleSpecular( textureMaps@value( specular_map_idx ),
+													  samplerState@value(specular_map_sampler),
+													  UV_SPECULAR( inPs.uv@value(uv_specular).xy ),
+													  texIndex_specularIdx ).xyz;
+		@end
+		@property( specular_map && fresnel_workflow )
+			pixelData.F0 *= SampleSpecular( textureMaps@value( specular_map_idx ),
+											samplerState@value(specular_map_sampler),
+											UV_SPECULAR( inPs.uv@value(uv_specular).xy ),
+											texIndex_specularIdx ).@insertpiece( FresnelSwizzle );
+		@end
+	@else
+		float metalness = material.F0.x;
+		@property( specular_map )
+			metalness *= SampleSpecular( textureMaps@value( specular_map_idx ),
+										 samplerState@value(specular_map_sampler),
+										 UV_SPECULAR( inPs.uv@value(uv_specular).xy ),
+										 texIndex_specularIdx ).x;
+		@end
+		pixelData.F0 = lerp( make_float_fresnel( 0.03f ), pixelData.diffuse.xyz * 3.14159f, metalness );
+		pixelData.diffuse.xyz = pixelData.diffuse.xyz - pixelData.diffuse.xyz * metalness;
+		@property( hlms_alphablend || hlms_screen_space_refractions )
+			pixelData.F0 *= material.F0.w; ///Should this be done for non-metallic as well???
+		@end
+	@end
+	@property( transparent_mode || hlms_screen_space_refractions )
+		pixelData.F0 *= pixelData.diffuse.w;
+	@end
+@end
+
+@piece( SampleRoughnessMap )
+	/// ROUGHNESS MAP
+	pixelData.perceptualRoughness = material.kS.w;
+	@property( roughness_map )
+		pixelData.perceptualRoughness *=
+			SampleRoughness( textureMaps@value( roughness_map_idx ),
+							 samplerState@value( roughness_map_sampler ),
+							 UV_ROUGHNESS( inPs.uv@value(uv_roughness).xy ),
+							 texIndex_roughnessIdx ).x;
+	@end
+	@property( perceptual_roughness )
+		pixelData.roughness = max( pixelData.perceptualRoughness * pixelData.perceptualRoughness, 0.001f );
+	@else
+		pixelData.roughness = max( pixelData.perceptualRoughness, 0.001f );
+	@end
+@end
+
+@property( two_sided_lighting )
+	@property( hlms_forwardplus_flipY )
+		@piece( two_sided_flip_normal )* (gl_FrontFacing ? -1.0 : 1.0)@end
+	@else
+		@piece( two_sided_flip_normal )* (gl_FrontFacing ? 1.0 : -1.0)@end
+	@end
+@end
+@piece( LoadNormalData )
+	@property( !normal_map )
+		// Geometric normal
+		pixelData.normal = normalize( inPs.normal ) @insertpiece( two_sided_flip_normal );
+	@else
+		//Normal mapping.
+		pixelData.geomNormal = normalize( inPs.normal ) @insertpiece( two_sided_flip_normal );
+		float3 vTangent		= normalize( inPs.tangent );
+
+		@property( hlms_qtangent )
+			@piece( tbnApplyReflection ) * inPs.biNormalReflection@end
+		@end
+
+		//Get the TBN matrix
+		float3 vBinormal	= normalize( cross( pixelData.geomNormal, vTangent )@insertpiece( tbnApplyReflection ) );
+		float3x3 TBN		= buildFloat3x3( vTangent, vBinormal, pixelData.geomNormal );
+
+		@property( normal_map_tex )
+			pixelData.normal = getTSNormal( textureMaps@value( normal_map_tex_idx ),
+											samplerState@value( normal_map_tex_sampler ),
+											UV_NORMAL( inPs.uv@value(uv_normal).xy ),
+											texIndex_normalIdx );
+		@else
+			pixelData.normal = float3( 0.0, 0.0, 1.0 );
+		@end
+		@property( normal_weight_tex )
+			// Apply the weight to the main normal map
+			pixelData.normal = lerp( float3( 0.0, 0.0, 1.0 ), pixelData.normal, normalMapWeight );
+		@end
+	@end
+@end
+
+@piece( SampleAndApplyDetailNormalMaps )
+	/// If there is no normal map, the first iteration must
+	/// initialize pixelData.normal instead of try to merge with it.
+	@property( normal_map_tex )
+		@piece( detail_nm_op_sum )+=@end
+		@piece( detail_nm_op_mul )*=@end
+	@else
+		@piece( detail_nm_op_sum )=@end
+		@piece( detail_nm_op_mul )=@end
+	@end
+
+	@property( detail_maps_normal )
+	   @foreach( 4, n )
+		   @property( normal_weight_detail@n )
+			   @piece( detail@n_nm_weight_mul ) * material.normalWeights.@insertpiece( detail_swizzle@n )@end
+		   @end
+	   @end
+	@end
+
+	@foreach( detail_maps_normal, n )
+		@piece( SampleDetailMapNm@n )getTSNormal( textureMaps@value(detail_map_nm@n_idx),
+												  samplerState@value(detail_map_nm@n_sampler),
+												  UV_DETAIL_NM@n( inPs.uv@value(uv_detail_nm@n).xy@insertpiece( offsetDetail@n ) ),
+												  texIndex_detailNormMapIdx@n ) * detailWeights.@insertpiece(detail_swizzle@n) @insertpiece( detail@n_nm_weight_mul )@end
+	@end
+
+	/// Blend the detail normal maps with the main normal.
+	@foreach( second_valid_detail_map_nm, n, first_valid_detail_map_nm )
+		float3 vDetail = @insertpiece( SampleDetailMapNm@n );
+		pixelData.normal.xy	@insertpiece( detail_nm_op_sum ) vDetail.xy;
+		pixelData.normal.z	@insertpiece( detail_nm_op_mul ) vDetail.z + 1.0 - detailWeights.@insertpiece(detail_swizzle@n) @insertpiece( detail@n_nm_weight_mul );
+	@end
+	@foreach( detail_maps_normal, n, second_valid_detail_map_nm )
+		@property( detail_map_nm@n )
+			vDetail = @insertpiece( SampleDetailMapNm@n );
+			pixelData.normal.xy	+= vDetail.xy;
+			pixelData.normal.z	*= vDetail.z + 1.0 - detailWeights.@insertpiece(detail_swizzle@n) @insertpiece( detail@n_nm_weight_mul );
+		@end
+	@end
+@end
+
+@piece( LightingHeader )
+	//Everything's in Camera space
+	@property( needs_view_dir )
+		@property( !hlms_instanced_stereo )
+			pixelData.viewDir	= normalize( -inPs.pos );
+		@else
+			pixelData.viewDir = -inPs.pos;
+			if( gl_FragCoord.x > passBuf.rightEyePixelStartX )
+				pixelData.viewDir += passBuf.leftToRightView.xyz;
+			pixelData.viewDir = normalize( pixelData.viewDir );
+		@end
+		pixelData.NdotV		= saturate( dot( pixelData.normal, pixelData.viewDir ) );
+	@end
+
+	@property( !ambient_fixed || vct_num_probes )
+		float3 finalColour = float3(0, 0, 0);
+	@else
+		float3 finalColour = passBuf.ambientUpperHemi.xyz * pixelData.diffuse.xyz;
+	@end
+
+	@property( hlms_lights_point || hlms_lights_spot || hlms_lights_area_approx || hlms_lights_area_ltc )
+		float3 lightDir;
+		float fDistance;
+		float3 tmpColour;
+		float spotCosAngle;
+	@end
+	@property( needs_refl_dir )
+		pixelData.reflDir = 2.0 * dot( pixelData.viewDir, pixelData.normal ) * pixelData.normal - pixelData.viewDir;
+	@end
+
+	@insertpiece( DoAmbientHeader )
+@end
+
+@piece( DoDirectionalLights )
+	@property( hlms_lights_directional )
+		@insertpiece( ObjLightMaskCmp )
+			finalColour += BRDF( light0Buf.lights[0].position.xyz, light0Buf.lights[0].diffuse.xyz, light0Buf.lights[0].specular, pixelData ) @insertpiece( DarkenWithShadowFirstLight );
+	@end
+	@foreach( hlms_lights_directional, n, 1 )
+		@insertpiece( ObjLightMaskCmp )
+			finalColour += BRDF( light0Buf.lights[@n].position.xyz, light0Buf.lights[@n].diffuse.xyz, light0Buf.lights[@n].specular, pixelData )@insertpiece( DarkenWithShadow );@end
+
+	@property( !hlms_static_branch_lights )
+		@foreach( hlms_lights_directional_non_caster, n, hlms_lights_directional )
+			@insertpiece( ObjLightMaskCmp )
+				finalColour += BRDF( light0Buf.lights[@n].position.xyz, light0Buf.lights[@n].diffuse.xyz, light0Buf.lights[@n].specular, pixelData );@end
+	@else
+		for( int n=0; n<floatBitsToInt( light0Buf.numNonCasterDirectionalLights ); ++n )
+		{
+			int i = @value( hlms_lights_directional ) + n;
+			@insertpiece( ObjLightMaskCmpNonCasterLoop )
+				finalColour += BRDF( light0Buf.lights[i].position.xyz, light0Buf.lights[i].diffuse.xyz, light0Buf.lights[i].specular, pixelData );
+		}
+		/// Increase fineMaskLightIdx to keep it working with spot/point lights
+		@insertpiece( ObjLightMaskCmpNonCasterLoopEnd )
+	@end
+@end
+
+//Point lights
+@piece( DoPointLights )
+	@foreach( hlms_lights_point, n, hlms_lights_directional_non_caster )
+		lightDir = light0Buf.lights[@n].position.xyz - inPs.pos;
+		fDistance= length( lightDir );
+		if( fDistance <= light0Buf.lights[@n].attenuation.x @insertpiece( andObjLightMaskCmp ) )
+		{
+			lightDir *= 1.0 / fDistance;
+			tmpColour = BRDF( lightDir, light0Buf.lights[@n].diffuse.xyz, light0Buf.lights[@n].specular, pixelData )@insertpiece( DarkenWithShadowPoint );
+			float atten = 1.0 / (0.5 + (light0Buf.lights[@n].attenuation.y + light0Buf.lights[@n].attenuation.z * fDistance) * fDistance );
+			finalColour += tmpColour * atten;
+		}
+	@end
+@end
+
+//Spot lights
+//spotParams[@value(spot_params)].x = 1.0 / cos( InnerAngle ) - cos( OuterAngle )
+//spotParams[@value(spot_params)].y = cos( OuterAngle / 2 )
+//spotParams[@value(spot_params)].z = falloff
+@piece( DoSpotLights )
+	@foreach( hlms_lights_spot, n, hlms_lights_point )
+		lightDir = light0Buf.lights[@n].position.xyz - inPs.pos;
+		fDistance= length( lightDir );
+		lightDir *= 1.0 / fDistance;
+		@property( !hlms_lights_spot_textured )
+			spotCosAngle = dot( -lightDir, light0Buf.lights[@n].spotDirection.xyz );
+		@else
+			spotCosAngle = dot( -lightDir, zAxis( light0Buf.lights[@n].spotQuaternion ) );
+		@end
+		if( fDistance <= light0Buf.lights[@n].attenuation.x && spotCosAngle >= light0Buf.lights[@n].spotParams.y @insertpiece( andObjLightMaskCmp ) )
+		{
+			@property( hlms_lights_spot_textured )
+				float3 posInLightSpace = qmul( spotQuaternion[@value(spot_params)], inPs.pos );
+				float spotAtten = texture( texSpotLight, normalize( posInLightSpace ).xy ).x; //TODO
+			@else
+				float spotAtten = saturate( (spotCosAngle - light0Buf.lights[@n].spotParams.y) * light0Buf.lights[@n].spotParams.x );
+				spotAtten = pow( spotAtten, light0Buf.lights[@n].spotParams.z );
+			@end
+
+			@property( light_profiles_texture )
+				spotAtten *= getPhotometricAttenuation( spotCosAngle,
+														light0Buf.lights[@n].lightTexProfileIdx
+														OGRE_PHOTOMETRIC_ARG );
+			@end
+
+			tmpColour = BRDF( lightDir, light0Buf.lights[@n].diffuse.xyz, light0Buf.lights[@n].specular, pixelData )@insertpiece( DarkenWithShadow );
+			float atten = 1.0 / (0.5 + (light0Buf.lights[@n].attenuation.y + light0Buf.lights[@n].attenuation.z * fDistance) * fDistance );
+			finalColour += tmpColour * (atten * spotAtten);
+		}
+	@end
+@end
+
+@piece( DoEmissiveLight )
+	@property( emissive_map || emissive_constant )
+		///Emissive is not part of PixelData because emissive can just be accumulated to finalColour
+		@property( emissive_map )
+			float3 emissiveCol = SampleEmissive( textureMaps@value( emissive_map_idx ),
+												 samplerState@value(emissive_map_sampler),
+												 UV_EMISSIVE( inPs.uv@value(uv_emissive).xy ),
+												 texIndex_emissiveMapIdx ).xyz;
+			@property( emissive_constant )
+				emissiveCol *= material.emissive.xyz;
+			@end
+			@property( emissive_as_lightmap )
+				emissiveCol *= pixelData.diffuse.xyz;
+			@end
+			finalColour += emissiveCol;
+		@else
+			finalColour += material.emissive.xyz;
+		@end
+	@end
+@end
+
+@piece( CubemapManualPcc )
+	float3 posInProbSpace = toProbeLocalSpace( inPs.pos, @insertpiece( pccProbeSource ) );
+	float probeFade = getProbeFade( posInProbSpace, @insertpiece( pccProbeSource ) );
+@property( vct_num_probes )
+	if( probeFade > 0 && (pixelData.roughness < 1.0f || vctSpecular.w == 0) )
+@else
+	if( probeFade > 0 )
+@end
+	{
+		probeFade = saturate( probeFade * 200.0 );
+		@property( vct_num_probes )
+			float4 reflDirLS_dist = localCorrect( pixelData.reflDir, posInProbSpace, @insertpiece( pccProbeSource ) );
+			float3 reflDirLS = reflDirLS_dist.xyz;
+		@else
+			float3 reflDirLS = localCorrect( pixelData.reflDir, posInProbSpace, @insertpiece( pccProbeSource ) ).xyz;
+		@end
+		float3 nNormalLS = localCorrect( pixelData.normal, posInProbSpace, @insertpiece( pccProbeSource ) ).xyz;
+		float4 envS = SampleEnvProbe( texEnvProbeMap, samplerState@value(envMapRegSampler),
+									  reflDirLS, @insertpiece( envSpecularRoughness ) );
+		@property( envmap_scale )
+			envS.xyz *= passBuf.ambientUpperHemi.w;
+		@end
+		@property( cubemaps_as_diffuse_gi )
+			float3 envD = SampleEnvProbe( texEnvProbeMap, samplerState@value(envMapRegSampler),
+										  nNormalLS, 11.0 ).xyz @insertpiece( ApplyEnvMapScale );
+			envD.xyz *= probeFade;
+		@end
+
+		envS.xyz *= probeFade;
+
+		@property( vct_num_probes )
+			float vctLerp = getPccVctBlendWeight( inPs.pos, pixelData.reflDir, reflDirLS_dist.w,
+												  pixelData.roughness,
+												  @insertpiece( pccProbeSource ).cubemapPosVS.xyz,
+												  vctSpecPosVS, vctSpecular.w,
+												  passBuf.pccVctMinDistance,
+												  passBuf.invPccVctInvDistance,
+												  envS.w );
+
+			pixelData.envColourS = lerp( envS.xyz, pixelData.envColourS, vctLerp );
+			@property( cubemaps_as_diffuse_gi )
+				pixelData.envColourD += vctSpecular.w > 0 ? float3( 0, 0, 0 ) : envD;
+			@end
+		@else
+			pixelData.envColourS += envS.xyz;
+			@property( cubemaps_as_diffuse_gi )
+				pixelData.envColourD += envD;
+			@end
+		@end
+	}
+@end
+
+@piece( CubemapGlobal )
+	pixelData.envColourS += SampleEnvProbe( texEnvProbeMap, samplerState@value(envMapRegSampler),
+											mul( pixelData.reflDir, passBuf.invViewMatCubemap ),
+											@insertpiece( envSpecularRoughness ) ).xyz @insertpiece( ApplyEnvMapScale );
+	@property( cubemaps_as_diffuse_gi )
+		pixelData.envColourD += SampleEnvProbe( texEnvProbeMap, samplerState@value(envMapRegSampler),
+												mul( pixelData.normal, passBuf.invViewMatCubemap ),
+												11.0 ).xyz @insertpiece( ApplyEnvMapScale );
+	@end
+@end
+
+@property( !hlms_shadowcaster )
+@piece( DefaultBodyPS )
+	@property( hlms_screen_pos_uv )
+		float2 screenPosUv = gl_FragCoord.xy * passBuf.invWindowRes.xy;
+	@end
+	@property( hlms_screen_pos_int )
+		rshort2 iFragCoord =
+			rshort2( gl_FragCoord.x,
+					 @property( !hlms_forwardplus_flipY && syntax == glsl )passBuf.windowResolution.y - @end
+					 gl_FragCoord.y );
+	@end
+
+	@property( hlms_normal || hlms_qtangent )
+		PixelData pixelData;
+
+		@insertpiece( LoadMaterial )
+		@insertpiece( UnpackTextureIndices0 )
+		@insertpiece( UnpackTextureIndices1 )
+		@insertpiece( DeclareObjLightMask )
+		@insertpiece( custom_ps_posMaterialLoad )
+
+		@insertpiece( LoadDetailWeights )
+
+		@insertpiece( SampleDetailMaps )
+
+		@property( !hlms_prepass || alpha_test )
+			@insertpiece( SampleDiffuseMap )
+		@end
+
+		@insertpiece( SampleSpecularMap )
+		@insertpiece( SampleRoughnessMap )
+
+@property( hlms_bake_lighting_only )
+		pixelData.diffuse.xyz	= float3( 1.0f, 1.0f, 1.0f );
+		pixelData.specular.xyz	= float3( 0.0f, 0.0f, 0.0f );
+@end
+
+		@insertpiece( forwardPlusDoDecals )
+
+		@property( !hlms_use_prepass )
+			@insertpiece( LoadNormalData )
+			@insertpiece( SampleAndApplyDetailNormalMaps )
+
+			@insertpiece( custom_ps_posSampleNormal )
+
+			@insertpiece( forwardPlusApplyDecalsNormal )
+
+			@property( normal_map )
+				pixelData.normal = normalize( mul( TBN, pixelData.normal ) );
+			@end
+
+			@insertpiece( DoDirectionalShadowMaps )
+
+		@end @property( hlms_use_prepass )
+			@property( hlms_use_prepass_msaa )
+				//SV_Coverage/gl_SampleMaskIn is always before depth & stencil tests,
+				//so we need to perform the test ourselves
+				//See http://www.yosoygames.com.ar/wp/2017/02/beware-of-sv_coverage/
+				uint sampleMask = uint( gl_SampleMaskIn0 );
+				float msaaDepth;
+				uint subsampleDepthMask;
+				float pixelDepthZ;
+				float pixelDepthW;
+				float2 pixelDepthZW;
+				float pixelDepth;
+				int intPixelDepth;
+				int intMsaaDepth;
+				//Unfortunately there are precision errors, so we allow some ulp errors.
+				//200 & 5 are arbitrary, but were empirically found to be very good values.
+				int ulpError = int( lerp( 200.0, 5.0, gl_FragCoord.z ) );
+				@foreach( hlms_use_prepass_msaa, n )
+					pixelDepthZW = interpolateAtSample( inPs.zwDepth, @n );
+					pixelDepthZ = pixelDepthZW.x;
+					pixelDepthW = pixelDepthZW.y;
+					pixelDepth = pixelDepthZ / pixelDepthW;
+					msaaDepth = OGRE_Load2DMS( gBuf_depthTexture, iFragCoord.xy, @n ).x;
+					intPixelDepth = floatBitsToInt( pixelDepth );
+					intMsaaDepth = floatBitsToInt( msaaDepth );
+					subsampleDepthMask = (abs( intPixelDepth - intMsaaDepth ) <= ulpError) ? 0xffffffffu : ~(1u << @nu);
+					//subsampleDepthMask = int( (pixelDepth <= msaaDepth) ? 0xffffffffu : ~(1u << @nu) );
+					sampleMask &= subsampleDepthMask;
+				@end
+
+				sampleMask = sampleMask == 0u ? 1u : sampleMask;
+
+				int gBufSubsample = int( findLSB( sampleMask ) );
+
+				pixelData.normal = normalize( OGRE_Load2DMS( gBuf_normals, iFragCoord, gBufSubsample ).xyz * 2.0 - 1.0 );
+				float2 shadowRoughness = OGRE_Load2DMS( gBuf_shadowRoughness, iFragCoord, gBufSubsample ).xy;
+			@else
+				pixelData.normal = normalize( OGRE_Load2D( gBuf_normals, iFragCoord, 0 ).xyz * 2.0 - 1.0 );
+				float2 shadowRoughness = OGRE_Load2D( gBuf_shadowRoughness, iFragCoord, 0 ).xy;
+			@end
+
+			float fShadow = shadowRoughness.x;
+
+			@property( roughness_map )
+				pixelData.roughness = shadowRoughness.y * 0.98 + 0.02;
+			@end
+		@end
+
+		@property( !hlms_prepass )
+			@insertpiece( LightingHeader )
+
+			@insertpiece( custom_ps_preLights )
+
+			@property( !custom_disable_directional_lights )
+				@insertpiece( DoDirectionalLights )
+			@end
+
+			@insertpiece( DoPointLights )
+			@insertpiece( DoSpotLights )
+
+			@insertpiece( DoAreaApproxLights )
+			@insertpiece( DoAreaLtcLights )
+
+			@insertpiece( forward3dLighting )
+
+			@property( needs_env_brdf )
+				pixelData.envColourS = float3( 0, 0, 0 );
+				pixelData.envColourD = float3( 0, 0, 0 );
+			@end
+
+			@insertpiece( applyVoxelConeTracing )
+			@insertpiece( applyIrradianceField )
+
+			@insertpiece( forwardPlusDoCubemaps )
+			@insertpiece( applyIrradianceVolumes )
+
+			@insertpiece( DoEmissiveLight )
+
+			@property( use_envprobe_map )
+				@property( use_parallax_correct_cubemaps && !hlms_enable_cubemaps_auto )
+					@insertpiece( CubemapManualPcc )
+				@end @property( !use_parallax_correct_cubemaps )
+					@insertpiece( CubemapGlobal )
+				@end
+			@end
+
+			@property( hlms_use_ssr )
+				//TODO: SSR pass should be able to combine global & local cubemap.
+				float4 ssrReflection = OGRE_Load2D( ssrTexture, iFragCoord, 0 ).xyzw;
+				@property( use_envprobe_map )
+					pixelData.envColourS = lerp( pixelData.envColourS.xyz, ssrReflection.xyz, ssrReflection.w );
+				@else
+					pixelData.envColourS += ssrReflection.xyz * ssrReflection.w;
+				@end
+			@end
+
+			@insertpiece( DoPlanarReflectionsPS )
+
+			@insertpiece( DoAmbientLighting )
+
+			@property( needs_env_brdf )
+				@insertpiece( BRDF_EnvMap )
+			@end
+
+			@insertpiece( applyRefractions )
+		@end ///!hlms_prepass
+
+	@end ///!hlms_normal || hlms_qtangent
+
+	@property( !hlms_render_depth_only )
+		@property( !hlms_prepass )
+			@property( hlms_normal || hlms_qtangent )
+				@property( !hw_gamma_write )
+					//Linear to Gamma space
+					outPs_colour0.xyz	= sqrt( finalColour );
+				@else
+					outPs_colour0.xyz	= finalColour;
+				@end
+
+				@property( hlms_alphablend )
+					@property( use_texture_alpha )
+						outPs_colour0.w	= material.F0.w * pixelData.diffuse.w;
+					@else
+						outPs_colour0.w	= material.F0.w;
+					@end
+				@else
+					outPs_colour0.w		= 1.0;
+				@end
+
+				@property( debug_pssm_splits )
+					outPs_colour0.xyz = mix( outPs_colour0.xyz, debugPssmSplit.xyz, 0.2f );
+				@end				
+				@property( hlms_gen_normals_gbuffer )
+					outPs_normals = float4( pixelData.normal * 0.5 + 0.5, 1.0 );
+				@end
+			@else
+				outPs_colour0 = float4( 1.0, 1.0, 1.0, 1.0 );
+				@property( hlms_gen_normals_gbuffer )
+					outPs_normals = float4( 0.5, 0.5, 1.0, 1.0 );
+				@end
+			@end
+		@else
+			outPs_normals			= float4( pixelData.normal * 0.5 + 0.5, 1.0 );
+			@property( hlms_pssm_splits )
+				outPs_shadowRoughness	= float2( fShadow, (pixelData.roughness - 0.02) * 1.02040816 );
+			@end @property( !hlms_pssm_splits )
+				outPs_shadowRoughness	= float2( 1.0, (pixelData.roughness - 0.02) * 1.02040816 );
+			@end
+		@end
+	@end
+@end ///DefaultBodyPS
+@else ///!hlms_shadowcaster
+
+@piece( DefaultBodyPS )
+	@property( alpha_test )
+		PixelData pixelData;
+		@insertpiece( LoadMaterial )
+		@insertpiece( UnpackTextureIndices0 )
+		@insertpiece( LoadDetailWeights )
+		@insertpiece( SampleDetailMaps )
+		@insertpiece( SampleDiffuseMap )
+	@end
+	@insertpiece( DoShadowCastPS )
+@end
+
+@end

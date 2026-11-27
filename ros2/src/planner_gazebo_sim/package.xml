@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>planner_gazebo_sim</name>
+  <version>0.1.0</version>
+  <description>Gazebo mine worlds and model resources used by the planner migration.</description>
+  <maintainer email="257770113+ai4sci-z@users.noreply.github.com">ai4sci-z</maintainer>
+  <license>NOASSERTION</license>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>gazebo_ros</exec_depend>
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

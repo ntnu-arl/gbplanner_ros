@@ -1,0 +1,688 @@
+{
+  "scope": "Pinned source resources, original RMF Obelix physical model, and native Fortress sensor conversion; runtime evidence is stored separately.",
+  "sources": {
+    "rotors_simulator": {
+      "repository": "https://github.com/ntnu-arl/rotors_simulator",
+      "commit": "e8c6f170de51620f572664656f10603334bf5057",
+      "reference_branch": "dev/rmf_obelix",
+      "entry": "rotors_description/urdf/rmf_obelix.gazebo",
+      "imu_reference": {
+        "implementation": "rotors_gazebo_plugins/src/gazebo_imu_plugin.cpp",
+        "implementation_sha256": "0bfb7b0c14a4435cee06824d1ccaf0526942de4e059ffaa3cd4238c59f408373",
+        "header": "rotors_gazebo_plugins/include/rotors_gazebo_plugins/gazebo_imu_plugin.h",
+        "header_sha256": "b70e4572e8f04d7149d89acfcf721a09dcc4c6dd075b29095b75de71ff4e8ab8",
+        "verification": "Read from the same pinned commit; downloaded blobs checked against Git blob identifiers.",
+        "license": "Apache-2.0"
+      }
+    },
+    "lidar_simulator": {
+      "repository": "https://github.com/ntnu-arl/lidar_simulator",
+      "commit": "c772727b73445975d604f6ed6f5fd524ae1caa8c",
+      "reference_branch": "psuedo_bpearl",
+      "entry": "lidar_description/urdf/OS0-128.urdf.xacro",
+      "selection": "Dependency branch declared by upstream packages_https.rosinstall, resolved and pinned independently; no historical same-date claim."
+    },
+    "hector_gazebo_imu_reference": {
+      "repository": "https://github.com/tu-darmstadt-ros-pkg/hector_gazebo",
+      "commit": "de947fb1e253b114d259e8690456792d91b93347",
+      "reference_branch": "melodic-devel",
+      "package_version": "0.5.4",
+      "selection": "Chosen public implementation reference. The original RMF/lidar dependency does not pin or declare a Hector version; this is not a claim about the historical runtime version.",
+      "files_sha256": {
+        "hector_gazebo_plugins/src/gazebo_ros_imu.cpp": "afba57015761ea325ac0d5123ad048a6dbe85ccbe70cd441f343adbc606fbc4e",
+        "hector_gazebo_plugins/include/hector_gazebo_plugins/sensor_model.h": "232799ffde67697b5304300a2b5f8257811e0118a95ce359cbe6314d2fd6598f"
+      },
+      "cross_check": "Both files are byte-identical at kinetic-devel commit c60323a5e0484db9f5447bfcb1554c5b2468a65b.",
+      "license": "BSD-3-Clause"
+    },
+    "fortress_imu_reference": {
+      "sensor_repository": "https://github.com/gazebosim/gz-sensors",
+      "sensor_tag": "ignition-sensors6_6.9.0",
+      "system_repository": "https://github.com/gazebosim/gz-sim",
+      "system_tag": "ignition-gazebo6_6.18.0",
+      "system_file": "src/systems/imu/Imu.cc",
+      "files_sha256": {
+        "src/ImuSensor.cc": "1fb1b420c633274120ed45cd364f74c5cdc6a0ea8dd7ce1e599e1caf58e74c7f",
+        "src/GaussianNoiseModel.cc": "42f4d99e95e535bb4b0a17c55aeba637eac2ceb8351a18d324724795c21900d0"
+      },
+      "selection": "Release tags match the installed Fortress sensors 6.9.0 and simulator 6.18.0."
+    }
+  },
+  "files_sha256": {
+    "upstream/lidar_simulator/LICENSE": "a0322173997beb63b7f53a83ab4fa67be57e67c0cc2a41c3127ab022910708bf",
+    "upstream/lidar_simulator/lidar_description/meshes/Ouster/ouster.dae": "d71e557aa501303bf5c31be7db9ee0a129337921301f5bd96f3d977242c1728c",
+    "upstream/lidar_simulator/lidar_description/package.xml": "54048b3e7084e6d1565cf8017ffbc93da1138bfa3bc668af0f183bf27790fb20",
+    "upstream/lidar_simulator/lidar_description/urdf/OS0-128.urdf.xacro": "f72a93b82991a2154e8635b2faf89b4b8265aadb090c18ca312e4fbd53e88edc",
+    "upstream/rotors_simulator/rotors_description/meshes/propeller_ccw.dae": "3d8d39737cf6df9dfaa1cf7b05be4bac396001f53dcdb1c6af1a72cc925bf52c",
+    "upstream/rotors_simulator/rotors_description/meshes/propeller_cw.dae": "09994038cb7fe9e8f719e9944bddd084979ddb84cb8dfc7e1dbfef2e88355e0a",
+    "upstream/rotors_simulator/rotors_description/meshes/rmf_obelix/carbon_fiber.jpg": "119d0d76ca624ed52d4b4fdc45c553d2d76735b8d9e78902c211a99510c13af8",
+    "upstream/rotors_simulator/rotors_description/meshes/rmf_obelix/rmf_obelix.dae": "b54830dfd55dad119cf46256b00e744b17b984cbb817d4be1388c55c39f4208d",
+    "upstream/rotors_simulator/rotors_description/package.xml": "1ba7b24b4642fef60d7878da1e0027518cf28871b77a3fb6fe8918d552b1cb5e",
+    "upstream/rotors_simulator/rotors_description/urdf/component_snippets.xacro": "00d5226e3b16176ce67c5799ba61d4c6683a225a65c0c6cc8f8f9b58618e0df7",
+    "upstream/rotors_simulator/rotors_description/urdf/mav_generic_odometry_sensor.gazebo": "ce2db7ac87341f72c20f54990b8bd54a6dabe1f40220c494b66ed170c3a8b103",
+    "upstream/rotors_simulator/rotors_description/urdf/multirotor_base.xacro": "b61318014263fa4d51752f7e426351e3227c7924b3375fbf79069db6448bfdbc",
+    "upstream/rotors_simulator/rotors_description/urdf/rmf_obelix.gazebo": "f07a78a601242a98fd0f17bd93c09fd730fbb2a3352ada47a31d42d6eea64fb1",
+    "upstream/rotors_simulator/rotors_description/urdf/rmf_obelix.xacro": "81d34161e7bfd2d3049bd4c89a16229b229ed0c8b6c0e455617cca969736eeef",
+    "upstream/rotors_simulator/rotors_description/urdf/rmf_obelix_base.xacro": "7cebe311046206e066047ff0bf2bde8df2f582adc0690c4537ea2093f195662a",
+    "upstream/rotors_simulator/rotors_description/urdf/vi_sensor_base.xacro": "e2f6e326bd5f159c57c587b3c3e62e2f3f282c28960c7ee8b68070d62446bc63",
+    "upstream/rotors_simulator/rotors_gazebo/resource/lee_controller_rmf_obelix.yaml": "e6975a1b49d4ca11290cbe4b4a58265eced267b19aa839b657dd0dab0cb536c1",
+    "upstream/rotors_simulator/rotors_gazebo/resource/rmf_obelix.yaml": "b1725ced0273dfe152fc5707a814d7e604b60bbee28d492beb0960bc4c7debeb"
+  },
+  "tools": {
+    "xacro": "official ros-humble-xacro 2.1.1-1jammy.20260307.132851, installed in existing development container (37.8 kB archive; no other package changed)",
+    "sdformat": "Fortress ign sdf; final generated model passes ign sdf -k",
+    "gazebo": "6.18.0"
+  },
+  "source_physics": {
+    "mass_kg": 0.5270300009999999,
+    "com_base_m": [
+      0.0,
+      0.0,
+      0.0011384553352969374
+    ],
+    "inertia_at_combined_com_q0_kgm2": [
+      [
+        0.01037280493930133,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.010398644928965334,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.010454339987861777
+      ]
+    ],
+    "links": [
+      {
+        "name": "rmf_obelix/base_link_inertia",
+        "mass_kg": 0.5,
+        "com_base_m": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "inertia_at_own_com_base_axes_kgm2": [
+          [
+            0.01,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.01,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.01
+          ]
+        ]
+      },
+      {
+        "name": "rmf_obelix/rotor_0",
+        "mass_kg": 0.003,
+        "com_base_m": [
+          0.07071067811800001,
+          -0.07071067811800001,
+          0.05
+        ],
+        "inertia_at_own_com_base_axes_kgm2": [
+          [
+            5.849997659999999e-07,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            7.044997181999999e-06,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            7.584996965999999e-06
+          ]
+        ]
+      },
+      {
+        "name": "rmf_obelix/rotor_2",
+        "mass_kg": 0.003,
+        "com_base_m": [
+          0.07071067811800001,
+          0.07071067811800001,
+          0.05
+        ],
+        "inertia_at_own_com_base_axes_kgm2": [
+          [
+            5.849997659999999e-07,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            7.044997181999999e-06,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            7.584996965999999e-06
+          ]
+        ]
+      },
+      {
+        "name": "rmf_obelix/rotor_1",
+        "mass_kg": 0.003,
+        "com_base_m": [
+          -0.07071067811800001,
+          0.07071067811800001,
+          0.05
+        ],
+        "inertia_at_own_com_base_axes_kgm2": [
+          [
+            5.849997659999999e-07,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            7.044997181999999e-06,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            7.584996965999999e-06
+          ]
+        ]
+      },
+      {
+        "name": "rmf_obelix/rotor_3",
+        "mass_kg": 0.003,
+        "com_base_m": [
+          -0.07071067811800001,
+          -0.07071067811800001,
+          0.05
+        ],
+        "inertia_at_own_com_base_axes_kgm2": [
+          [
+            5.849997659999999e-07,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            7.044997181999999e-06,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            7.584996965999999e-06
+          ]
+        ]
+      },
+      {
+        "name": "rmf_obelix/imu_link",
+        "mass_kg": 0.015,
+        "com_base_m": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "inertia_at_own_com_base_axes_kgm2": [
+          [
+            1e-05,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1e-05,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1e-05
+          ]
+        ]
+      },
+      {
+        "name": "rmf_obelix/imugt_link",
+        "mass_kg": 1e-05,
+        "com_base_m": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "inertia_at_own_com_base_axes_kgm2": [
+          [
+            1e-05,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1e-05,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1e-05
+          ]
+        ]
+      },
+      {
+        "name": "rmf_obelix/odometry_sensorgt_link",
+        "mass_kg": 1e-05,
+        "com_base_m": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "inertia_at_own_com_base_axes_kgm2": [
+          [
+            1e-05,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1e-05,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1e-05
+          ]
+        ]
+      },
+      {
+        "name": "rmf_obelix/velodyne",
+        "mass_kg": 1e-09,
+        "com_base_m": [
+          0.0,
+          0.0,
+          0.11649999999999999
+        ],
+        "inertia_at_own_com_base_axes_kgm2": [
+          [
+            0.000241148,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.000241148,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.000264
+          ]
+        ]
+      },
+      {
+        "name": "rmf_obelix/odometry_sensor1_link",
+        "mass_kg": 1e-05,
+        "com_base_m": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "inertia_at_own_com_base_axes_kgm2": [
+          [
+            1e-05,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1e-05,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1e-05
+          ]
+        ]
+      }
+    ],
+    "reference_controller_mass_kg": 0.5265,
+    "reference_controller_inertia_diagonal_kgm2": [
+      0.01,
+      0.01,
+      0.01
+    ],
+    "mass_difference_kg": 0.0005300009999998911,
+    "mass_difference_percent": 0.10066495726492874,
+    "rotor_configuration_note": "Combined inertia is at zero rotor joint angles; the four physical rotors remain separate moving bodies."
+  },
+  "native_model": {
+    "canonical_link": "base_link",
+    "model_to_base_link_pose": "0 0 0 0 0 0",
+    "mass_kg": 0.5270300009999999,
+    "rotors": "Four original physical moving links/joints, axes +Z; 0 front-right ccw, 1 back-left ccw, 2 front-left cw, 3 back-right cw.",
+    "initialization": "No commanded or initialized rotor speed; native gravity and motor plugins govern motion.",
+    "contact_publication": "Fortress Contact.cc reads sensor/contact/topic; each body/rotor contact sensor sets that nested topic. A sensor-level topic alone does not enable contact publication. This adapter setting leaves original collision geometry and physical parameters unchanged."
+  },
+  "conversion": [
+    "Only stale gpu/organize_cloud xacro arguments are omitted from the temporary call site.",
+    "Zero-range sensor joints become fixed rigid mounts; their original masses and inertias are lumped by sdformat.",
+    "Original link/rotor geometry, inertias, motor constants and slowdown are retained.",
+    "Classic lidar gaussianNoise is represented by native Gaussian range noise; exact point layout/noise parity is not claimed."
+  ],
+  "fixed_sensor_mounts": [
+    "imu_joint",
+    "imugt_joint",
+    "odometry_sensorgt_joint",
+    "odometry_sensor1_joint"
+  ],
+  "topics": {
+    "motor_command": "/rmf/command/motor_speed",
+    "ground_truth": "/rmf/ground_truth",
+    "joint_state": "/rmf/joint_state",
+    "lidar_scan": "/rmf/scan",
+    "lidar_points": "/rmf/scan/points",
+    "contacts": {
+      "base": "/rmf/contact/base",
+      "rotor_0": "/rmf/contact/rotor_0",
+      "rotor_1": "/rmf/contact/rotor_1",
+      "rotor_2": "/rmf/contact/rotor_2",
+      "rotor_3": "/rmf/contact/rotor_3"
+    }
+  },
+  "sensor": {
+    "name": "OS0-128 source macro configured for 64 beams",
+    "pose_base_m_rad": [
+      0,
+      0,
+      0.08,
+      0,
+      0,
+      0
+    ],
+    "ROS_frame": "lidar",
+    "horizontal_samples": 512,
+    "vertical_samples": 64,
+    "horizontal_fov_deg": 360,
+    "vertical_fov_deg": 90,
+    "range_m": [
+      0.2,
+      100
+    ],
+    "rate_hz": 10,
+    "gaussian_range_stddev_m": 0.01
+  },
+  "physical_source_notes": [
+    "The upstream OS0 macro sets mass to 1e-9 kg but inertia to diag(0.000241148,0.000241148,0.000264) kg m^2; these unusual values are retained, not silently corrected.",
+    "The upstream rotor inertia macro uses mass_rotor multiplied by rotor_velocity_slowdown_sim=10; its inertia is retained while each rotor mass remains 0.003 kg.",
+    "Source mass/inertia and controller YAML values differ. The source .5265 kg/.01 kg m^2 controller parameters are retained unchanged; no gain or model tuning is hidden in the generator.",
+    "The actual source lidar sensor pose is z=.08 m; the ROS1 launch z=.05 m static TF is stale and is not copied.",
+    "No external force, kinematic pose overwrite, preset hover rotor speed or world-fixed joint is introduced."
+  ],
+  "not_migrated": [
+    "Classic ROS interface, telemetry and logging plugins; ROS2 bridges are configured by launch."
+  ],
+  "licensing": "Original source headers and package.xml license metadata are retained. lidar_simulator LICENSE is copied unchanged. The IMU adapter retains RotorS Apache-2.0 attribution and Hector BSD-3-Clause notice.",
+  "validation": {
+    "kind": "Original offline xacro/SDF checks plus subsequent native mission runtime evidence",
+    "xacro_expansion": "passed",
+    "sdf_check": "Valid",
+    "total_mass_preserved": true,
+    "runtime_simulation": "results/fortress_rmf/mission4.json; one-start automatic takeoff/exploration/return/contact-confirmed landing/stopped rotors passed; original static resource checks remain unchanged.",
+    "runtime_review": "results/fortress_rmf/mission4_review.json",
+    "runtime_scope": "ARM64 Fortress/Humble; native model, Lee control, motors, lidar and IMUs used. No ROS1 whole-system or Linux x86 equivalence claim; controller-generated takeoff profile was not ValidatePath-certified."
+  },
+  "imu": {
+    "sensors": [
+      {
+        "name": "adis",
+        "frame": "imu_link",
+        "model": "rotors",
+        "update_rate_hz": 500.0,
+        "raw_topic": "/rmf/imu/adis/raw",
+        "output_topic": "/rmf/imu",
+        "pose_base_m_rad": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "parameters": {
+          "gyroscope_random_walk": 3.878509448876288e-05,
+          "gyroscope_bias_correlation_time": 1000.0,
+          "accelerometer_bias_correlation_time": 300.0,
+          "gyroscope_noise_density": 0.0003394,
+          "gyroscope_turn_on_bias_sigma": 0.0087,
+          "accelerometer_noise_density": 0.004,
+          "accelerometer_random_walk": 0.006,
+          "accelerometer_turn_on_bias_sigma": 0.196
+        },
+        "ignored_source_gyroscopeRandomWalk": 3.8785e-05
+      },
+      {
+        "name": "ground_truth",
+        "frame": "imugt_link",
+        "model": "rotors",
+        "update_rate_hz": 500.0,
+        "raw_topic": "/rmf/imu/ground_truth/raw",
+        "output_topic": "/rmf/ground_truth/imu",
+        "pose_base_m_rad": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "parameters": {
+          "gyroscope_random_walk": 3.878509448876288e-05,
+          "gyroscope_bias_correlation_time": 1000.0,
+          "accelerometer_bias_correlation_time": 300.0,
+          "gyroscope_noise_density": 0.0,
+          "gyroscope_turn_on_bias_sigma": 0.0,
+          "accelerometer_noise_density": 0.0,
+          "accelerometer_random_walk": 0.0,
+          "accelerometer_turn_on_bias_sigma": 0.0
+        },
+        "ignored_source_gyroscopeRandomWalk": 0.0
+      },
+      {
+        "name": "os0",
+        "frame": "os0_imu",
+        "model": "hector_reference",
+        "update_rate_hz": 100.0,
+        "raw_topic": "/rmf/imu/os0/raw",
+        "output_topic": "/os0_cloud_node/imu",
+        "pose_base_m_rad": [
+          0.006253,
+          -0.011775,
+          0.087645,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "parameters": {
+          "accel.Drift": [
+            0.005,
+            0.005,
+            0.005
+          ],
+          "accel.GaussianNoise": [
+            0.005,
+            0.005,
+            0.005
+          ],
+          "accel.DriftFrequency": [
+            0.0002777777777777778,
+            0.0002777777777777778,
+            0.0002777777777777778
+          ],
+          "rate.Drift": [
+            0.005,
+            0.005,
+            0.005
+          ],
+          "rate.GaussianNoise": [
+            0.005,
+            0.005,
+            0.005
+          ],
+          "rate.DriftFrequency": [
+            0.0002777777777777778,
+            0.0002777777777777778,
+            0.0002777777777777778
+          ],
+          "yaw.Drift": 0.0,
+          "yaw.GaussianNoise": 0.0,
+          "yaw.DriftFrequency": 0.0002777777777777778
+        },
+        "ignored_source_heading_parameters": {
+          "headingDrift": 0.005,
+          "headingGaussianNoise": 0.005
+        }
+      }
+    ],
+    "measurement_pipeline": "Three noise-free native Fortress type=imu sensors at the original mounts -> ros_gz_bridge sensor_msgs/Imu -> rmf_imu_adapter_node -> original logical IMU outputs.",
+    "model_system": "ignition-gazebo-imu-system (ignition::gazebo::systems::Imu), attached once to this model.",
+    "orientation_reference": "World/map axes: CUSTOM localization with custom_rpy=0 0 0 and parent_frame=world; orientation is independent of initial spawn yaw.",
+    "sample_source": "Native sensor acceleration, angular velocity and orientation. Adapter subscribes only to raw IMU topics; no odometry/pose input or sample interpolation.",
+    "rotors_stochastic_model": {
+      "initial_state": "Zero dynamic bias; independent fixed turn-on bias drawn once for gyro and acceleration axes.",
+      "white_noise_sigma": "density / sqrt(dt)",
+      "dynamic_bias": "b_next = exp(-dt/tau)*b + random_walk*sqrt(-tau/2*expm1(-2*dt/tau))*N(0,1)",
+      "output": "native_measurement + b_next + density/sqrt(dt)*N(0,1) + fixed_turn_on_bias",
+      "covariance": "Gyro and acceleration diagonals are continuous noise density squared, as in RotorS, not total measurement uncertainty. All nine orientation covariance entries are -1; orientation carries the native world-referenced quaternion.",
+      "parameter_name_compatibility": "The original xacro emits gyroscopeRandomWalk but the pinned plugin reads gyroscopeBiasRandomWalk. Both ADIS and nominal ground_truth therefore use the header default 2*4/3600/180*pi. The ground_truth gyro random walk remains nonzero.",
+      "rate": "Original RotorS updates every physics step. Native rate 500 Hz matches the current max_step_size=0.002 s world."
+    },
+    "hector_stochastic_model": {
+      "initial_state": "Each acceleration/rate bias drawn from N(0,drift^2); offset=0, scale=1.",
+      "dynamic_bias": "b_next = exp(-dt*drift_frequency)*b + dt*sqrt(2*drift_frequency)*drift*N(0,1)",
+      "output": "native_measurement * scale_error + offset + updated_dynamic_drift + gaussian_noise * N(0,1)",
+      "orientation": "Reference pseudo-AHRS: rotate acceleration bias to world coordinates; normalize quaternion error [1, 0.5*b_world_y/g, -0.5*b_world_x/g, 0], compose with yaw bias and native orientation. Bias only; no gyro-bias integration or white-noise orientation injection.",
+      "covariance": "Acceleration/rate covariance retain startup GaussianNoise squared; orientation covariance follows current GaussianNoise, as in the source plugin.",
+      "parameter_name_compatibility": "OS0 macro emits headingDrift/headingGaussianNoise=.005. The selected Hector reference reads yaw-prefixed parameters, so effective yaw drift/noise are zero."
+    },
+    "native_noise_decision": "Fortress GaussianNoiseModel decays the initial and dynamic bias together, unlike the fixed RotorS turn-on bias. Hector uses a different dt-scaled driving term and bias-coupled attitude. Native noise is disabled; the adapter applies each source model once.",
+    "timing_and_randomness": [
+      "First accepted sample uses its nominal sensor period; subsequent updates use acquisition stamp differences.",
+      "Duplicate, nonpositive, nonfinite or reversed samples are rejected before random state advances. Gaps greater than 1.5 nominal periods are counted; missing samples are not fabricated.",
+      "Each stream has a separate default_random_engine seeded by random_seed=1. RotorS axis draw order is retained; bit-for-bit cross-library or cross-sensor random-sequence equivalence is not claimed.",
+      "Clock reversal rejects samples until timestamps catch up. Restart the adapter after resetting simulation time."
+    ],
+    "native_measurement_differences": [
+      "Native physics IMU measurements replace Classic link acceleration and Hector finite differences of velocity and quaternion.",
+      "Hector reference starts with dt=0 and zero ideal acceleration. The adapter retains the first native measurement and uses its nominal period instead of reproducing this initialization artifact."
+    ],
+    "diagnostics": "Trigger service /rmf/imu_state reports native source stamp, received/published/rejected counts and acquisition interval gaps for each stream.",
+    "static_validation": {
+      "sdf": "Valid (ign sdf -k /tmp/rmf_imu_static/rmf.sdf)",
+      "physical_and_motor_metadata_unchanged_from": "results/fortress_rmf/autonomy4_model.json",
+      "native_sensor_count": 3,
+      "runtime": "Subsequent runtime evidence is recorded in imu.runtime_validation; this does not change the original static provenance."
+    },
+    "runtime_validation": {
+      "run": "results/fortress_rmf/mission4.json",
+      "review": "results/fortress_rmf/mission4_imu_review.json",
+      "scope": "Offline source/measurement review of the existing native mission; no second simulation.",
+      "raw_output_observed_hz": {
+        "adis": [
+          499.837,
+          499.928
+        ],
+        "ground_truth": [
+          499.855,
+          499.946
+        ],
+        "os0": [
+          99.946,
+          99.964
+        ]
+      },
+      "observations": [
+        "All six streams finite with positive monotonic acquisition stamps and expected frames.",
+        "World-reference native orientation, body angular velocity and sensor-offset specific force agree with recorded changing tilt/yaw; native specific force is R^T(a-g).",
+        "Retained exact-stamp differences and covariance arrays agree with source-effective noise contracts; ground_truth acceleration unchanged while its gyro keeps the source-default nonzero bias random walk.",
+        "Raw gyro versus native pose derivative RMS about .0006 rad/s; raw sensor-position specific-force RMS .003677/.003519/.006201 m/s^2 for ADIS/ground_truth/OS0 with +/-20 ms differences."
+      ],
+      "limitations": [
+        "First/every-tenth per stream/phase histories cap at 1000; the two 500 Hz raw flight histories end about 27.59 s and exact flight input/output pairs end at 12.208 s before significant rotation. Rotation checks use each individual stream; OS0 exact pairs cover rotation.",
+        "Full-run maximum acceleration 1187.502 m/s^2 is retained in summaries but absent from sampled histories; exact impulse time cannot be recovered. No clipping or replacement.",
+        "One zero-spawn-yaw native mission; no noise distribution, Allan variance, all-axis hardware or full ROS1 statistical equivalence validation. Source covariance is not total uncertainty."
+      ]
+    }
+  },
+  "hector_runtime_interfaces": {
+    "implementation": "rmf_imu_adapter_node; interface-only ROS 2 hector_gazebo_plugins/SetBias",
+    "services": {
+      "calibrate": "std_srvs/Empty: reset only gyro dynamic bias to zero",
+      "set_accel_bias": "hector_gazebo_plugins/SetBias: set acceleration dynamic drift",
+      "set_rate_bias": "hector_gazebo_plugins/SetBias: set gyro dynamic drift"
+    },
+    "bias_topic": "output_topic + /bias: sensor_msgs/Imu, same header, current dynamic drift + fixed offset for accel/rate, actual orientationError, zero covariance",
+    "preserved": "No service-generated sample, timestamp reset, RNG draw or changes to drift/noise parameters",
+    "finite_request_adaptation": "Nonfinite vectors are ignored and counted; original empty response has no success field",
+    "evidence": [
+      "results/hector_imu_services/smb1.json",
+      "results/hector_imu_services/rmf1.json"
+    ],
+    "remaining": "ROS1 dynamic_reconfigure wire protocol/UI is replaced by native ROS2 parameters; original RNG implementation/library bit parity is not claimed."
+  },
+  "hector_dynamic_parameters": {
+    "implementation": "Native ROS 2 parameter services on gbplanner_rmf_imu_adapter; os0 and enabled smb_os1 streams",
+    "source_commit": "de947fb1e253b114d259e8690456792d91b93347",
+    "source_cfg": "upstream/hector_gazebo_0.5.4/hector_gazebo_plugins/cfg/SensorModel.cfg",
+    "source_cfg_sha256": "5753e9f7abdb02be908ae2e17156c716ffb2619146ce326b33f2e1e68caf9700",
+    "names": "<stream>.<accel|rate|yaw>.<GaussianNoise|Offset|Drift|DriftFrequency|ScaleError>",
+    "runtime_ranges": {
+      "GaussianNoise": [
+        0,
+        10
+      ],
+      "Offset": [
+        -10,
+        10
+      ],
+      "Drift": [
+        0,
+        10
+      ],
+      "DriftFrequency": [
+        0,
+        1
+      ],
+      "ScaleError": [
+        0,
+        2
+      ]
+    },
+    "types": "accel/rate: three doubles; yaw: one double",
+    "startup": "Preserves loaded per-axis values and 1/3600 default frequency; cfg GUI defaults do not overwrite source model defaults",
+    "native_parameter_adaptation": "Only named arrays/scalars change. Unlike ROS1 dynamic_reconfigure, an update does not broadcast all five scalar GUI values over all three axes. ROS1 wire protocol/UI are not emulated.",
+    "atomicity": "Validate complete Hector-only batch before applying. Reject mixed non-Hector batches; static node parameters are read-only. Pure use_sim_time retains rclcpp behavior.",
+    "state": "No RNG consumption, drift reset, time reset or synthetic sample on configuration. Offset contributes to total published bias and pseudo-AHRS. SetBias changes dynamic drift only; rate calibration preserves fixed offset.",
+    "measurement": "native_measurement * scale_error + offset + updated_dynamic_drift + gaussian_noise * N(0,1)",
+    "yaw": "ScaleError remains unused, matching source yawModel.update(dt); yaw white noise affects covariance but not pseudo-AHRS bias quaternion.",
+    "covariance": "Acceleration/rate covariance retain startup GaussianNoise squared; orientation covariance follows current GaussianNoise, as in the source plugin.",
+    "evidence": [
+      "results/hector_imu_parameters/rmf2.json",
+      "results/hector_imu_parameters/smb1.json"
+    ],
+    "scope": "Each native stream contributes 30 same-stamp raw/output/bias samples after a runtime update, plus paused state transitions. No noise-distribution, motion or complete-migration claim."
+  }
+}

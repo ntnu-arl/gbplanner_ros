@@ -1,0 +1,48 @@
+{
+  "repository": "https://github.com/ntnu-arl/smb_simulator",
+  "commit": "9aa33187d7375fd48dbd63e27ca5e55bb219f750",
+  "source_selection": "Unversioned smb_simulator dependency in fixed GBPlanner packages_https.rosinstall; HEAD resolved on 2026-10-30. Only smb_path_tracker retained.",
+  "archive_sha256": "8072e44e9c9e84ebb9eef735d56558eec39bf208e374ad1dcaf0ab3350c0d049",
+  "files": [
+    {
+      "path": "CMakeLists.txt",
+      "sha256": "f13fce194d568aba53fc07654eaa0c5c5991d23e3cfdf727bb0e15115e863d93"
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "d53882826bc2d1f8402b9093945837fbcd9b46af05b3b78052f5a0167728e12a"
+    },
+    {
+      "path": "README.md",
+      "sha256": "b3c7ed4ef9023650eaa406fbac1575139853801976a864583d921e5ba1643a7b"
+    },
+    {
+      "path": "include/smb_path_tracker/pure_pursuit.h",
+      "sha256": "2f2acd96334f7512079a03c88af388e10d1450af1e4255a7ffa8f19d296e949c"
+    },
+    {
+      "path": "launch/dummy_client.launch",
+      "sha256": "48b4763e3d24cc20f5e81611ce33569c58a90c3f0955ba23b647fa9ad7775600"
+    },
+    {
+      "path": "launch/pure_pursuit_tracker.launch",
+      "sha256": "7473cc706432fae854f65bfc280281bf957b5f64ad1de989b2c5bfa21aa78804"
+    },
+    {
+      "path": "package.xml",
+      "sha256": "bdc48db8fd895341650e7b9486039eec9af96b798ca83fc76b0b3d2054d450d6"
+    },
+    {
+      "path": "src/dummy_client.cpp",
+      "sha256": "f8deb8d1bbe01c05bb5ccf70086e121bade23d642dada357d08e4bb5f0cd3594"
+    },
+    {
+      "path": "src/path_tracker_node.cpp",
+      "sha256": "e5a74585cdaba51b8a842ed2390990c726f5248fe7db6eb81ea29cd9d4a326db"
+    },
+    {
+      "path": "src/pure_pursuit.cpp",
+      "sha256": "a8771a1abf46c8fc310a5e08856526d941ec238189e67647a8a76a5ffed95e28"
+    }
+  ]
+}

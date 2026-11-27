@@ -1,0 +1,11 @@
+<launch>
+	<node name="smb_path_tracker_node" pkg="smb_path_tracker" type="smb_path_tracker_ros_node" output="screen">
+		<remap from="cmd_vel" to="/smb_velocity_controller/cmd_vel" />
+		<remap from="odometry" to="/ground_truth/state" />
+		<param name="critical_angle" value="0.52"/>
+		<param name="max_ang_vel" value="0.5"/>
+		<param name="desired_vel" value="0.5"/>
+		<param name="look_ahead_error_margin" value="0.2"/>
+		<param name="look_ahead_distance" value="0.5"/>
+	</node>
+</launch>

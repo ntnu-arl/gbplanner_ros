@@ -1,0 +1,9 @@
+# Optional overlay for a voxblox_mapper_node + gbplanner_local pair.
+# Namespace/remap voxel_map_update and augment_free_box together if needed.
+# The normal and native-flight configurations keep this feature disabled.
+gbplanner_local:
+  ros__parameters:
+    map.use_update_envelope: true
+    planning.augment_free_voxels: true
+    # Number of completed RRG sampling/build loops, not elapsed seconds.
+    planning.augment_free_voxels_time: 5

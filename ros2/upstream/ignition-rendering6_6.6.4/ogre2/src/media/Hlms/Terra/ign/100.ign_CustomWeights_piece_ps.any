@@ -1,0 +1,52 @@
+
+#include "/media/matias/Datos/SyntaxHighlightingMisc.h"
+
+// Look for all pieces with "ign_" prefix when updating Terra to
+// a new version
+
+@piece( ign_weights )
+	detailWeights = float4( 0.0f, 0.0f, 0.0f, 0.0f );
+	@property( ign_weight0 )
+		detailWeights.x = smoothstep( material.ignWeightsMinHeight.x, material.ignWeightsMaxHeight.x, inPs.localHeight );
+	@end
+	@property( ign_weight1 )
+		detailWeights.y = smoothstep( material.ignWeightsMinHeight.y, material.ignWeightsMaxHeight.y, inPs.localHeight );
+	@end
+	@property( ign_weight2 )
+		detailWeights.z = smoothstep( material.ignWeightsMinHeight.z, material.ignWeightsMaxHeight.z, inPs.localHeight );
+	@end
+	@property( ign_weight3 )
+		detailWeights.w = smoothstep( material.ignWeightsMinHeight.w, material.ignWeightsMaxHeight.w, inPs.localHeight );
+	@end
+
+	@property( diffuse_map )
+		@property( detail_map0 )
+			// detailWeights.x *= detailCol0.w;
+			pixelData.diffuse.xyz = lerp( pixelData.diffuse.xyz, detailCol0.xyz, detailWeights.x );
+		@else
+			// When there's no diffuse map; then first detail map couldn't be diffuse map
+			// because it contained a normal map; hence we must force it to be the
+			// base layer
+			detailWeights.x = 1.0f;
+			pixelData.diffuse.xyz = detailCol0.xyz;
+		@end
+	@else
+		// When there's no diffuse map; then first detail map couldn't be diffuse map
+		// because it contained a normal map; hence we must force it to be the
+		// base layer
+		detailWeights.x = 1.0f;
+		pixelData.diffuse.xyz = detailCol0.xyz;
+	@end
+	@property( detail_map1 )
+		//detailWeights.y *= detailCol1.w;
+		pixelData.diffuse.xyz = lerp( pixelData.diffuse.xyz, detailCol1.xyz, detailWeights.y );
+	@end
+	@property( detail_map2 )
+		//detailWeights.z *= detailCol2.w;
+		pixelData.diffuse.xyz = lerp( pixelData.diffuse.xyz, detailCol2.xyz, detailWeights.z );
+	@end
+	@property( detail_map3 )
+		//detailWeights.w *= detailCol3.w;
+		pixelData.diffuse.xyz = lerp( pixelData.diffuse.xyz, detailCol3.xyz, detailWeights.w );
+	@end
+@end

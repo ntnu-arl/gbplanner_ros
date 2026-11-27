@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>gbplanner_execution</name><version>0.1.0</version>
+  <description>Validated ROS 2 PathFollower bridge to trajectory topics or external tracking actions.</description>
+  <maintainer email="257770113+ai4sci-z@users.noreply.github.com">ai4sci-z</maintainer>
+  <license>BSD-2-Clause</license>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>geometry_msgs</depend><depend>nav_msgs</depend><depend>trajectory_msgs</depend>
+  <depend>planner_msgs</depend><depend>std_msgs</depend><depend>std_srvs</depend>
+  <exec_depend>rclpy</exec_depend><exec_depend>action_msgs</exec_depend>
+  <exec_depend>launch_ros</exec_depend><exec_depend>ament_index_python</exec_depend>
+  <exec_depend>gbplanner_local</exec_depend>
+  <test_depend>eigen</test_depend><test_depend>ament_cmake_pytest</test_depend>
+  <export><build_type>ament_cmake</build_type></export>
+</package>

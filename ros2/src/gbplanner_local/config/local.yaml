@@ -1,0 +1,24 @@
+gbplanner_local:
+  ros__parameters:
+    frame_id: map
+    map.resolution: 0.25
+    map.origin: [-5.0, -5.0, -1.5]
+    map.dimensions: [40, 40, 12]
+    robot.size: [0.4, 0.4, 0.4]
+    # Optional port of the original free-path corridor adjustment.
+    planning.path_safety_enhance_enable: false
+    robot.safety_extension: [3.0, 4.0, 3.0]
+    planning.path_interpolation_distance: 0.5
+    planning.relaxed_corridor_multiplier: 1.0
+    planning.planning_backward: false
+    sampling.seed: 42
+    sampling.min: [-3.0, -3.0, -1.0]
+    sampling.max: [3.0, 3.0, 1.0]
+    planning.max_vertices: 100
+    planning.max_edges: 2000
+    planning.max_attempts: 4000
+    # Upstream sampling rounds (up to 1000 raw draws per round).
+    planning.empty_graph_cutoff: 1000
+    planning.path_length_penalty: 0.07
+    # Zero retains gain-only branch selection. Positive values favor motion history.
+    planning.path_direction_penalty: 0.0

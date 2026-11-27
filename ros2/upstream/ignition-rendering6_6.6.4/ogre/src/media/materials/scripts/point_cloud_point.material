@@ -1,0 +1,30 @@
+
+vertex_program PointCloudVS glsl
+{
+  source point_vs.glsl
+
+  default_params
+  {
+    param_named_auto worldviewproj_matrix worldviewproj_matrix
+    param_named size float 1.0
+  }
+}
+
+fragment_program PointCloudFS glsl
+{
+  source point_fs.glsl
+}
+
+material PointCloudPoint
+{
+  technique
+  {
+    pass
+    {
+      point_size_attenuation on
+      point_sprites on
+      vertex_program_ref   PointCloudVS {}
+      fragment_program_ref PointCloudFS {}
+    }
+  }
+}

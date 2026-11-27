@@ -1,0 +1,29 @@
+voxblox_mapper:
+  ros__parameters:
+    frame_id: map
+    sensor_frame: lidar
+    pointcloud_queue_size: 1000
+    min_time_between_msgs_sec: 0.0
+    # Only used by upstream transform-topic mode; TF lookup has no tolerance.
+    timestamp_tolerance_sec: 0.001
+    map.storage: dense
+    map.resolution: 0.25
+    map.origin: [-5.0, -5.0, -1.5]
+    map.dimensions: [40, 40, 12]
+    sensor.min_range: 0.1
+    sensor.max_range: 6.0
+    tsdf.voxels_per_side: 16
+    tsdf.truncation_distance: 0.75
+    tsdf.method: fast
+    tsdf.threads: 1
+    tsdf.max_weight: 200.0
+    tsdf.clearing_ray_weight_factor: 0.01
+    tsdf.use_weight_dropoff: true
+    tsdf.voxel_carving_enabled: true
+    tsdf.occupancy_distance_factor: 1.0
+    esdf.clear_sphere_for_planning: false
+    esdf.clear_sphere_pose_source: sensor
+    esdf.clear_sphere_radius: 1.5
+    esdf.occupied_sphere_radius: 5.0
+    color_mode: colors
+    update_mesh_every_n_sec: 0.5

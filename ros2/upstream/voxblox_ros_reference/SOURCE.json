@@ -1,0 +1,25 @@
+{
+  "repository": "https://github.com/ntnu-arl/voxblox",
+  "commit": "0ee88c26c203a3fe88e348dbbb552ab431a35352",
+  "archive_url": "https://codeload.github.com/ntnu-arl/voxblox/tar.gz/0ee88c26c203a3fe88e348dbbb552ab431a35352",
+  "archive_sha256": "2e9a8c13c086f1bf8b92c582276e50356372d5e9cab592b5d3883c86847cb4b0",
+  "archive": "source.tar.gz",
+  "extracted_root": "voxblox-0ee88c26c203a3fe88e348dbbb552ab431a35352",
+  "purpose": "Read-only ROS1 voxblox_ros and voxblox_msgs reference for migration review",
+  "colcon_isolation": "COLCON_IGNORE",
+  "audited_files": [
+    "voxblox_ros/src/tsdf_server.cc",
+    "voxblox_ros/src/esdf_server.cc",
+    "voxblox_ros/src/transformer.cc",
+    "voxblox_ros/include/voxblox_ros/tsdf_server.h",
+    "voxblox_ros/include/voxblox_ros/esdf_server.h",
+    "voxblox_ros/include/voxblox_ros/transformer.h",
+    "voxblox_ros/include/voxblox_ros/ros_params.h",
+    "voxblox_msgs/msg/Layer.msg",
+    "voxblox_msgs/msg/Block.msg",
+    "voxblox_msgs/msg/Mesh.msg",
+    "voxblox_msgs/msg/MeshBlock.msg",
+    "voxblox_msgs/srv/FilePath.srv"
+  ],
+  "test_status": "Not built or executed; source inspection only"
+}

@@ -1,0 +1,104 @@
+{
+  "repository": "https://github.com/ntnu-arl/pci_general",
+  "commit": "152eb2dfa19180391c7291d02414b1684f8f8198",
+  "source_selection": "main dependency named by fixed GBPlanner packages_https.rosinstall; resolved on 2026-10-25",
+  "archive_sha256": "b26784189e6dde7d69710588326cb0786d2b0ca910d4fd5b1de113bba40d79bd",
+  "files": [
+    {
+      "path": ".clang-format",
+      "sha256": "591540f382af71419ca17cc0431007de10371ab2582ea0f89fba4ec32f25131e"
+    },
+    {
+      "path": "CMakeLists.txt",
+      "sha256": "8f74d988c6f3b92b51d510d116340404b05e66452189fe68f7faf6c25335bd41"
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "c02539ed6dcc749d7b6a7f5767de974351bdefb86ce50dfd6404f2499dc0a493"
+    },
+    {
+      "path": "README.md",
+      "sha256": "178697b0fbc5873a57da9ad5fb2f60bcdae3a9149c3206aa938fae1ef6fcc2db"
+    },
+    {
+      "path": "include/pci_general/pci_general.h",
+      "sha256": "2a17ad4bd18e25a7f9b7a998b72a1a9803271d6085f429a41b4ff0df698c9398"
+    },
+    {
+      "path": "package.xml",
+      "sha256": "989c6cff76045e232a5e78372a324884ff7854270e85b429ef42aaa4b1873ac8"
+    },
+    {
+      "path": "src/pci_general.cpp",
+      "sha256": "be7af5aeda715a1ed05806f3e7c4070dffaf92049fc8a29c3fddd9125e7b8c17"
+    },
+    {
+      "path": "src/pci_general_ros_node.cpp",
+      "sha256": "2c2e365804080ba052c2929205fb677764f6d0e5862cacf98c50698df2a3ce33"
+    }
+  ],
+  "reference_functions_sha256": {
+    "allocateYawAlongPath": "d27bddab3c98061fba5f9c846c773de7e2e0b5b18140429bf10acff35da3b4ea",
+    "interpolatePath": "6f6e95dc364cfc3794e529ac11b478c157dc4362a8b1f739520f207ffe9484de",
+    "reconnectPath": "2f46d3c240076259b542445641a876f43528cc528f1a2dcce19d209c1f5b0d1f"
+  },
+  "reference_changes": [
+    "Rename PCIGeneral to Reference; geometry_msgs types to ROS 2 namespace; provide tf/Eigen compatibility stubs and no-op logging.",
+    "Reference reconnect keeps planAhead false; no far-distance concatenation.",
+    "Explicit using std::abs in reduced reference headers to preserve floating-point absolute value; no full ROS 1 runtime equivalence claim."
+  ],
+  "port_changes": [
+    "ROS 2 asynchronous action server emits original topic contract MultiDOFJointTrajectory.",
+    "Original reconnect short-distance branches and yaw allocation preserved; collision validate modified route.",
+    "Interpolation preserves interior fractions but appends exact segment endpoints omitted by upstream; finite budget and degenerate input checks.",
+    "Actual endpoint/yaw and stopped odometry required; hold on cancellation with observed settling; no real vehicle controller or dynamics."
+  ],
+  "live_path_validation": {
+    "progress": "Monotonic measured-position cursor with the existing 0.15 m tube and 0.25 m retained guard; no time-based or globally nearest-branch advancement.",
+    "geometry": "Connect current observation to the next original forward vertex after measured progress, retrace original polyline vertices to the retained guard, then validate the complete suffix. Backward guard traversal is only validation geometry, never a motion command.",
+    "reason": "The former current-to-old-guard chord swept an obstacle outside the route; current-to-cursor projection instead introduced a lateral slope unrelated to forward travel. Forward attachment preserves every original future corner and segment.",
+    "observation": "The existing separately observed initial seam is retained while the guard overlaps it. No interpolated point becomes an observation.",
+    "evidence": "results/edgar_mine/motion9_native_replay.json: same map209 original chord occupied; current footprint, original route, connector, and traced guard all admissible.",
+    "ground_attachment": "For explicitly marked observation connectors in zero_crossing_simplex only, an original Steep result may be evaluated between both current central TSDF supports. Original swept body, both raw endpoints, sub-voxel height offsets, projected sweep, ordinary directional slope and all subsequent fixed route edges remain checked. Neither motion geometry nor observation provenance changes.",
+    "ground_attachment_evidence": "results/edgar_mine/motion10_attachment_replay.json: raw -86.199 deg, observed-only -77.587 deg, both current supports +6.396 deg; native projected connector admissible."
+  },
+  "simulated_topic_clock": {
+    "implementation": "Store actual command header; use ROS elapsed/ETA/grace and mission receipt age in simulation. Hardware and communications deadlines retain steady time.",
+    "evidence": "results/topic_trajectory_clock/native.json",
+    "scope": "7 directed real ROS communication cases with synthetic observations"
+  },
+  "aerial_retiming": {
+    "provenance": "New ROS 2 execution adaptation, not an extracted pci_general algorithm. Upstream PCI intentionally supplies timed positions with default zero velocity and acceleration.",
+    "selection": "trajectory_profile=upstream preserves the original interpolation/zero derivatives. The RMF launch selects quintic explicitly.",
+    "geometry": "Retain every prepared waypoint and each original straight segment. Generate position, velocity and acceleration from one piecewise quintic time law, stopping at vertices without rounding corners or relaxing PathProgress.",
+    "continuation": "The moving initial reference uses measured along-segment velocity. Infeasible boundary states reject the continuation before publishing; the current command remains active. Duration and ETA use the retimed samples.",
+    "budget": "ContinuePath exposes a combined onward-travel/return/reserve cost. Retimed continuation conservatively retains that entire cost and charges at least the complete new schedule, which may reserve onward travel twice. It does not extend the mission deadline."
+  },
+  "ground_maneuver_construction": {
+    "provenance": "New pre-departure ROS2 extension core; not extracted upstream PCI logic.",
+    "implementation": "ground_maneuver.py constructs a finite forward/reverse pivot-straight-pivot family for a stationary SE2 start and explicit ordered targets. Exact separate-primitive integration retains signed motion, stop boundaries, duration, derivatives and base arc length.",
+    "validation": "Each candidate is fully sampled through a caller predicate under shared wall and complete-candidate resource limits. Continuous body/ground checks, task admission and actual state freshness remain external.",
+    "runtime": "Explicit opt-in GROUND_MANEUVER Action mode preserves the approved reference, primitive boundaries and signed controls. Default PATH behavior stays selected unless allow_ground_maneuver is enabled for ground action output.",
+    "evidence": "results/pittsburgh_port/preflight1.json and preflight1_cpp/summary.json; recorded-map construction/production segment validation, not native execution."
+  },
+  "ground_maneuver_transport": {
+    "provenance": "New ROS 2 protocol and lifecycle adaptation, not upstream pci_general logic.",
+    "validation": "Shared transport validates fixed-Z references, signed primitive coverage, offset-model integration, velocities, acceleration, stopped boundaries and configured caps without resampling or clamping. Native live ValidatePath and measured PathProgress remain in force.",
+    "preflight": "A steady deadline captured at input goal reception bounds repeated validation and is forwarded as remaining time to the downstream action. Approved XYZ/yaw and stationary observations are rechecked before dispatch.",
+    "execution": "The approved max_duration is charged in the motion clock. Terminal downstream action replies do not release ownership until fresh stationary observations confirm rest; cancellation has an independent fixed braking-plus-settle deadline.",
+    "verification": "Host analytic/protocol checks are separate from native ROS transport and physical-motion evidence."
+  },
+  "ground_return_route": {
+    "provenance": "New ROS 2 opt-in pre-departure adaptation, not extracted upstream PCI logic.",
+    "ordered_route": "Ground homing retains every original response pose in order and the original home heading. Only exact zero-motion leading roots may be omitted; retained targets are explicit stops. Fixed-Z model is limited to complete routes within 0.04 m of measured start height.",
+    "runtime": "Complete finite candidates use the existing transport and live ValidatePath, PathProgress, downstream feedback and stationary completion. No current progress is reset to allow a different route during execution.",
+    "budget": "Return consumes the remaining mission allowance once, including its already contained exploration reserve. Admission and dispatch age the heartbeat, cap execution allowance without extending it, and reject a reference without positive settling allowance; ongoing mission expiration still stops execution.",
+    "limits": "At most 16 ordered targets under the existing whole-candidate time, length, point and wall limits. Stop-to-stop construction is not a complete return planner, a pass-through trajectory or a general conservative travel-time bound."
+  },
+  "ground_route_crossings": {
+    "provenance": "New explicit ordered graph-route execution adaptation, not extracted upstream PCI logic.",
+    "contract": "Straight primitives may carry increasing positive interior crossing distances. Endpoints still stop. Crossing observation must respect existing intermediate position/yaw tolerances; no time-based skipping.",
+    "geometry": "Only same-heading, ordered collinear graph samples may become crossing obligations, with every original planar pose checked against the new full reference. Corners and heading-alignment anchors remain stops. Whole-route fixed-height and all live map constraints remain in force.",
+    "status": "Implementation in progress; no new native execution result yet."
+  }
+}

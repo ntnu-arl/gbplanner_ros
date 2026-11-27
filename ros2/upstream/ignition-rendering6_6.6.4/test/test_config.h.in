@@ -1,0 +1,80 @@
+#ifndef GZ_RENDERING_TEST_CONFIG_HH_
+#define GZ_RENDERING_TEST_CONFIG_HH_
+
+#define PROJECT_SOURCE_PATH "${PROJECT_SOURCE_DIR}"
+#define PROJECT_BUILD_PATH "${PROJECT_BINARY_DIR}"
+#define IGN_RENDERING_TEST_PLUGIN_PATH "${CMAKE_BINARY_DIR}/lib"
+
+/// \brief Helper macro to instantiate gtest for different engines
+#define RENDER_ENGINE_VALUES ::testing::ValuesIn(\
+    gz::rendering::TestValues())
+
+#include <vector>
+#include <gz/common/Util.hh>
+#include <gz/rendering/config.hh>
+
+/// \todo(anyone) re-enable ogre2 test once ogre 2.2 works on macOS
+#ifdef __APPLE__
+static const std::vector<const char *> kRenderEngineTestValues{"ogre"};
+#else
+  /// We can not mix ogre and ogre2 tests in Fortress for a single test file
+  /// prefer here ogre2 over ogre.
+  #if defined(HAVE_OGRE) && defined(HAVE_OPTIX) && defined(HAVE_OGRE2)
+  static const std::vector<const char *> kRenderEngineTestValues{"ogre2", "optix"};
+  #elif defined(HAVE_OGRE) && defined(HAVE_OPTIX)
+  static const std::vector<const char *> kRenderEngineTestValues{"ogre", "optix"};
+  #elif defined(HAVE_OGRE) && defined(HAVE_OGRE2)
+  static const std::vector<const char *> kRenderEngineTestValues{"ogre2"};
+  #elif defined(HAVE_OGRE2) && defined(HAVE_OPTIX)
+  static const std::vector<const char *> kRenderEngineTestValues{"ogre2", "optix"};
+  #elif defined(HAVE_OGRE)
+  static const std::vector<const char *> kRenderEngineTestValues{"ogre"};
+  #elif defined(HAVE_OGRE2)
+  static const std::vector<const char *> kRenderEngineTestValues{"ogre2"};
+  #elif defined(HAVE_OPTIX)
+  static const std::vector<const char *> kRenderEngineTestValues{"optix"};
+  #else
+  #warning "Can not detect a rendering engine support: ogre | ogre2 | optix"
+  #endif
+#endif
+
+namespace ignition
+{
+  namespace rendering
+  {
+    /// \brief Helper function used with INSTANTIATE_TEST_CASE_P.
+    struct PrintToStringParam
+    {
+      template<class T>
+      std::string operator()(const ::testing::TestParamInfo<T> &_info) const
+      {
+        return static_cast<std::string>(_info.param);
+      }
+    };
+
+    /// \brief Helper function used with ::testing::Values
+    /// Checks env variable for render engine values to be used in tests.
+    /// If env variable exists, it overrides the default render engine values
+    std::vector<const char *> TestValues()
+    {
+      std::string envTestValueStr;
+      if (!common::env("RENDER_ENGINE_VALUES", envTestValueStr))
+        return kRenderEngineTestValues;
+      static std::vector<std::string> renderEngineEnvTestValues
+          = common::split(envTestValueStr, ",");
+      if (renderEngineEnvTestValues.empty())
+      {
+        std::cerr << "Error parsing 'RENDER_ENGINE_VALUES'. "
+                  << "Using default test values" << std::endl;
+        return kRenderEngineTestValues;
+      }
+      std::vector<const char *> values;
+      values.resize(renderEngineEnvTestValues.size());
+      for (unsigned int i = 0; i < renderEngineEnvTestValues.size(); ++i)
+        values[i] = renderEngineEnvTestValues[i].c_str();
+      return values;
+    }
+  }
+}
+
+#endif

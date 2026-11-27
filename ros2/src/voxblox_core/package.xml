@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>voxblox_core</name><version>0.1.0</version>
+  <description>Unmodified NTNU Voxblox core with an ament build.</description>
+  <maintainer email="257770113+ai4sci-z@users.noreply.github.com">ai4sci-z</maintainer>
+  <license>BSD-3-Clause</license><buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>eigen</depend><depend>libgoogle-glog-dev</depend><depend>libprotobuf-dev</depend>
+  <build_depend>protobuf-compiler</build_depend>
+  <export><build_type>ament_cmake</build_type></export>
+</package>

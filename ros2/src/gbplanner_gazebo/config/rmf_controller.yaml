@@ -1,0 +1,29 @@
+gbplanner_rmf_controller:
+  ros__parameters:
+    frame_id: map
+    robot_frame: base_link
+    # Original pinned RMF controller parameters, separate from model mass.
+    mass: 0.5265
+    inertia: [0.01, 0.01, 0.01]
+    position_gain: [2.0, 2.0, 2.0]
+    velocity_gain: [1.2, 1.2, 1.2]
+    attitude_gain: [0.7, 0.7, 0.015]
+    angular_rate_gain: [0.12, 0.12, 0.012]
+    rotor_angles: [-0.785398, 2.35619, 0.78539, -2.35619]
+    rotor_directions: [1, 1, -1, -1]
+    arm_length: 0.1
+    force_constant: 0.00000854858
+    moment_constant: 0.016
+    motor_max_speed: 2000.0
+    odom_timeout: 0.5
+    clock_order_tolerance: 0.1
+    # New native execution profile; separate from the original PCI init path.
+    # Rise 1 m in the takeoff column, observe, then return 0.2 m so OS0
+    # has actually scanned the Extended root's upper near-field voxels.
+    flight.takeoff_height: 0.8
+    flight.takeoff_duration: 4.0
+    flight.takeoff_observation_height: 0.2
+    flight.takeoff_observation_duration: 1.0
+    flight.takeoff_return_duration: 2.0
+    flight.landing_speed: 0.2
+    flight.landing_max_descent: 5.0

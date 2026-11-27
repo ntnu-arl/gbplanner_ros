@@ -1,0 +1,97 @@
+{
+  "upstream_model": "../../upstream/smb_model/SOURCE.json",
+  "repository": "https://github.com/ntnu-arl/smb_simulator",
+  "commit": "9aa33187d7375fd48dbd63e27ca5e55bb219f750",
+  "physics_adapter": "New smb_vehicle.cpp; Bullet physics, not upstream Gazebo code.",
+  "motor_torque_limit_Nm": 20,
+  "motor_torque_is_adapter_assumption": true,
+  "dimensions_and_control_limits": "See retained xacro/YAML and the upstream_model manifest.",
+  "limitations": [
+    "No suspension or terrain deformation",
+    "No sensor mass or actuator calibration",
+    "No original Gazebo world or ros2_control integration",
+    "No claim of matching original simulator performance"
+  ],
+  "license": {
+    "new_adapter": "MIT; see LICENSE. Independent course-project implementation, not a copy of the BSD-3-Clause smb_path_tracker source.",
+    "upstream_geometry": "smb_description/package.xml declares MIT. Retained xacro/XML are unmodified; no repository-wide LICENSE was present in the retrieved source.",
+    "upstream_control": "smb_lowlevel_controller/package.xml declares MIT for control_sim.yaml; original text verified in the same resolved source archive."
+  },
+  "command_timeout": {
+    "upstream_control_sim_s": 0.25,
+    "ros2_adapter_default_s": 0.3,
+    "parameter": "command_timeout",
+    "note": "ROS node timeout differs from the original controller configuration; the physics core receives explicit commands and has no wall-clock timeout."
+  },
+  "visualization": {
+    "source_manifest": "meshes/SOURCE.json",
+    "description": "urdf/smb.urdf",
+    "launch": "launch/description.launch.py",
+    "scope": "Original SMB DAE and four-wheel JointState-driven TF; no ROS 1 Gazebo plugins or simulated dynamics in the URDF."
+  },
+  "contact_observations": {
+    "implementation": "Read-only Bullet btJointFeedback and contact manifold observations, exported with each VehicleState and ROS status response.",
+    "joint_axis_torque": "Total joint reaction torque projected on the wheel +Y hinge axis captured before the last physics step. This is not an independently measured motor torque.",
+    "joint_axis_impulse": "Projected joint reaction torque times the last physics step; compare with the configured max_wheel_torque times that step as an effort indicator, not a proof of motor saturation.",
+    "contact_impulses": "Normal and enabled nonzero sliding-friction row impulses acting on each wheel, expressed in current body coordinates. Rolling/spinning torsional impulses are excluded.",
+    "slip": "Post-step wheel-minus-scene relative velocity at contact local anchors, projected onto the tangent plane; unweighted mean vector and RMS speed over contacts within 0.002 m.",
+    "validity": "Unavailable JSON measurements are null; joint/contact availability and contact point counts are explicit.",
+    "effect": "No solver, motor, mass or friction changes. 15,226 recorded baseline samples retained identical pose, velocity and wheel speed after adding observations.",
+    "evidence": "results/terminal_recovery/observation_equivalence.json"
+  },
+  "static_triangle_scene": {
+    "implementation": "SmbVehicle::addTriangleMesh copies world-space indexed triangles into owned btTriangleMesh storage and a static btBvhTriangleMeshShape. Bodies are removed before shapes and triangle storage are destroyed.",
+    "collision_margin_m": 0.001,
+    "collision_filter": "Same static-scene filter and configured ground friction as addBox; shared by contact dynamics, raycast and sensorRaycast.",
+    "parameters": [
+      "collision_mesh",
+      "add_ground",
+      "room"
+    ],
+    "edgar_launch": "launch/edgar_mine.launch.py",
+    "asset_manifest": "planner_gazebo_sim/collision/SOURCE.json",
+    "geometry": "All 13,770 source vertices and 22,557 source triangles after exact SDF/unit/node world transform. No added floor or box-room geometry in the Edgar configuration.",
+    "core_evidence": "results/edgar_mine/core/summary.json",
+    "scope": "Original static environment geometry in the existing Bullet adapter. This does not reproduce the upstream Gazebo simulator, sensors or contact solver.",
+    "internal_edges": {
+      "implementation": "Official Bullet btGenerateInternalEdgeInfo / btAdjustInternalEdgeContacts, with owned MeshEdgeInfoMap and a per-dispatcher discrete contact result. Exactly coplanar shared triangle edges use the actual convex support interval (including margin) to orient the local surface normal.",
+      "surface_semantics": "Only contacts near an exactly coplanar shared edge and projected inside its two-face union receive planar correction. Truly straddling convex shapes retain Bullet contact handling. Genuine folds and boundaries use official CONCAVE_DOUBLE_SIDED | CONVEX_DOUBLE_SIDED handling; no process-global callback is replaced.",
+      "reason": "The original mine has coplanar shared edges that otherwise generate non-surface contact normals and impulses.",
+      "unchanged": "Original vertex/triangle data, friction, motor torque, chassis/wheel dimensions and planner collision thresholds.",
+      "evidence": [
+        "results/edgar_mine/internal_edges/comparison.json",
+        "results/edgar_mine/internal_edges/side_comparison.json",
+        "results/edgar_mine/internal_edges/anchor_comparison.json",
+        "results/edgar_mine/internal_edges/critical_anchor_behaviors.json"
+      ],
+      "contact_anchors": "Preserve an original convex anchor inside the complete support interval. Replace only an anchor proven outside that interval with the actual convex support on the contacting side, then recompute both anchors and depth using the existing 0.001 m mesh skin before manifold insertion."
+    }
+  },
+  "angular_velocity_feedback": {
+    "implementation": "Optional Bullet base wheel-motor integral feedback of pre-step measured body-Z angular rate; not an upstream planner or path-tracker algorithm.",
+    "parameter": "angular_velocity_feedback_gain",
+    "unit": "1/s",
+    "core_default": 0.0,
+    "smb_and_edgar_configuration": 2.0,
+    "law": "correction += gain * (ramped_requested_w - measured_body_wz) * dt; applied_w = ramped_requested_w + correction",
+    "limits": "Existing angular ramp and maximum preserved; conditional anti-windup and headroom projection bound the integral; zero limited command or turn-sign reversal clears it.",
+    "actuation": "Only differential wheel targets change. No body velocity assignment, contact solver, friction, torque, or planner collision threshold changes.",
+    "scope": "Yaw-rate response improves in the fixed paired floor probe; lateral slip remains. Closed-loop mission evidence is separate.",
+    "evidence": [
+      "results/yaw_response/paired.json",
+      "results/yaw_tracking/summary.json"
+    ]
+  },
+  "sensor_transform": {
+    "implementation": "Rigid base_link to smb_lidar transform published once with tf2_ros::StaticTransformBroadcaster; map to base_link remains dynamic.",
+    "output_timing": "Five bounded wall/thread-CPU subphases: odometry, dynamic_tf, joints, status_payload, status_publish.",
+    "evidence": "results/smb_output_payload/analysis.json",
+    "scope": "Eliminates one repeated fixed-transform DDS write per output, without claiming to resolve the earlier 0.409 second output stall."
+  },
+  "physics_scheduling": {
+    "implementation": "ROS node bounds catch-up debt to 0.05 s and yields after a complete physical step/state/statistics sequence when the physics phase reaches 0.005 s wall time.",
+    "scope": "Callback scheduling only; Bullet step, per-step observation, physical parameters, output/scan order and freshness thresholds remain unchanged. A single step cannot be preempted.",
+    "overload": "Unsimulated wall-clock time above the total debt cap is counted as dropped_sim_time_s; simulation time remains the sum of actual completed physical steps.",
+    "diagnostics": "physics_budget_exhausted_ticks, current/max post-physics backlog, dropped_sim_time_s, full-step wall/thread CPU maxima and sample counts."
+  }
+}

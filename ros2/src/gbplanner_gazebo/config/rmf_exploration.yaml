@@ -1,0 +1,238 @@
+# ROS 2 mapping of gbplanner/config/rmf_obelix/{gbplanner_config,
+# voxblox_sim_config,planner_control_interface_sim_config}.yaml.
+# The upstream planning box is retained independently of the physical airframe.
+gbplanner_local:
+  ros__parameters:
+    use_sim_time: true
+    frame_id: map
+    map.storage: sparse
+    map.resolution: 0.2
+    robot.type: kAerial
+    robot.size: [0.2, 0.2, 0.2]
+    robot.size_extension_min: [0.1, 0.1, 0.1]
+    robot.size_extension: [0.2, 0.2, 0.2]
+    robot.center_offset: [0.0, 0.0, 0.0]
+    robot.relax_ratio: 0.5
+    robot.safety_extension: [3.0, 4.0, 3.0]
+    # kExtendedBound is selected by the PCI planning request, not a YAML key.
+
+    # Edgar scene bounds replace the original +/-[3000,3000,300] world box.
+    planning.global_type: kCuboid
+    planning.global_min: [-25.0, -30.0, -2.0]
+    planning.global_max: [505.0, 240.0, 8.0]
+    sampling.space_type: kCuboid
+    sampling.min: [-15.0, -15.0, -3.0]
+    sampling.max: [15.0, 15.0, 3.0]
+    sampling.min_extension: [-20.0, -20.0, -20.0]
+    sampling.max_extension: [20.0, 20.0, 20.0]
+    sampling.rotations: [0.0, 0.0, 0.0]
+    sampling.distribution: uniform
+    sampling.heading.distribution: uniform
+    sampling.heading.min: -3.141592653589793
+    sampling.heading.max: 3.141592653589793
+    # ROS 2 reproducibility: successive requests use different seeded draws.
+    sampling.seed: 42
+    sampling.seed_mode: sequence
+    search.sampling.space_type: kCuboid
+    search.sampling.min: [-50.0, -50.0, -1.0]
+    search.sampling.max: [50.0, 50.0, 1.0]
+    search.sampling.rotations: [0.0, 0.0, 0.0]
+    search.sampling.distribution: uniform
+    search.sampling.heading.distribution: uniform
+    search.sampling.heading.min: -3.141592653589793
+    search.sampling.heading.max: 3.141592653589793
+    planning.adaptive_exploration: false
+    adaptive.type: kPca
+    adaptive.local_pointcloud_range: 50.0
+    adaptive.bounding_box_size_max: 35.0
+
+    planning.graph_mode: true
+    planning.v_max: 1.0
+    planning.edge_min: 0.2
+    planning.edge_max: 2.0
+    planning.overshoot: 0.0
+    planning.max_vertices: 700
+    planning.max_edges: 9000
+    # Upstream num_loops_max: complete sampleVertex calls, up to 1000 draws each.
+    planning.sampling_budget_mode: sampling_rounds
+    planning.max_sampling_rounds: 4000
+    planning.empty_graph_cutoff: 2000
+    planning.neighbor_radius: 2.0
+    planning.neighbor_min: 0.5
+    planning.neighbor_max: 2.0
+    planning.tangent_yaw: true
+    planning.use_ray_model_for_volumetric_gain: true
+    planning.exp_gain_voxel_size: 0.8
+    planning.path_length_penalty: 0.04
+    planning.path_direction_penalty: 0.1
+    gain.occupied: 0.0
+    gain.free: 0.0
+    gain.unknown: 60.0
+    planning.traverse_length_max: 8.0
+    planning.traverse_time_max: 500.0
+    planning.path_safety_enhance_enable: true
+    planning.freespace_cloud_enable: false
+    planning.leaf_gain_only: true
+    planning.cluster_vertices_for_gain: true
+    planning.clustering_radius: 0.5
+    planning.path_interpolation_distance: 0.5
+    planning.nonuniform_ray_cast: true
+    planning.ray_cast_step_size_multiplier: 1.0
+    planning.ray_cast_method: iterative
+    planning.geofence_checking_enable: true
+    planning.go_home_if_fully_explored: true
+    planning.auto_global_planner_enable: true
+
+    sensor.names: [OS064]
+    planning.exploration_sensors: [OS064]
+    sensor.OS064.type: kLidar
+    sensor.OS064.range: 20.0
+    sensor.OS064.min_range: 0.0
+    # Preserve the original gain model's zero offset. Mapping uses the actual
+    # lidar TF at base_link +0.08 m from the native RMF model.
+    sensor.OS064.center_offset: [0.0, 0.0, 0.0]
+    sensor.OS064.rotations: [0.0, 0.0, 0.0]
+    sensor.OS064.horizontal_fov: 6.283185307179586
+    sensor.OS064.vertical_fov: 1.5707963267948966
+    sensor.OS064.horizontal_resolution: 0.12217304763960307
+    sensor.OS064.vertical_resolution: 0.12217304763960307
+    sensor.OS064.frontier_threshold: 0.04
+    # Upstream g1 was not in no_gain_zones_list, so no exclusion is activated.
+
+    global.enable: true
+    # Mission sets home at the observed hover pose after Extended root acceptance.
+    global.auto_home: false
+    global.background_enable: true
+    global.background_period: 0.5
+    # Match the upstream 0.1 s soft budget, including complete cluster rounds.
+    global.background_budget_mode: time
+    global.background_time_budget: 0.1
+    mission.enabled: true
+    mission.time_limit: 480.0
+    mission.auto_homing: true
+    mission.homing_speed: 0.9
+    mission.require_battery: false
+    # Mission calls native land_srv after returned_home; planner deadline landing stays off.
+    mission.auto_landing_enable: false
+
+voxblox_mapper:
+  ros__parameters:
+    use_sim_time: true
+    frame_id: map
+    sensor_frame: lidar
+    input_sensors: [lidar]
+    input.lidar.topic: points
+    input.lidar.frame: lidar
+    use_tf_transforms: true
+    map.storage: sparse
+    map.resolution: 0.2
+    map.distance_field: tsdf
+    # Full snapshots take ~0.17 s to accept on the development machine.
+    # Bound serialization to 5 Hz while continuing to integrate every scan.
+    map.snapshot_publish_period: 0.2
+    sensor.min_range: 0.5
+    sensor.max_range: 50.0
+    tsdf.voxels_per_side: 16
+    tsdf.truncation_distance: 0.6
+    tsdf.method: fast
+    tsdf.threads: 1
+    tsdf.voxel_carving_enabled: true
+    tsdf.allow_clear: true
+    tsdf.integration_order_mode: sorted
+    tsdf.max_consecutive_ray_collisions: 0
+    tsdf.use_const_weight: false
+    tsdf.use_weight_dropoff: true
+    tsdf.use_symmetric_weight_dropoff: false
+    tsdf.max_weight: 200.0
+    tsdf.clearing_ray_weight_factor: 0.01
+    tsdf.weight_ray_by_range: false
+    tsdf.occupancy_distance_factor: 1.0
+    occupancy_min_distance_voxel_size_factor: 1.0
+    color_mode: colors
+    update_mesh_every_n_sec: 1.0
+    mesh.min_weight: 0.0001
+    slice_level: 1.0
+    publish_slices: false
+    publish_pointclouds: true
+    publish_traversable: true
+    traversability_radius: 0.4
+    enable_icp: false
+    pointcloud_queue_size: 1000
+    # Native large scans use reliable delivery from bridge through the mapper.
+    pointcloud_reliability: reliable
+    min_time_between_msgs_sec: 0.0
+    timestamp_tolerance_sec: 0.001
+    use_freespace_pointcloud: true
+    freespace.sensor_frames: [lidar]
+    publish_tsdf_map: true
+    publish_esdf_map: true
+    esdf.enabled: true
+    # Original EsdfServer updates this derived field every ROS second; the
+    # planner continues to consume TSDF observations on every integrated scan.
+    update_esdf_every_n_sec: 1.0
+    esdf.max_distance: 2.0
+    esdf.clear_sphere_for_planning: false
+    esdf.clear_sphere_radius: 0.8
+    # Upstream augment_free_voxels_time=3 is a completed-build window in the
+    # planner. Its optional ROS 2 service/envelope adapter is kept off here;
+    # mission4 and the native flight baseline use only actual observations.
+    clear_unknown_box_on_start: false
+    robot.size: [0.2, 0.2, 0.2]
+    robot.center_offset: [0.0, 0.0, 0.0]
+    odometry_timeout: 2.0
+    # sparsity_compensation_factor=100 in the RMF YAML is a legacy setting:
+    # the pinned dev/noetic core removed it (SMB YAML: "THESE ARE OUT") and
+    # uses clearing_ray_weight_factor=0.01 above. Do not apply it twice.
+
+gbplanner_control:
+  ros__parameters:
+    use_sim_time: true
+    frame_id: map
+    robot_type: kAerial
+    # Manual triggering is the initial state. Initialization is not automatic;
+    # this trajectory still requires observed free space along the whole path.
+    init_motion.z_takeoff: 2.5
+    init_motion.z_drop: 1.7
+    init_motion.x_forward: 2.0
+    planner_trigger_lead_time: 0.4
+    # ROS 2 adaptation: add measured planning/dispatch latency in trajectory
+    # time; validate and splice immediately when ready, before the old endpoint.
+    planner_trigger_adaptive_lead: true
+    # Start one endpoint plan after a new travel observation. If its root is
+    # still unknown, one fresh-map retry waits for the ordinary lead window.
+    planner_trigger_early_start: true
+    # ROS 2 service/execution deadlines and completion tolerances.
+    request_timeout: 30.0
+    execution_timeout: 600.0
+    odom_timeout: 2.0
+    endpoint_tolerance: 0.1
+    max_cycles: 100
+    require_mission_status: true
+
+gbplanner_path_follower:
+  ros__parameters:
+    use_sim_time: true
+    frame_id: map
+    joint_name: base_link
+    robot_type: kAerial
+    output_type: kTopic
+    # All three upstream PCI translational speed limits are 1.0 m/s.
+    speed: 1.0
+    yaw_rate: 0.15
+    sample_period: 0.05
+    # Execution adaptation for the native Lee controller. The original PCI
+    # zero-derivative profile remains available as trajectory_profile=upstream.
+    trajectory_profile: quintic
+    # RMF honors the trajectory header origin. Preserve the active timed
+    # prefix and append at its rest endpoint; other topic drivers opt in only
+    # after confirming this clock contract. Upstream interpolation is unchanged.
+    continuation_strategy: append_timed
+    max_acceleration: 1.0
+    max_yaw_acceleration: 0.3
+    smooth_yaw: true
+    odom_timeout: 2.0
+    endpoint_tolerance: 0.05
+    yaw_tolerance: 0.1
+    execution_grace: 10.0
+    validation_timeout: 30.0
+    max_points: 20000

@@ -118,3 +118,7 @@ You can contact us for any question:
 * [Tung Dang](mailto:tung.dang@nevada.unr.edu)
 * [Mihir Dharmadhikari](mailto:mihir.dharmadhikari@ntnu.no)
 * [Kostas Alexis](mailto:konstantinos.alexis@ntnu.no)
+
+## ROS 2 Humble workspace
+
+An independent ROS 2 Humble port with Voxblox mapping, an RViz2 panel, and aerial/ground Gazebo Fortress simulation is available under [`ros2/`](ros2/README.md). The ROS 1 packages above retain their existing build and launch entrypoints.

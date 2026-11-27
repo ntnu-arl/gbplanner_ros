@@ -1,0 +1,30 @@
+#include "/media/matias/Datos/SyntaxHighlightingMisc.h"
+
+@property( irradiance_field )
+
+@piece( DeclIrradianceFieldStruct )
+	struct IrradianceField
+	{
+		float4 viewToIrradianceFieldRow0;
+		float4 viewToIrradianceFieldRow1;
+		float4 viewToIrradianceFieldRow2;
+
+		float2 numProbesAggregated;
+		float padding0;
+		float padding1;
+
+		float depthBorderedRes;
+		float depthFullWidth;
+		float2 depthInvFullResolution;
+
+		float irradBorderedRes;
+		float irradFullWidth;
+		float2 irradInvFullResolution;
+	};
+@end
+
+@piece( DeclIrradianceFieldUniform )
+	IrradianceField irradianceField;
+@end
+
+@end

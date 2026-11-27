@@ -1,0 +1,28 @@
+# goal
+geometry_msgs/PoseStamped[] path
+# ROS 2 extension: mode captured for validation and any inherited continuation.
+int32 bound_mode 3
+# ROS 2 extension: retain manual waypoint headings and skip path reconnection.
+bool manual_path false
+# ROS 2 extension: PCIGeneral setVelocity semantics; zero keeps the prior speed.
+float64 vel_max 0.0
+# Explicit ROS 2 ground maneuver mode; ordinary path following stays default.
+uint8 PATH=0
+uint8 GROUND_MANEUVER=1
+uint8 execution_mode 0
+# In GROUND_MANEUVER mode path is the complete approved reference, manual_path
+# must be false, and the executor preserves every declared stopped boundary.
+planner_msgs/GroundManeuver maneuver
+# Remaining wall-clock admission/validation budget; GROUND_MANEUVER requires
+# a finite positive value. Each forwarding layer passes only its remainder.
+float64 pre_execution_timeout 0.0
+
+---
+# result
+bool success
+
+---
+# feedback
+int32 remaining_waypoints
+float32 dist_to_goal
+float32 estimated_time_remaining

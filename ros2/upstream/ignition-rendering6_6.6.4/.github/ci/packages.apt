@@ -1,0 +1,13 @@
+freeglut3-dev
+libfreeimage-dev
+libglew-dev
+libignition-cmake2-dev
+libignition-common4-dev
+libignition-math6-dev
+libignition-math6-eigen3-dev
+libignition-plugin-dev
+libogre-1.9-dev
+libxi-dev
+libxmu-dev
+uuid-dev
+xvfb

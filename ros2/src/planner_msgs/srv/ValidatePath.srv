@@ -1,0 +1,23 @@
+# ROS 2 extension: validate a commanded polyline against the accepted map.
+std_msgs/Header header
+geometry_msgs/Pose[] path
+# ROS 2 extension: collision-body mode for this path check (default: exact size).
+int32 bound_mode 3
+# Extra swept-box margin for an asynchronous moving splice; zero preserves defaults.
+float64 clearance_margin
+# Limit extra margin to this many leading segments; zero applies to all.
+uint32 clearance_segments
+# The first pose is measured odometry prepended to a retained route for a live
+# check, rather than a commanded terrain waypoint. On ground robots only, its
+# sub-voxel height error may be projected before evaluating the connector slope.
+# Both original and projected swept bodies and observed support remain checked.
+# In continuous simplex TSDF mode, a steep attachment also checks both current
+# endpoint supports; the fixed commanded waypoints and later edges stay unchanged.
+bool first_pose_is_observation false
+---
+bool valid
+string reason
+uint64 map_revision
+# Zero-based start index of the rejected segment; -1 for non-segment failures.
+# The final vertex is also checked as a zero-length segment.
+int32 failure_segment -1

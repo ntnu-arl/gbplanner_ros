@@ -1,0 +1,6 @@
+# ROS 2 adaptation of the original Voxblox FilePath request.
+# The original ROS 1 callback return value becomes explicit response fields.
+string file_path
+---
+bool success
+string message

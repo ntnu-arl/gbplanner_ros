@@ -1,0 +1,33 @@
+{
+  "repository": "https://github.com/ntnu-arl/smb_simulator",
+  "commit": "9aa33187d7375fd48dbd63e27ca5e55bb219f750",
+  "archive_sha256": "8072e44e9c9e84ebb9eef735d56558eec39bf208e374ad1dcaf0ab3350c0d049",
+  "scope": "Unmodified SMB Joy source, mux configuration and launch wiring retained for provenance; no ROS 1 build.",
+  "license_declaration": "smb_teleop_twist_joy/package.xml and smb_lowlevel_controller/package.xml declare MIT; no repository-wide license text is supplied by this archive.",
+  "files": [
+    {
+      "path": "smb_teleop_twist_joy/src/smb_teleop_twist_joy_node.cpp",
+      "sha256": "dea5513102d10b2280369a3de04d4236d632797518504a79e0c5b6d5c942490d"
+    },
+    {
+      "path": "smb_teleop_twist_joy/package.xml",
+      "sha256": "87cfce1626df815ecabad5a4212f55795a3751a22bc27c8aed3dc544a40e5630"
+    },
+    {
+      "path": "smb_lowlevel_controller/config/twist_mux.yaml",
+      "sha256": "6e3f760c2b33f778d47638815667e9ec97a5f61f0016ac8965cc68427b45a2f4"
+    },
+    {
+      "path": "smb_lowlevel_controller/package.xml",
+      "sha256": "43db570654da68dcfe136219ec1eb18c2482a1dc8f664e5107839f9f9ff3dc43"
+    },
+    {
+      "path": "smb_gazebo/launch/spawn_smb.launch",
+      "sha256": "71fa44a32cacc333cfc93e52da3cbafdafd01f79de462da83a3d94395d47e2da"
+    },
+    {
+      "path": "smb_path_tracker/launch/pure_pursuit_tracker.launch",
+      "sha256": "7473cc706432fae854f65bfc280281bf957b5f64ad1de989b2c5bfa21aa78804"
+    }
+  ]
+}

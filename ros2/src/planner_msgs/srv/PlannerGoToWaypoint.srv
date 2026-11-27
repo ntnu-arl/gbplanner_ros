@@ -1,0 +1,7 @@
+bool check_collision
+geometry_msgs/PoseStamped waypoint
+# ROS 2 extension: collision-body mode for this global-graph route.
+int32 bound_mode 3
+---
+# Return best path.
+geometry_msgs/Pose[] path

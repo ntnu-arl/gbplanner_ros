@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<sdf version="1.8">
+  <world name="pittsburgh">
+    <physics name="physics" type="ignored">
+      <max_step_size>0.002</max_step_size><real_time_factor>1.0</real_time_factor>
+    </physics>
+    <gravity>0 0 -9.81</gravity>
+    <plugin filename="ignition-gazebo-physics-system" name="ignition::gazebo::systems::Physics"/>
+    <plugin filename="ignition-gazebo-user-commands-system" name="ignition::gazebo::systems::UserCommands"/>
+    <plugin filename="ignition-gazebo-scene-broadcaster-system" name="ignition::gazebo::systems::SceneBroadcaster"/>
+    <plugin filename="ignition-gazebo-sensors-system" name="ignition::gazebo::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+    <plugin filename="ignition-gazebo-contact-system" name="ignition::gazebo::systems::Contact"/>
+    <plugin filename="ignition-gazebo-imu-system" name="ignition::gazebo::systems::Imu"/>
+    <scene><ambient>0.4 0.4 0.4 1</ambient><background>0.7 0.7 0.7 1</background></scene>
+    <light type="directional" name="sun">
+      <pose>0 0 10 0 0 0</pose><diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular><direction>-0.5 0.1 -0.9</direction>
+    </light>
+    <!-- Explicit model-pose variant. The source Classic world's saved state
+         instead records (-22.4884, 286.186, 0); it is not replayed here.
+         MeshManager 4.8.1 preserves this DAE's coordinates despite Y_UP.
+         Do not add an axis correction, rescale the mesh, or add a floor. -->
+    <include>
+      <uri>model://pittsburgh_mine</uri>
+      <name>pittsburgh_mine</name>
+      <pose>-22 92.5 0 0 0 0</pose>
+    </include>
+  </world>
+</sdf>

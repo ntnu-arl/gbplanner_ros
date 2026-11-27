@@ -1,0 +1,29 @@
+# Request the planner to run and return a path
+std_msgs/Header header
+
+# Set the bound mode of the robot to use in planner.
+# Use extension to actual size. (default)
+int32 K_EXTENDED_BOUND = 0
+int32 K_RELAXED_BOUND = 1
+int32 K_MIN_BOUND = 2
+int32 K_EXACT_BOUND = 3
+int32 K_NO_BOUND = 4
+# Can only be used with one of above values. Check Params/BoundModeType for more details.
+int32 bound_mode
+
+# Set root pose if requires the planner starts planning from this root.
+# Otherwise, set all to zero, planner will start at robot's current state.
+geometry_msgs/Pose root_pose
+---
+int32 K_FORWARD = 0
+int32 K_BACKWARD = 1
+int32 K_HOMING = 2
+int32 K_REPOSITIONING = 3
+# Status of the best path, take one of the above values.
+int32 status
+
+# Return actual bound mode used for planning
+int32 planning_bound_mode
+
+# Return best path.
+geometry_msgs/Pose[] path

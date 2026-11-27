@@ -1,0 +1,21 @@
+gbplanner_local:
+  ros__parameters:
+    frame_id: map
+    map.resolution: 0.25
+    map.origin: [-5.0, -5.0, -1.5]
+    map.dimensions: [40, 40, 12]
+    robot.size: [0.4, 0.4, 0.4]
+    global.enable: true
+    search.sampling.min: [-1.5, -3.0, -0.5]
+    search.sampling.max: [6.5, 4.5, 0.5]
+    search.sampling.rotations: [0.0, 0.0, 0.0]
+    search.sampling.distribution: uniform
+    search.sampling.mean: [0.0, 0.0, 0.0]
+    search.sampling.scale: [1.0, 1.0, 1.0]
+    search.sampling.seed: 42
+    search.max_vertices: 500
+    search.max_edges: 10000
+    search.max_attempts: 12000
+    search.empty_graph_cutoff: 1500
+    search.max_target_candidates: 12
+    search.target_radius: 0.8

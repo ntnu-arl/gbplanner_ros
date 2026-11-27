@@ -1,0 +1,4 @@
+gbplanner_graph:
+  ros__parameters:
+    frame_id: map
+    snap_radius: 0.5

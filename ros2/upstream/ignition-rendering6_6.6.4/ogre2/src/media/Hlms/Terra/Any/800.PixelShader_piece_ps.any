@@ -1,0 +1,401 @@
+
+#include "/media/matias/Datos/SyntaxHighlightingMisc.h"
+
+@piece( DefaultTerraHeaderPS )
+	@insertpiece( DefaultHeaderPS )
+	@property( !hlms_prepass && needs_view_dir )
+		@insertpiece( DeclareBRDF )
+		@insertpiece( DeclareBRDF_InstantRadiosity )
+		@insertpiece( DeclareBRDF_AreaLightApprox )
+	@end
+
+	#define SampleMetalness0( tex, sampler, uv, arrayIdx ) OGRE_SampleArray2D( tex, sampler, uv, arrayIdx )
+	#define SampleMetalness1( tex, sampler, uv, arrayIdx ) OGRE_SampleArray2D( tex, sampler, uv, arrayIdx )
+	#define SampleMetalness2( tex, sampler, uv, arrayIdx ) OGRE_SampleArray2D( tex, sampler, uv, arrayIdx )
+	#define SampleMetalness3( tex, sampler, uv, arrayIdx ) OGRE_SampleArray2D( tex, sampler, uv, arrayIdx )
+
+	#define SampleRoughness0( tex, sampler, uv, arrayIdx ) OGRE_SampleArray2D( tex, sampler, uv, arrayIdx )
+	#define SampleRoughness1( tex, sampler, uv, arrayIdx ) OGRE_SampleArray2D( tex, sampler, uv, arrayIdx )
+	#define SampleRoughness2( tex, sampler, uv, arrayIdx ) OGRE_SampleArray2D( tex, sampler, uv, arrayIdx )
+	#define SampleRoughness3( tex, sampler, uv, arrayIdx ) OGRE_SampleArray2D( tex, sampler, uv, arrayIdx )
+
+	#define OGRE_UNPACK_X_2x16( packedInt ) ((packedInt) & 0x0000FFFFu)
+	#define OGRE_UNPACK_Y_2x16( packedInt ) ((packedInt) >> 16u)
+@end
+
+//-----------------------------------------------------------------------------
+//		BODY CODE
+//-----------------------------------------------------------------------------
+
+@undefpiece( UnpackTextureIndices0 )
+
+@piece( UnpackTextureIndices0 )
+	@property( syntax == metal )
+		@property( diffuse_map )		ushort texIndex_diffuseIdx			= material.diffuseIdx;@end
+		@property( detail_weight_map )	ushort texIndex_weightMapIdx		= material.weightMapIdx;@end
+
+		@property( detail_map0 )		ushort texIndex_detailMapIdx0		= material.detailMapIdx0;@end
+		@property( detail_map1 )		ushort texIndex_detailMapIdx1		= material.detailMapIdx1;@end
+		@property( detail_map2 )		ushort texIndex_detailMapIdx2		= material.detailMapIdx2;@end
+		@property( detail_map3 )		ushort texIndex_detailMapIdx3		= material.detailMapIdx3;@end
+
+		@property( detail_map_nm0 )		ushort texIndex_detailNormMapIdx0	= material.detailNormMapIdx0;@end
+		@property( detail_map_nm1 )		ushort texIndex_detailNormMapIdx1	= material.detailNormMapIdx1;@end
+		@property( detail_map_nm2 )		ushort texIndex_detailNormMapIdx2	= material.detailNormMapIdx2;@end
+		@property( detail_map_nm3 )		ushort texIndex_detailNormMapIdx3	= material.detailNormMapIdx3;@end
+
+		@property( roughness_map0 )		ushort texIndex_detailRoughnessIdx0	= material.detailRoughnessIdx0;@end
+		@property( roughness_map1 )		ushort texIndex_detailRoughnessIdx1	= material.detailRoughnessIdx1;@end
+		@property( roughness_map2 )		ushort texIndex_detailRoughnessIdx2	= material.detailRoughnessIdx2;@end
+		@property( roughness_map3 )		ushort texIndex_detailRoughnessIdx3	= material.detailRoughnessIdx3;@end
+
+		@property( metalness_map0 )		ushort texIndex_detailMetalnessIdx0	= material.detailMetalnessIdx0;@end
+		@property( metalness_map1 )		ushort texIndex_detailMetalnessIdx1	= material.detailMetalnessIdx1;@end
+		@property( metalness_map2 )		ushort texIndex_detailMetalnessIdx2	= material.detailMetalnessIdx2;@end
+		@property( metalness_map3 )		ushort texIndex_detailMetalnessIdx3	= material.detailMetalnessIdx3;@end
+	@else
+		@property( diffuse_map )		ushort texIndex_diffuseIdx			= OGRE_UNPACK_X_2x16( material.indices0_7.x );@end
+		@property( detail_weight_map )	ushort texIndex_weightMapIdx		= OGRE_UNPACK_Y_2x16( material.indices0_7.x );@end
+
+		@property( detail_map0 )		ushort texIndex_detailMapIdx0		= OGRE_UNPACK_X_2x16( material.indices0_7.y );@end
+		@property( detail_map1 )		ushort texIndex_detailMapIdx1		= OGRE_UNPACK_Y_2x16( material.indices0_7.y );@end
+		@property( detail_map2 )		ushort texIndex_detailMapIdx2		= OGRE_UNPACK_X_2x16( material.indices0_7.z );@end
+		@property( detail_map3 )		ushort texIndex_detailMapIdx3		= OGRE_UNPACK_Y_2x16( material.indices0_7.z );@end
+
+		@property( detail_map_nm0 )		ushort texIndex_detailNormMapIdx0	= OGRE_UNPACK_X_2x16( material.indices0_7.w );@end
+		@property( detail_map_nm1 )		ushort texIndex_detailNormMapIdx1	= OGRE_UNPACK_Y_2x16( material.indices0_7.w );@end
+		@property( detail_map_nm2 )		ushort texIndex_detailNormMapIdx2	= OGRE_UNPACK_X_2x16( material.indices8_15.x );@end
+		@property( detail_map_nm3 )		ushort texIndex_detailNormMapIdx3	= OGRE_UNPACK_Y_2x16( material.indices8_15.x );@end
+
+		@property( roughness_map0 )		ushort texIndex_detailRoughnessIdx0	= OGRE_UNPACK_X_2x16( material.indices8_15.y );@end
+		@property( roughness_map1 )		ushort texIndex_detailRoughnessIdx1	= OGRE_UNPACK_Y_2x16( material.indices8_15.y );@end
+		@property( roughness_map2 )		ushort texIndex_detailRoughnessIdx2	= OGRE_UNPACK_X_2x16( material.indices8_15.z );@end
+		@property( roughness_map3 )		ushort texIndex_detailRoughnessIdx3	= OGRE_UNPACK_Y_2x16( material.indices8_15.z );@end
+
+		@property( metalness_map0 )		ushort texIndex_detailMetalnessIdx0	= OGRE_UNPACK_X_2x16( material.indices8_15.w );@end
+		@property( metalness_map1 )		ushort texIndex_detailMetalnessIdx1	= OGRE_UNPACK_Y_2x16( material.indices8_15.w );@end
+		@property( metalness_map2 )		ushort texIndex_detailMetalnessIdx2	= OGRE_UNPACK_X_2x16( material.indices16_24.x );@end
+		@property( metalness_map3 )		ushort texIndex_detailMetalnessIdx3	= OGRE_UNPACK_Y_2x16( material.indices16_24.x );@end
+	@end
+@end
+@undefpiece( UnpackTextureIndices1 )
+
+@undefpiece( SampleDiffuseMap )
+@piece( SampleDiffuseMap )
+	/// DIFFUSE MAP
+	@property( diffuse_map )
+		pixelData.diffuse = SampleDiffuse( textureMaps@value( diffuse_map_idx ),
+										   samplerState@value(diffuse_map_sampler),
+										   UV_DIFFUSE( inPs.uv@value(uv_diffuse).xy ),
+										   texIndex_diffuseIdx );
+	@else
+		/// If there are no diffuse maps, we must initialize it to some value.
+		pixelData.diffuse.xyzw = float4( 1, 1, 1, 1 );
+	@end
+
+	@foreach( detail_maps_diffuse, n )
+		@property( !detail_map@n )float3 detailCol@n = float3( 0.0f, 0.0f, 0.0f );@end
+	@end
+
+
+	@property( !detail_maps_diffuse && !detail_maps_normal )
+		float4 detailWeights = float4( 0.25f, 0.25f, 0.25f, 0.25f );
+		@insertpiece( ign_weights )
+	@else
+		// IGN CUSTOMIZE BEGIN
+		//pixelData.diffuse.xyz *= (detailCol0.xyz * detailWeights.x + detailCol1.xyz * detailWeights.y) +
+		//						 (detailCol2.xyz * detailWeights.z + detailCol3.xyz * detailWeights.w);
+		@insertpiece( ign_weights )
+		// IGN CUSTOMIZE END
+	@end
+
+	/// Apply the material's diffuse over the textures
+	pixelData.diffuse.xyz *= material.kD.xyz;
+@end
+
+@undefpiece( SampleSpecularMap )
+@piece( SampleSpecularMap )
+	/// SPECUlAR MAP
+	@foreach( 4, n )
+		@property( metalness_map@n )
+			float metalness@n = SampleMetalness@n( textureMaps@value( metalness_map@n_idx ),
+												   samplerState@value(metalness_map@n_sampler),
+												   inPs.uv0.xy * material.detailOffsetScale[@n].zw +
+												   material.detailOffsetScale[@n].xy,
+												   texIndex_detailMetalnessIdx@n ).x;
+		@else
+			float metalness@n = 0;
+		@end
+	@end
+
+	pixelData.specular.xyz = float3( 1.0f, 1.0f, 1.0f );
+
+	// IGN CUSTOMIZE BEGIN
+	//	float metalness =	(metalness0 * detailWeights.x * material.metalness.x +
+	//						 metalness1 * detailWeights.y * material.metalness.y) +
+	//						(metalness2 * detailWeights.z * material.metalness.z +
+	//						 metalness3 * detailWeights.w * material.metalness.w);
+	float metalness = 0.0f;
+	metalness = lerp( metalness, metalness0, detailWeights.x );
+	metalness = lerp( metalness, metalness1, detailWeights.y );
+	metalness = lerp( metalness, metalness2, detailWeights.z );
+	metalness = lerp( metalness, metalness3, detailWeights.w );
+	// IGN CUSTOMIZE END
+
+	pixelData.F0 = lerp( float3( 0.03f, 0.03f, 0.03f ), pixelData.diffuse.xyz * 3.14159f, metalness );
+	pixelData.diffuse.xyz = pixelData.diffuse.xyz - pixelData.diffuse.xyz * metalness;
+@end
+
+@undefpiece( SampleRoughnessMap )
+@piece( SampleRoughnessMap )
+	/// ROUGHNESS MAP
+	@foreach( 4, n )
+		@property( roughness_map@n )
+			float roughness@n = SampleRoughness@n( textureMaps@value( roughness_map@n_idx ),
+												   samplerState@value(roughness_map@n_sampler),
+												   inPs.uv0.xy * material.detailOffsetScale[@n].zw +
+												   material.detailOffsetScale[@n].xy,
+												   texIndex_detailRoughnessIdx@n ).x;
+		@else
+			float roughness@n = 0;
+		@end
+	@end
+
+	// IGN CUSTOMIZE BEGIN
+	//	pixelData.roughness =	(roughness0 * detailWeights.x * material.roughness.x +
+	//							 roughness1 * detailWeights.y * material.roughness.y) +
+	//							(roughness2 * detailWeights.z * material.roughness.z +
+	//							 roughness3 * detailWeights.w * material.roughness.w);
+	float roughness = 1.0f;
+	roughness = lerp( roughness, roughness0, detailWeights.x );
+	roughness = lerp( roughness, roughness1, detailWeights.y );
+	roughness = lerp( roughness, roughness2, detailWeights.z );
+	roughness = lerp( roughness, roughness3, detailWeights.w );
+	// IGN CUSTOMIZE END
+	pixelData.roughness = max( pixelData.roughness, 0.001f );
+@end
+
+@undefpiece( LoadNormalData )
+@piece( LoadNormalData )
+	// Geometric normal
+	pixelData.geomNormal = OGRE_Sample( terrainNormals, samplerStateTerra, inPs.uv0.xy ).xyz * 2.0 - 1.0;
+	@property( z_up )
+		  pixelData.geomNormal.yz = float2( -pixelData.geomNormal.z, pixelData.geomNormal.y );
+	@end
+	pixelData.geomNormal = mul( pixelData.geomNormal, toFloat3x3( passBuf.view ) );
+	@property( normal_map )
+		//Get the TBN matrix
+		float3 viewSpaceUnitX	= mul( float3( 1, 0, 0 ) , toFloat3x3( passBuf.view ) );
+		float3 vTangent			= normalize( cross( pixelData.geomNormal, viewSpaceUnitX ) );
+		float3 vBinormal		= cross( vTangent, pixelData.geomNormal );
+		float3x3 TBN			= buildFloat3x3( vBinormal, vTangent, pixelData.geomNormal );
+	@end
+@end
+
+@piece( DefaultTerraBodyPS )
+	PixelData pixelData;
+
+	@insertpiece( LoadMaterial )
+	@insertpiece( UnpackTextureIndices0 )
+	@insertpiece( UnpackTextureIndices1 )
+	@insertpiece( DeclareObjLightMask )
+	@insertpiece( custom_ps_posMaterialLoad )
+
+	@insertpiece( LoadDetailWeights )
+
+	@insertpiece( SampleDetailMaps )
+
+	@property( !hlms_prepass )
+		@insertpiece( SampleDiffuseMap )
+	@end
+
+	@insertpiece( SampleSpecularMap )
+	@insertpiece( SampleRoughnessMap )
+
+	@insertpiece( forwardPlusDoDecals )
+
+	@property( !hlms_use_prepass )
+		@insertpiece( LoadNormalData )
+		@insertpiece( SampleAndApplyDetailNormalMaps )
+
+		@insertpiece( custom_ps_posSampleNormal )
+
+		@insertpiece( forwardPlusApplyDecalsNormal )
+
+		@property( normal_map )
+			pixelData.normal = normalize( mul( TBN, pixelData.normal ) );
+		@end
+
+		@insertpiece( DoDirectionalShadowMaps )
+
+	@end @property( hlms_use_prepass )
+		rshort2 iFragCoord = rshort2( gl_FragCoord.x,
+									  @property( !hlms_forwardplus_flipY && syntax == glsl )passBuf.windowHeight.x - @end
+									  gl_FragCoord.y );
+
+		@property( hlms_use_prepass_msaa )
+			//SV_Coverage/gl_SampleMaskIn is always before depth & stencil tests,
+			//so we need to perform the test ourselves
+			//See http://www.yosoygames.com.ar/wp/2017/02/beware-of-sv_coverage/
+			uint sampleMask = uint( gl_SampleMaskIn0 );
+			float msaaDepth;
+			uint subsampleDepthMask;
+			float pixelDepthZ;
+			float pixelDepthW;
+			float2 pixelDepthZW;
+			float pixelDepth;
+			int intPixelDepth;
+			int intMsaaDepth;
+			//Unfortunately there are precision errors, so we allow some ulp errors.
+			//200 & 5 are arbitrary, but were empirically found to be very good values.
+			int ulpError = int( lerp( 200.0, 5.0, gl_FragCoord.z ) );
+			@foreach( hlms_use_prepass_msaa, n )
+				pixelDepthZW = interpolateAtSample( inPs.zwDepth, @n );
+				pixelDepthZ = pixelDepthZW.x;
+				pixelDepthW = pixelDepthZW.y;
+				pixelDepth = pixelDepthZ / pixelDepthW;
+				msaaDepth = OGRE_Load2DMS( gBuf_depthTexture, iFragCoord.xy, @n ).x;
+				intPixelDepth = floatBitsToInt( pixelDepth );
+				intMsaaDepth = floatBitsToInt( msaaDepth );
+				subsampleDepthMask = (abs( intPixelDepth - intMsaaDepth ) <= ulpError) ? 0xffffffffu : ~(1u << @nu);
+				//subsampleDepthMask = int( (pixelDepth <= msaaDepth) ? 0xffffffffu : ~(1u << @nu) );
+				sampleMask &= subsampleDepthMask;
+			@end
+
+			sampleMask = sampleMask == 0u ? 1u : sampleMask;
+
+			int gBufSubsample = int( findLSB( sampleMask ) );
+
+			pixelData.normal = normalize( OGRE_Load2DMS( gBuf_normals, iFragCoord, gBufSubsample ).xyz * 2.0 - 1.0 );
+			float2 shadowRoughness = OGRE_Load2DMS( gBuf_shadowRoughness, iFragCoord, gBufSubsample ).xy;
+		@else
+			pixelData.normal = normalize( OGRE_Load2D( gBuf_normals, iFragCoord, 0 ).xyz * 2.0 - 1.0 );
+			float2 shadowRoughness = OGRE_Load2D( gBuf_shadowRoughness, iFragCoord, 0 ).xy;
+		@end
+
+		float fShadow = shadowRoughness.x;
+
+		@property( roughness_map )
+			pixelData.roughness = shadowRoughness.y * 0.98 + 0.02;
+		@end
+	@end
+
+	@property( !hlms_prepass )
+		@insertpiece( LightingHeader )
+
+		@insertpiece( custom_ps_preLights )
+
+		@property( !custom_disable_directional_lights )
+			float fTerrainShadow = OGRE_Sample( terrainShadows, samplerStateTerra, inPs.uv0.xy ).x;
+			@property( !(hlms_pssm_splits || (!hlms_pssm_splits && hlms_num_shadow_map_lights && hlms_lights_directional)) )
+				float fShadow = 1.0f;
+			@end
+			fShadow *= fTerrainShadow;
+
+			@insertpiece( DoDirectionalLights )
+		@end
+
+		@insertpiece( DoPointLights )
+		@insertpiece( DoSpotLights )
+
+		@insertpiece( DoAreaApproxLights )
+		@insertpiece( DoAreaLtcLights )
+
+		@insertpiece( forward3dLighting )
+
+		@property( needs_env_brdf && (use_envprobe_map || hlms_use_ssr || use_planar_reflections || vct_num_probes) )
+			pixelData.envColourS = float3( 0, 0, 0 );
+			pixelData.envColourD = float3( 0, 0, 0 );
+		@end
+
+		@insertpiece( applyVoxelConeTracing )
+
+		@insertpiece( forwardPlusDoCubemaps )
+		@insertpiece( applyIrradianceVolumes )
+
+		@insertpiece( DoEmissiveLight )
+
+		@property( use_envprobe_map )
+			@property( use_parallax_correct_cubemaps && !hlms_enable_cubemaps_auto )
+				@insertpiece( CubemapManualPcc )
+			@end @property( !use_parallax_correct_cubemaps )
+				@insertpiece( CubemapGlobal )
+			@end
+		@end
+
+		@property( hlms_use_ssr )
+			//TODO: SSR pass should be able to combine global & local cubemap.
+			float4 ssrReflection = OGRE_Load2D( ssrTexture, iFragCoord, 0 ).xyzw;
+			@property( use_envprobe_map )
+				pixelData.envColourS = lerp( pixelData.envColourS.xyz, ssrReflection.xyz, ssrReflection.w );
+			@else
+				pixelData.envColourS += ssrReflection.xyz * ssrReflection.w;
+			@end
+		@end
+
+		@insertpiece( DoPlanarReflectionsPS )
+
+		@property( ambient_hemisphere )
+			@property( use_envprobe_map || hlms_use_ssr || use_planar_reflections || vct_num_probes )
+				@property( vct_num_probes )
+					//Only use ambient lighting if object is outside any VCT probe
+					if( vctSpecular.w == 0 )
+					{
+				@end
+						pixelData.envColourS += lerp( passBuf.ambientLowerHemi.xyz, passBuf.ambientUpperHemi.xyz, ambientWD );
+						pixelData.envColourD += lerp( passBuf.ambientLowerHemi.xyz, passBuf.ambientUpperHemi.xyz, ambientWS );
+					@property( vct_num_probes )
+					}
+				@end
+				@else
+					pixelData.envColourS = lerp( passBuf.ambientLowerHemi.xyz, passBuf.ambientUpperHemi.xyz, ambientWD );
+					pixelData.envColourD = lerp( passBuf.ambientLowerHemi.xyz, passBuf.ambientUpperHemi.xyz, ambientWS );
+				@end
+			@end
+			@property( ambient_fixed && vct_num_probes )
+				//Only use ambient lighting if object is outside any VCT probe
+				finalColour += vctSpecular.w == 0 ? float3( 0, 0, 0 ) :
+													(passBuf.ambientUpperHemi.xyz * pixelData.diffuse.xyz);
+			@end
+
+		@property( needs_env_brdf )
+			@insertpiece( BRDF_EnvMap )
+		@end
+	@end ///!hlms_prepass
+
+	@property( !hlms_render_depth_only )
+		@property( !hlms_prepass )
+			@property( !hw_gamma_write )
+				//Linear to Gamma space
+				outPs_colour0.xyz	= sqrt( finalColour );
+			@else
+				outPs_colour0.xyz	= finalColour;
+			@end
+
+			@property( hlms_alphablend )
+				@property( use_texture_alpha )
+					outPs_colour0.w	= material.F0.w * pixelData.diffuse.w;
+				@else
+					outPs_colour0.w	= material.F0.w;
+				@end
+			@else
+				outPs_colour0.w		= 1.0;
+			@end
+
+			@property( debug_pssm_splits )
+				outPs_colour0.xyz = mix( outPs_colour0.xyz, debugPssmSplit.xyz, 0.2f );
+			@end
+
+            @property( hlms_gen_normals_gbuffer )
+                outPs_normals = float4( pixelData.normal * 0.5 + 0.5, 1.0 );
+            @end
+		@else
+			outPs_normals			= float4( pixelData.normal * 0.5 + 0.5, 1.0 );
+			@property( hlms_pssm_splits )
+				outPs_shadowRoughness	= float2( fShadow, (pixelData.roughness - 0.02) * 1.02040816 );
+			@end @property( !hlms_pssm_splits )
+				outPs_shadowRoughness	= float2( 1.0, (pixelData.roughness - 0.02) * 1.02040816 );
+			@end
+		@end
+	@end
+@end ///DefaultTerraBodyPS

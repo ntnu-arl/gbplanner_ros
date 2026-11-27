@@ -1,0 +1,37 @@
+\page tutorials Tutorials
+
+Welcome to the Ignition @GZ_DESIGNATION_CAP@ tutorials. These tutorials
+will guide you through the process of understanding the capabilities of the
+Ignition @GZ_DESIGNATION_CAP@ library and how to use the library effectively.
+
+**The tutorials**
+
+1. \subpage introduction "Introduction"
+2. \subpage installation "Installation"
+3. \subpage renderingplugin "Understanding the Rendering Plugin"
+4. \subpage lightmap "Creating and using light maps"
+5. \subpage transform_fbx_to_dae  "Transform FBX to Collada in Blender"
+
+**The examples**
+
+1. \subpage actor_animation  "Actor animation"
+2. \subpage gazebo_scene_viewer  "Gazebo scene viewer"
+3. \subpage mesh_viewer  "Mesh viewer"
+4. \subpage custom_scene_viewer  "Custom scene viewer"
+5. \subpage camera_tracking  "Camera tracking"
+6. \subpage custom_shaders  "Custom shaders"
+7. \subpage render_pass  "Render pass"
+8. \subpage simple_demo  "Simple demo"
+9. \subpage text_geom  "Text geom"
+10. \subpage particles  "Particles"
+11. \subpage render_order  "Render Order"
+12. \subpage heightmap  "Heightmap"
+13. \subpage envmap "Environment map"
+14. \subpage depth_camera "Depth camera"
+14. \subpage boundingbox_camera "Bounding box camera"
+
+## License
+
+The code associated with this documentation is licensed under an [Apache 2.0 License](https://www.apache.org/licenses/LICENSE-2.0).
+
+This documentation is licensed under a [Creative Commons Attribution 4.0 International License](http://creativecommons.org/licenses/by/4.0/).

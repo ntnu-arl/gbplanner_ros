@@ -1,0 +1,49 @@
+gbplanner_pure_pursuit:
+  ros__parameters:
+    fixed_frame: map
+    robot_frame: base_link
+    dt: 0.05
+    critical_angle: 0.52
+    curvature_scaling_angle: 0.7853981633974483
+    desired_vel: 0.3
+    max_lin_vel: 0.5
+    max_ang_vel: 0.5
+    look_ahead_distance: 0.5
+    look_ahead_error_margin: 0.2
+    # Keep an unvisited sharp turn when a short route fits inside lookahead.
+    preserve_corners: true
+    # Remove the source radius regularizer's nonzero straight-line yaw demand.
+    # Keep its speed scaling, turn threshold and the original endpoint checks.
+    steering_curvature: signed_geometric
+    # Reduce yaw during turns and terminal alignment as longitudinal offset grows.
+    rotation_hold_yaw_governor: true
+    goal_reaching_threshold: 0.04
+    goal_yaw_threshold: 0.1
+    odom_timeout: 0.5
+    # Explicit experimental action mode; ordinary PATH stays the default.
+    allow_ground_maneuver: false
+    ground_maneuver_max_speed: 0.3
+    ground_maneuver_max_yaw_rate: 0.4
+    ground_maneuver_max_acceleration: 0.3
+    ground_maneuver_max_yaw_acceleration: 0.6
+    ground_maneuver_max_duration: 30.0
+    ground_maneuver_max_path_length: 5.0
+
+gbplanner_path_follower:
+  ros__parameters:
+    frame_id: map
+    joint_name: base_link
+    robot_type: kGround
+    output_type: kAction
+    output_action: pci_output_path
+    output_action_timeout: 0.0
+    speed: 0.3
+    yaw_rate: 0.5
+    sample_period: 0.05
+    smooth_yaw: false
+    odom_timeout: 0.5
+    # The bridge compares XYZ against a 0.1 m TSDF surface estimate. The real
+    # wheel tracker still stops within 0.04 m in XY; this also admits the
+    # sub-voxel ground-height error at that measured endpoint.
+    endpoint_tolerance: 0.075
+    yaw_tolerance: 0.1

@@ -1,0 +1,448 @@
+@piece( PassStructDecl )
+struct ShadowReceiverData
+{
+	float4x4 texViewProj;
+@property( exponential_shadow_maps )
+	float4 texViewZRow;
+@end
+	float2 shadowDepthRange;
+	float2 padding;
+	float4 invShadowMapSize;
+};
+
+struct Light
+{
+	@property( syntax != hlsl )
+		float4 position;	//.w contains the objLightMask
+	@else
+		float3 position;
+		uint lightMask;
+	@end
+	float4 diffuse;		//.w contains numNonCasterDirectionalLights
+	float3 specular;
+@property( hlms_num_shadow_map_lights )
+	float3 attenuation;
+	//Spotlights:
+	//  spotDirection.xyz is direction
+	//  spotParams.xyz contains falloff params
+	float4 spotDirection;
+	float4 spotParams;
+@end
+
+#define lightTexProfileIdx spotDirection.w
+};
+
+#define numNonCasterDirectionalLights lights[0].diffuse.w
+
+#define areaLightDiffuseMipmapStart areaApproxLights[0].diffuse.w
+#define areaLightNumMipmapsSpecFactor areaApproxLights[0].specular.w
+
+#define numAreaApproxLights areaApproxLights[0].doubleSided.y
+#define numAreaApproxLightsWithMask areaApproxLights[0].doubleSided.z
+
+#define numAreaLtcLights areaLtcLights[0].points[0].w
+#define numAreaLtcLights areaLtcLights[0].points[0].w
+
+struct AreaLight
+{
+	@property( syntax != hlsl )
+		float4 position;	//.w contains the objLightMask
+	@else
+		float3 position;
+		uint lightMask;
+	@end
+	float4 diffuse;		//[0].w contains diffuse mipmap start
+	float4 specular;	//[0].w contains mipmap scale
+	float4 attenuation;	//.w contains texture array idx
+	//Custom 2D Shape:
+	//  direction.xyz direction
+	//  direction.w invHalfRectSize.x
+	//  tangent.xyz tangent
+	//  tangent.w invHalfRectSize.y
+	float4 direction;
+	float4 tangent;
+	float4 doubleSided;	//.y contains numAreaApproxLights
+						//.z contains numAreaApproxLightsWithMask
+	@property( obb_restraint_approx )
+		float4 obbFadeFactorApprox; //.w unused
+		float4 obbRestraint[3];
+	@end
+};
+
+struct AreaLtcLight
+{
+	@property( syntax != hlsl )
+		float4 position;	//.w contains the objLightMask
+	@else
+		float3 position;
+		uint lightMask;
+	@end
+	float4 diffuse;			//.w contains attenuation range
+	float4 specular;		//.w contains doubleSided
+	float4 points[4];		//.w contains numAreaLtcLights
+							//points[1].w, points[2].w, points[3].w contain obbFadeFactorLtc.xyz
+	@property( obb_restraint_ltc )
+		float4 obbRestraint[3];
+	@end
+};
+
+@insertpiece( DeclCubemapProbeStruct )
+@insertpiece( DeclVctStruct )
+@insertpiece( DeclIrradianceFieldStruct )
+
+//Uniforms that change per pass
+CONST_BUFFER_STRUCT_BEGIN( PassBuffer, 0 )
+{
+	//Vertex shader (common to both receiver and casters)
+@property( !hlms_instanced_stereo )
+	float4x4 viewProj;
+@else
+	float4x4 viewProj[2];
+	@property( hlms_forwardplus )
+		float4x4 leftEyeViewSpaceToCullCamClipSpace;
+	@end
+	float4 leftToRightView;
+@end
+
+@property( hlms_global_clip_planes )
+	float4 clipPlane0;
+@end
+
+@property( hlms_shadowcaster_point )
+	float4 cameraPosWS;	//Camera position in world space
+@end
+
+@property( !hlms_shadowcaster )
+	//Vertex shader
+	float4x4 view;
+	@property( hlms_num_shadow_map_lights )ShadowReceiverData shadowRcv[@value(hlms_num_shadow_map_lights)];@end
+
+	@property( hlms_use_uv_baking )
+		float4 pixelOffset2x; //.zw are unused.
+	@end
+
+	//-------------------------------------------------------------------------
+
+	//Pixel shader
+	float3x3 invViewMatCubemap;
+@property( syntax == hlsl )
+	float padding; //Compatibility with GLSL
+@end
+
+	float4 pccVctMinDistance_invPccVctInvDistance_rightEyePixelStartX_envMapNumMipmaps;
+
+	float4 aspectRatio_planarReflNumMips_unused2;
+
+	float2 invWindowRes;
+	float2 windowResolution;
+
+@property( ambient_hemisphere || ambient_fixed || envmap_scale || vct_ambient_hemisphere )
+	float4 ambientUpperHemi;
+@end
+@property( ambient_hemisphere || vct_ambient_hemisphere )
+	float4 ambientLowerHemi;
+	float4 ambientHemisphereDir;
+@end
+
+@property( ambient_sh )
+	@property( ambient_sh_monochrome )
+		float4 sh0;
+		float4 sh1;
+		float4 sh2; // sh2.yzw are unused
+	@else
+		@foreach( 7, n )
+			float4 sh@n;@end
+	@end
+@end
+
+@property( irradiance_volumes )
+	float4 irradianceOrigin;	//.w = maxPower
+	float4 irradianceSize;		//.w = 1.0f / irradianceTexture->getHeight()
+	float4x4 invView;
+@end
+
+@property( hlms_pssm_splits )@psub( hlms_pssm_splits_minus_one, hlms_pssm_splits, 1 )@foreach( hlms_pssm_splits, n )
+	float pssmSplitPoints@n;@end @end
+@property( hlms_pssm_blend )@foreach( hlms_pssm_splits_minus_one, n )
+	float pssmBlendPoints@n;@end @end
+@property( hlms_pssm_fade )
+	float pssmFadePoint;@end
+
+@property( !use_light_buffers )
+	@property( hlms_lights_spot )Light lights[@value(hlms_lights_spot)];@end
+	@property( hlms_lights_area_approx )AreaLight areaApproxLights[@value(hlms_lights_area_approx)];@end
+	@property( hlms_lights_area_ltc )AreaLtcLight areaLtcLights[@value(hlms_lights_area_ltc)];@end
+@end // !use_light_buffers
+
+@end @property( hlms_shadowcaster )
+	//Vertex shader
+	@property( exponential_shadow_maps )float4 viewZRow;@end
+	float2 depthRange;
+@end
+
+@property( hlms_forwardplus )
+	//Forward3D
+	//f3dData.x = minDistance;
+	//f3dData.y = invMaxDistance;
+	//f3dData.z = f3dNumSlicesSub1;
+	//f3dData.w = uint cellsPerTableOnGrid0 (floatBitsToUint);
+
+	//Clustered Forward:
+	//f3dData.x = minDistance;
+	//f3dData.y = invExponentK;
+	//f3dData.z = f3dNumSlicesSub1;
+	//f3dData.w = renderWindow->getHeight();
+	float4 f3dData;
+	@property( hlms_forwardplus == forward3d )
+		float4 f3dGridHWW[@value( forward3d_num_slices )];
+		float4 f3dViewportOffset;
+	@end
+	@property( hlms_forwardplus != forward3d )
+		float4 fwdScreenToGrid;
+	@end
+@end
+
+	@insertpiece( DeclPlanarReflUniforms )
+
+@property( parallax_correct_cubemaps && !hlms_enable_cubemaps_auto )
+	CubemapProbe autoProbe;
+@end
+
+	@insertpiece( DeclVctUniform )
+	@insertpiece( DeclIrradianceFieldUniform )
+
+	@insertpiece( custom_passBuffer )
+
+#define pccVctMinDistance		pccVctMinDistance_invPccVctInvDistance_rightEyePixelStartX_envMapNumMipmaps.x
+#define invPccVctInvDistance	pccVctMinDistance_invPccVctInvDistance_rightEyePixelStartX_envMapNumMipmaps.y
+#define rightEyePixelStartX		pccVctMinDistance_invPccVctInvDistance_rightEyePixelStartX_envMapNumMipmaps.z
+#define envMapNumMipmaps		pccVctMinDistance_invPccVctInvDistance_rightEyePixelStartX_envMapNumMipmaps.w
+
+#define aspectRatio			aspectRatio_planarReflNumMips_unused2.x
+#define planarReflNumMips	aspectRatio_planarReflNumMips_unused2.y
+}
+CONST_BUFFER_STRUCT_END( passBuf );
+
+@property( use_light_buffers )
+
+CONST_BUFFER_STRUCT_BEGIN( Light0Buffer, 4 )
+{
+	Light lights[16];
+}
+CONST_BUFFER_STRUCT_END( light0Buf );
+
+CONST_BUFFER_STRUCT_BEGIN( Light1Buffer, 5 )
+{
+	AreaLight areaApproxLights[2];
+}
+CONST_BUFFER_STRUCT_END( light1Buf );
+
+CONST_BUFFER_STRUCT_BEGIN( Light2Buffer, 6 )
+{
+	AreaLtcLight areaLtcLights[2];
+}
+CONST_BUFFER_STRUCT_END( light2Buf );
+
+
+@else
+
+#define light0Buf		passBuf
+#define light1Buf		passBuf
+#define light2Buf		passBuf
+
+@end // use_light_buffers
+
+@end
+
+@property( syntax == metal )
+	@piece( PassDecl )
+	, constant PassBuffer &passBuf [[buffer(CONST_SLOT_START+0)]]
+	@property( use_light_buffers )
+	, constant Light0Buffer &light0Buf [[buffer(CONST_SLOT_START+4)]]
+	, constant Light1Buffer &light1Buf [[buffer(CONST_SLOT_START+5)]]
+	, constant Light2Buffer &light2Buf [[buffer(CONST_SLOT_START+6)]]
+	@end // use_light_buffers
+	@end
+@end
+
+@property( fresnel_scalar )
+	@piece( FresnelSwizzle )xyz@end
+@else
+	@piece( FresnelSwizzle )x@end
+@end
+
+@piece( MaterialStructDecl )
+//Uniforms that change per Item/Entity, but change very infrequently
+struct Material
+{
+	/* kD is already divided by PI to make it energy conserving.
+	  (formula is finalDiffuse = NdotL * surfaceDiffuse / PI)
+	*/
+	float4 bgDiffuse;
+	float4 kD; //kD.w is alpha_test_threshold
+	float4 kS; //kS.w is roughness
+	//Fresnel coefficient, may be per colour component (float3) or scalar (float)
+	//F0.w is transparency
+	float4 F0;
+	float4 normalWeights;
+	float4 cDetailWeights;
+	float4 detailOffsetScale[4];
+	float4 emissive;		//emissive.w contains mNormalMapWeight.
+	float refractionStrength;
+	float _padding10;
+	float _padding11;
+	float _padding12;
+	float4 userValue[3];
+
+	@property( syntax != metal )
+		uint4 indices0_3;
+		uint4 indices4_7;
+	@else
+		ushort diffuseIdx;
+		ushort normalIdx;
+		ushort specularIdx;
+		ushort roughnessIdx;
+		ushort weightMapIdx;
+		ushort detailMapIdx0;
+		ushort detailMapIdx1;
+		ushort detailMapIdx2;
+
+		ushort detailMapIdx3;
+		ushort detailNormMapIdx0;
+		ushort detailNormMapIdx1;
+		ushort detailNormMapIdx2;
+
+		ushort detailNormMapIdx3;
+		ushort emissiveMapIdx;
+		ushort envMapIdx;
+	@end
+
+	@insertpiece( custom_materialBuffer )
+};
+	@property( normal_weight_tex )#define normalMapWeight material.emissive.w@end
+
+	@property( syntax != metal )
+		CONST_BUFFER( MaterialBuf, 1 )
+		{
+			Material materialArray[@value( materials_per_buffer )];
+		};
+	@end
+@end
+
+@property( syntax == metal )
+	@piece( MaterialDecl )
+		, constant Material *materialArray [[buffer(CONST_SLOT_START+1)]]
+	@end
+@end
+
+@property( syntax != metal )
+	@piece( InstanceStructDecl )
+		//Uniforms that change per Item/Entity
+		CONST_BUFFER( InstanceBuffer, 2 )
+		{
+			//.x =
+			//The lower 9 bits contain the material's start index.
+			//The higher 23 bits contain the world matrix start index.
+			//
+			//.y =
+			//shadowConstantBias. Send the bias directly to avoid an
+			//unnecessary indirection during the shadow mapping pass.
+			//Must be loaded with uintBitsToFloat
+			//
+			//.z =
+			//lightMask. Ogre must have been compiled with OGRE_NO_FINE_LIGHT_MASK_GRANULARITY
+			@property( fast_shader_build_hack )
+				uint4 worldMaterialIdx[2];
+			@else
+				uint4 worldMaterialIdx[4096];
+			@end
+		};
+	@end
+@else
+	@piece( InstanceDecl )
+		, constant uint4 *worldMaterialIdx [[buffer(CONST_SLOT_START+2)]]
+	@end
+@end
+
+@property( envprobe_map && envprobe_map != target_envprobe_map && use_parallax_correct_cubemaps && !hlms_enable_cubemaps_auto )
+@piece( PccManualProbeDecl )
+	@property( syntax != metal )
+		CONST_BUFFER( ManualProbe, 3 )
+		{
+			CubemapProbe manualProbe;
+		};
+	@else
+		, constant CubemapProbe &manualProbe [[buffer(CONST_SLOT_START+3)]]
+	@end
+@end
+@end
+
+//Reset texcoord to 0 for every shader stage (since values are preserved).
+@pset( texcoord, 0 )
+
+@piece( VStoPS_block )
+	@property( syntax == metal )
+		@property( (!hlms_shadowcaster || alpha_test) && !lower_gpu_overhead )
+			ushort materialId [[flat]];
+		@end
+		@property( hlms_fine_light_mask || hlms_forwardplus_fine_light_mask )
+			uint objLightMask [[flat]];
+		@end
+		@property( use_planar_reflections )
+			ushort planarReflectionIdx [[flat]];
+		@end
+	@else
+		@property( (!hlms_shadowcaster || alpha_test) && !lower_gpu_overhead )
+			FLAT_INTERPOLANT( ushort drawId, @counter(texcoord) );
+		@end
+	@end
+
+	@property( !hlms_shadowcaster )
+		@property( hlms_normal || hlms_qtangent )
+			INTERPOLANT( float3 pos, @counter(texcoord) );
+			INTERPOLANT( float3 normal, @counter(texcoord) );
+			@property( normal_map )
+				INTERPOLANT( float3 tangent, @counter(texcoord) );
+				@property( hlms_qtangent )FLAT_INTERPOLANT( float biNormalReflection, @counter(texcoord) );@end
+			@end
+		@end
+		@foreach( hlms_uv_count, n )
+			INTERPOLANT( float@value( hlms_uv_count@n ) uv@n, @counter(texcoord) );@end
+
+		@property( !shadows_receive_on_ps )
+			@foreach( hlms_num_shadow_map_lights, n )
+				@property( !hlms_shadowmap@n_is_point_light )
+					INTERPOLANT( float4 posL@n, @counter(texcoord) );
+				@end
+			@end
+		@else
+			@property( hlms_num_shadow_map_lights && !hlms_all_point_lights )
+				INTERPOLANT( float3 worldPos, @counter(texcoord) );
+			@end
+		@end
+
+		@property( hlms_pssm_splits )INTERPOLANT( float depth, @counter(texcoord) );@end
+		@property( hlms_use_prepass_msaa > 1 )
+			INTERPOLANT( float2 zwDepth, @counter(texcoord) );
+		@end
+
+		@property( hlms_forwardplus && hlms_instanced_stereo )
+			INTERPOLANT( float3 cullCamPosXY, @counter(texcoord) );
+		@end
+	@else
+		@property( alpha_test )
+			@foreach( hlms_uv_count, n )
+				INTERPOLANT( float@value( hlms_uv_count@n ) uv@n, @counter(texcoord) );@end
+		@end
+		@property( (!hlms_shadow_uses_depth_texture || exponential_shadow_maps) && !hlms_shadowcaster_point )
+			INTERPOLANT( float depth, @counter(texcoord) );
+		@end
+		@property( hlms_shadowcaster_point )
+			INTERPOLANT( float3 toCameraWS, @counter(texcoord) );
+			@property( !exponential_shadow_maps )
+				FLAT_INTERPOLANT( float constBias, @counter(texcoord) );
+			@end
+		@end
+	@end
+	@insertpiece( custom_VStoPS )
+@end
